@@ -7,15 +7,18 @@ export function updateExperienceBar(currentXP, maxXP) {
         experienceBar.style.position = 'fixed';
         experienceBar.style.top = '0';
         experienceBar.style.left = '0';
-        experienceBar.style.height = '10px';
-        experienceBar.style.background = 'limegreen';
+        experienceBar.style.height = '12px';
+        experienceBar.style.background = 'linear-gradient(90deg, #00ff99 0%, #00eaff 100%)';
         experienceBar.style.zIndex = '1000';
+        experienceBar.style.boxShadow = '0 0 16px 4px #00eaff, 0 2px 8px 0 #222';
+        experienceBar.style.transition = 'width 0.35s cubic-bezier(.4,1.6,.4,1)';
+        experienceBar.style.borderRadius = '0 0 12px 0';
         document.body.appendChild(experienceBar);
     }
     experienceBar.style.width = `${(currentXP / maxXP) * 100}%`;
 }
 
-export function displayLevel(level) {
+export function displayLevel(level, pop = false) {
     let levelDisplay = document.getElementById('level-display');
     if (!levelDisplay) {
         levelDisplay = document.createElement('div');
@@ -24,11 +27,27 @@ export function displayLevel(level) {
         levelDisplay.style.top = '12px';
         levelDisplay.style.left = '10px';
         levelDisplay.style.color = 'white';
-        levelDisplay.style.fontSize = '18px';
+        levelDisplay.style.fontSize = '20px';
         levelDisplay.style.zIndex = '1000';
+        levelDisplay.style.fontWeight = 'bold';
+        levelDisplay.style.padding = '6px 18px';
+        levelDisplay.style.borderRadius = '16px';
+        levelDisplay.style.background = 'rgba(30,40,60,0.85)';
+        levelDisplay.style.boxShadow = '0 0 16px 4px deepskyblue, 0 2px 8px 0 #222';
+        levelDisplay.style.textShadow = '0 0 8px #00eaff, 0 2px 4px #222';
+        levelDisplay.style.transition = 'transform 0.18s cubic-bezier(.4,1.6,.4,1), box-shadow 0.18s';
         document.body.appendChild(levelDisplay);
     }
     levelDisplay.innerText = `Level: ${level}`;
+    // Pop-Animation bei Level-Up
+    if (pop) {
+        levelDisplay.style.transform = 'scale(1.25)';
+        levelDisplay.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+        setTimeout(() => {
+            levelDisplay.style.transform = 'scale(1)';
+            levelDisplay.style.boxShadow = '0 0 16px 4px deepskyblue, 0 2px 8px 0 #222';
+        }, 180);
+    }
 }
 
 export function initializeUI() {
@@ -100,6 +119,9 @@ export function displayShopModal(onUpgrade) {
     modal.style.justifyContent = 'center';
     modal.style.alignItems = 'center';
     modal.style.zIndex = '3000';
+    modal.style.backdropFilter = 'blur(2px)';
+    modal.style.borderRadius = '0 0 32px 32px';
+    modal.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
 
     const title = document.createElement('h2');
     title.innerText = 'Level Up! Wähle ein Upgrade:';

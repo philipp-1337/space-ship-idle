@@ -187,6 +187,14 @@ function updateStars() {
     lastShipY = ship.y;
 }
 
+// --- SCREEN SHAKE ---
+let shakeTime = 0;
+let shakeIntensity = 0;
+function triggerScreenShake(intensity = 8, duration = 18) {
+    shakeTime = duration;
+    shakeIntensity = intensity;
+}
+
 // Passe main.js an, damit ship.shoot() ein Array zurückgibt (für Doppellaser)
 function gameLoop() {
     if (isGameOver) { // If game over, stop the loop.
@@ -197,10 +205,21 @@ function gameLoop() {
         return;
     }
 
+    // --- Screen Shake Offset anwenden ---
+    if (shakeTime > 0) {
+        const dx = (Math.random() - 0.5) * shakeIntensity;
+        const dy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.save();
+        ctx.translate(dx, dy);
+        shakeTime--;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // --- Hintergrundsterne ---
     updateStars();
     drawStars();
+    // --- XP-Partikel ---
+    updateAndDrawXpParticles(ctx);
     if (!ship.isExploding) {
         updateShipMovement();
     }
@@ -230,14 +249,21 @@ function gameLoop() {
         if (Array.isArray(laser)) {
             // Falls versehentlich ein Array im lasers-Array gelandet ist (Bugfix)
             laser.forEach(l => {
+                ctx.save();
+                ctx.shadowBlur = 16;
+                ctx.shadowColor = l.upgradeLevel >= 3 ? 'cyan' : 'red';
                 l.update();
                 l.draw(ctx);
+                ctx.restore();
             });
-            lasers.splice(lIdx, 1); // Entferne das Array aus lasers
-            return;
+            lasers.splice(lIdx, 1);            return;
         }
+        ctx.save();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = laser.upgradeLevel >= 3 ? 'cyan' : 'red';
         laser.update();
         laser.draw(ctx);
+        ctx.restore();
         if (!laser.isActive) {
             lasers.splice(lIdx, 1);
         }
@@ -248,6 +274,7 @@ function gameLoop() {
         enemy.draw(ctx);
         if (!ship.isExploding && enemy.checkCollision(ship)) {
             ship.explode();
+            triggerScreenShake(12, 24);
             setTimeout(() => endGame(), 1000); // 1 Sekunde Explosion zeigen
         }
         // Laser collision
@@ -274,11 +301,16 @@ function gameLoop() {
                 xp.y += dy * magnetStrength;
             }
         }
+        ctx.save();
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = 'deepskyblue';
         xp.draw(ctx);
+        ctx.restore();
         // XP-Einsammelradius
         const dx = ship.x - xp.x;
         const dy = ship.y - xp.y;
         if (Math.sqrt(dx*dx + dy*dy) < ship.getXpRadius() + xp.radius && !xp.collected) {
+            spawnXpParticles(xp.x, xp.y, 'deepskyblue');
             xp.collect();
             experience++;
             xpPoints.splice(xIdx, 1);
@@ -373,4 +405,41 @@ function spawnEnemy() {
 }
 
 enemySpawnIntervalId = setInterval(spawnEnemy, 2000);
+
+// --- XP-PARTIKEL-EFFEKT ---
+let xpParticles = [];
+function spawnXpParticles(x, y, color = 'deepskyblue') {
+    for (let i = 0; i < 12; i++) {
+        xpParticles.push({
+            x,
+            y,
+            angle: Math.random() * Math.PI * 2,
+            speed: 1.2 + Math.random() * 1.8,
+            life: 18 + Math.random() * 10,
+            maxLife: 18 + Math.random() * 10,
+            color,
+            size: 1.5 + Math.random() * 1.5
+        });
+    }
+}
+
+function updateAndDrawXpParticles(ctx) {
+    for (let i = xpParticles.length - 1; i >= 0; i--) {
+        const p = xpParticles[i];
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed;
+        p.speed *= 0.93;
+        p.life--;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        if (p.life <= 0) xpParticles.splice(i, 1);
+    }
+}
 gameLoop();

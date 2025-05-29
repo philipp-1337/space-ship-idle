@@ -66,7 +66,6 @@ class Enemy {
         if (this.exploding) {
             this.explosionFrame++;
             // Partikel animieren
-            // Optimierung: Partikel-Update in eigene Methode auslagern?
             this.particles.forEach(p => {
                 p.x += Math.cos(p.angle) * p.speed;
                 p.y += Math.sin(p.angle) * p.speed;
@@ -84,6 +83,18 @@ class Enemy {
                         color: i % 2 === 0 ? 'orange' : 'yellow',
                         size: 2 + Math.random() * 2,
                         life: 10 + Math.random() * 10
+                    });
+                }
+                // --- Neue Funken/Partikel für Explosionseffekt ---
+                for (let i = 0; i < 22; i++) {
+                    this.particles.push({
+                        x: 0,
+                        y: 0,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: 2.2 + Math.random() * 2.8,
+                        color: ['#fff200','#ff9800','#ff3c00','#ffeedd','#ffd700'][Math.floor(Math.random()*5)],
+                        size: 1.5 + Math.random() * 2.5,
+                        life: 14 + Math.random() * 16
                     });
                 }
             }

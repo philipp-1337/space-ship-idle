@@ -150,6 +150,9 @@ class Ship {
 
         // Triebwerksstrahl/-glühen basierend auf thrustState
         if (this.thrustState === 'forward') {
+            ctx.save();
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = 'orangered';
             ctx.fillStyle = 'orangered';
             const glowDepth = nacelleLength * 0.8; // Etwas längerer Strahl
             const glowThickness = nacelleThickness * 0.85; // Etwas dickerer Strahl
@@ -157,7 +160,11 @@ class Ship {
             ctx.fillRect(nacelleStartX + nacelleLength, -nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
             // Unterer Strahl
             ctx.fillRect(nacelleStartX + nacelleLength, nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
+            ctx.restore();
         } else if (this.thrustState === 'backward') {
+            ctx.save();
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = 'lightblue';
             ctx.fillStyle = 'lightblue'; // Andere Farbe für Rückwärtsschub
             const glowDepth = nacelleLength * 0.5; // Kürzerer Strahl
             const glowThickness = nacelleThickness * 0.7; // Etwas schmalerer Strahl
@@ -165,6 +172,7 @@ class Ship {
             ctx.fillRect(nacelleStartX + nacelleLength, -nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
             // Unterer Strahl (Rückwärts)
             ctx.fillRect(nacelleStartX + nacelleLength, nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
+            ctx.restore();
         }
 
         // Cockpit
