@@ -32,6 +32,8 @@ window.BASE_LASER_DAMAGE = BASE_LASER_DAMAGE; // Global verfügbar machen
 
 // --- SMOOTH SHIP MOVEMENT MIT BESCHLEUNIGUNG & DRIFT ---
 const keys = { up: false, down: false, left: false, right: false, shooting: false };
+// Für mobile absolute Steuerung:
+let joystickMove = null;
 
 // --- Welt-Offset für unendliche Map ---
 let worldOffsetX = 0;
@@ -81,6 +83,46 @@ ship.friction = 0.90;
 
 function updateShipMovement() {
     if (ship.isExploding) return; // Während Explosion keine Steuerung
+
+    // --- Mobile absolute Steuerung (Joystick) ---
+    if (joystickMove && (typeof joystickMove.x === 'number') && (typeof joystickMove.y === 'number')) {
+        // Normiere Vektor
+        let dx = joystickMove.x, dy = joystickMove.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 0) {
+            // Reduzierter Geschwindigkeitsfaktor für mobile Steuerung
+            const speed = Math.min(dist * 0.01, ship.maxSpeed);
+            const nx = dx / dist, ny = dy / dist;
+            ship.vx += nx * speed;
+            ship.vy += ny * speed;
+            // Optional: Schiff in Bewegungsrichtung drehen
+            ship.angle = Math.atan2(ny, nx);
+        }
+        // Friction/Drift
+        ship.vx *= ship.friction;
+        ship.vy *= ship.friction;
+        // Welt-Offset wie gehabt
+        let nextX = ship.x + ship.vx;
+        let nextY = ship.y + ship.vy;
+        let offsetX = 0, offsetY = 0;
+        if (nextX < marginX) { offsetX = marginX - nextX; nextX = marginX; }
+        if (nextX > canvas.width - marginX) { offsetX = (canvas.width - marginX) - nextX; nextX = canvas.width - marginX; }
+        if (nextY < marginY) { offsetY = marginY - nextY; nextY = marginY; }
+        if (nextY > canvas.height - marginY) { offsetY = (canvas.height - marginY) - nextY; nextY = canvas.height - marginY; }
+        if (offsetX !== 0 || offsetY !== 0) {
+            worldOffsetX += -offsetX;
+            worldOffsetY += -offsetY;
+            starLayers.forEach(layer => { layer.stars.forEach(star => { star.x += offsetX; star.y += offsetY; }); });
+            enemies.forEach(e => { e.x += offsetX; e.y += offsetY; });
+            xpPoints.forEach(xp => { xp.x += offsetX; xp.y += offsetY; });
+            lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
+            enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
+            xpParticles.forEach(p => { p.x += offsetX; p.y += offsetY; });
+        }
+        ship.x = nextX;
+        ship.y = nextY;
+        return;
+    }
 
     // Schubzustand für Animation setzen
     if (keys.up) {
@@ -546,4 +588,174 @@ function updateAndDrawXpParticles(ctx) {
         if (p.life <= 0) xpParticles.splice(i, 1);
     }
 }
-gameLoop();
+
+// --- Touch-Steuerung für Mobile ---
+function createTouchControls() {
+    // Container für Buttons
+    const touchContainer = document.createElement('div');
+    touchContainer.id = 'touch-controls';
+    touchContainer.style.position = 'fixed';
+    touchContainer.style.left = '0';
+    touchContainer.style.bottom = '0';
+    touchContainer.style.width = '100vw';
+    touchContainer.style.height = '40vh';
+    touchContainer.style.zIndex = '5000';
+    touchContainer.style.pointerEvents = 'none';
+
+    // --- Virtueller Joystick (links unten) ---
+    const joystickSize = 180;
+    const joystickBase = document.createElement('div');
+    joystickBase.style.position = 'absolute';
+    joystickBase.style.left = '36px';
+    joystickBase.style.bottom = '36px';
+    joystickBase.style.width = joystickSize + 'px';
+    joystickBase.style.height = joystickSize + 'px';
+    joystickBase.style.background = 'rgba(60,60,60,0.18)';
+    joystickBase.style.borderRadius = '50%';
+    joystickBase.style.pointerEvents = 'auto';
+    joystickBase.style.touchAction = 'none';
+    joystickBase.style.border = '2px solid #444';
+    joystickBase.style.boxSizing = 'border-box';
+
+    const joystickStick = document.createElement('div');
+    joystickStick.style.position = 'absolute';
+    joystickStick.style.left = (joystickSize/2 - 38) + 'px';
+    joystickStick.style.top = (joystickSize/2 - 38) + 'px';
+    joystickStick.style.width = '76px';
+    joystickStick.style.height = '76px';
+    joystickStick.style.background = 'rgba(200,200,200,0.85)';
+    joystickStick.style.borderRadius = '50%';
+    joystickStick.style.border = '2px solid #888';
+    joystickStick.style.boxSizing = 'border-box';
+    joystickStick.style.transition = 'left 0.08s, top 0.08s';
+    joystickBase.appendChild(joystickStick);
+    touchContainer.appendChild(joystickBase);
+
+    let joystickTouchId = null;
+    let baseRect = null;
+    let stickCenter = { x: joystickSize/2, y: joystickSize/2 };
+    let lastDir = { up: false, down: false, left: false, right: false };
+
+    function setKeysFromVector(dx, dy) {
+        // Deadzone
+        const deadzone = 18;
+        let up = false, down = false, left = false, right = false;
+        // Für mobile absolute Steuerung:
+        if (Math.abs(dx) > deadzone || Math.abs(dy) > deadzone) {
+            joystickMove = { x: dx, y: dy };
+        } else {
+            joystickMove = { x: 0, y: 0 };
+        }
+        // keys.* werden für Tastatur weiterhin gesetzt, aber auf Mobile zählt nur joystickMove
+        keys.up = up;
+        keys.down = down;
+        keys.left = left;
+        keys.right = right;
+        lastDir = { up, down, left, right };
+    }
+    function resetJoystick() {
+        joystickStick.style.left = (joystickSize/2 - 38) + 'px';
+        joystickStick.style.top = (joystickSize/2 - 38) + 'px';
+        joystickMove = { x: 0, y: 0 };
+        setKeysFromVector(0, 0);
+    }
+
+    joystickBase.addEventListener('touchstart', function(e) {
+        if (joystickTouchId !== null) return;
+        const touch = e.changedTouches[0];
+        joystickTouchId = touch.identifier;
+        baseRect = joystickBase.getBoundingClientRect();
+        const x = touch.clientX - baseRect.left;
+        const y = touch.clientY - baseRect.top;
+        moveStick(x, y);
+        e.preventDefault();
+    }, { passive: false });
+    joystickBase.addEventListener('touchmove', function(e) {
+        if (joystickTouchId === null) return;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (touch.identifier === joystickTouchId) {
+                const x = touch.clientX - baseRect.left;
+                const y = touch.clientY - baseRect.top;
+                moveStick(x, y);
+                e.preventDefault();
+                break;
+            }
+        }
+    }, { passive: false });
+    joystickBase.addEventListener('touchend', function(e) {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (touch.identifier === joystickTouchId) {
+                joystickTouchId = null;
+                resetJoystick();
+                e.preventDefault();
+                break;
+            }
+        }
+    }, { passive: false });
+    joystickBase.addEventListener('touchcancel', function(e) {
+        joystickTouchId = null;
+        resetJoystick();
+    });
+
+    function moveStick(x, y) {
+        // Begrenze Stick auf Kreisradius
+        const dx = x - joystickSize/2;
+        const dy = y - joystickSize/2;
+        const maxDist = joystickSize/2 - 38;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        let nx = dx, ny = dy;
+        if (dist > maxDist) {
+            nx = dx * maxDist / dist;
+            ny = dy * maxDist / dist;
+            dist = maxDist;
+        }
+        joystickStick.style.left = (joystickSize/2 - 38 + nx) + 'px';
+        joystickStick.style.top = (joystickSize/2 - 38 + ny) + 'px';
+        setKeysFromVector(nx, ny);
+    }
+
+    // --- Schuss-Button (rechts) ---
+    const shootBtn = document.createElement('button');
+    shootBtn.innerText = '⦿';
+    shootBtn.style.position = 'absolute';
+    shootBtn.style.right = '64px';
+    shootBtn.style.bottom = '96px';
+    shootBtn.style.width = '140px';
+    shootBtn.style.height = '140px';
+    shootBtn.style.fontSize = '76px';
+    shootBtn.style.borderRadius = '50%';
+    shootBtn.style.border = 'none';
+    shootBtn.style.background = '#e74c3c';
+    shootBtn.style.color = 'white';
+    shootBtn.style.pointerEvents = 'auto';
+    shootBtn.ontouchstart = (e) => { e.preventDefault(); keys.shooting = true; };
+    shootBtn.ontouchend = (e) => { e.preventDefault(); keys.shooting = false; };
+    touchContainer.appendChild(shootBtn);
+
+    document.body.appendChild(touchContainer);
+}
+
+// Canvas-Größe für Mobile vergrößern
+function resizeCanvasForMobile() {
+    // Immer 2x so groß wie der Viewport, unabhängig von der Größe
+    canvas.width = window.innerWidth * 2;
+    canvas.height = window.innerHeight * 2;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+}
+
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    window.addEventListener('DOMContentLoaded', () => {
+        resizeCanvasForMobile();
+        createTouchControls();
+        // Skaliere das gesamte Canvas für größere Darstellung
+        ctx.setTransform(2, 0, 0, 2, 0, 0);
+        gameLoop();
+    });
+} else {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gameLoop();
+}
