@@ -2,7 +2,7 @@ import { Ship } from './ship.js';
 import Enemy from './enemy.js';
 import Laser from './laser.js';
 import XP from './xp.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu } from './ui.js';
 
 initializeUI();
 
@@ -22,6 +22,9 @@ let level = 1;
 let maxXP = 5;
 let isGameOver = false;
 let isShopOpen = false; // Flag to pause game logic when shop is open
+let isPaused = false;
+let kills = 0;
+let xpCollected = 0;
 let enemySpawnIntervalId;
 
 const BASE_LASER_DAMAGE = 1; // Basis-Schaden für Laser auf Level 0
@@ -247,9 +250,56 @@ function triggerScreenShake(intensity = 8, duration = 18) {
     shakeIntensity = intensity;
 }
 
+// --- PAUSE BUTTON & ESC HANDLING ---
+displayPauseButton(() => pauseGame());
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (!isPaused) pauseGame();
+        else resumeGame();
+    }
+});
+
+function pauseGame() {
+    if (isPaused || isGameOver || isShopOpen) return;
+    isPaused = true;
+    removePauseButton();
+    displayPauseMenu({
+        level,
+        experience,
+        maxXP,
+        kills,
+        xpCollected
+    }, resumeGame, restartGame);
+}
+
+function resumeGame() {
+    if (!isPaused) return;
+    isPaused = false;
+    removePauseMenu();
+    displayPauseButton(() => pauseGame());
+    requestAnimationFrame(gameLoop);
+}
+
+function restartGame() {
+    document.location.reload();
+}
+
+// --- Statistiken tracken ---
+// (Korrekt: Nur im jeweiligen Kontext erhöhen, nicht global im Code!)
+// Entferne die fehlerhaften globalen Zeilen:
+// xp.collect();
+// experience++;
+// xpCollected++;
+// enemy.destroy();
+// kills++;
+// ...
+
 // Passe main.js an, damit ship.shoot() ein Array zurückgibt (für Doppellaser)
 function gameLoop() {
     if (isGameOver) { // If game over, stop the loop.
+        return;
+    }
+    if (isPaused) {
         return;
     }
     if (isShopOpen) { // If shop is open, effectively pause game logic and rendering
@@ -335,6 +385,7 @@ function gameLoop() {
                 enemy.destroy();
                 lasers.splice(lIdx, 1);
                 xpPoints.push(new XP(enemy.x, enemy.y));
+                kills++; // Gegner besiegt erhöhen
             }
         });
         if (!enemy.alive) {
@@ -365,6 +416,7 @@ function gameLoop() {
             spawnXpParticles(xp.x, xp.y, 'deepskyblue');
             xp.collect();
             experience++;
+            xpCollected++; // Gesammelte XP erhöhen
             xpPoints.splice(xIdx, 1);
             if (experience >= maxXP) {
                 levelUp();

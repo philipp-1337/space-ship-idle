@@ -248,3 +248,36 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     resumeBtn.innerText = 'Weiterspielen';
     resumeBtn.style.margin = '8px';
     resumeBtn.style.padding = '12px 28px';
+    resumeBtn.style.fontSize = '18px';
+    resumeBtn.style.borderRadius = '8px';
+    resumeBtn.style.border = 'none';
+    resumeBtn.style.background = 'limegreen';
+    resumeBtn.style.color = 'white';
+    resumeBtn.onclick = () => {
+        menu.remove();
+        onResume();
+    };
+    menu.appendChild(resumeBtn);
+
+    // Restart Button
+    const restartBtn = document.createElement('button');
+    restartBtn.innerText = 'Neustarten';
+    restartBtn.style.margin = '8px';
+    restartBtn.style.padding = '12px 28px';
+    restartBtn.style.fontSize = '18px';
+    restartBtn.style.borderRadius = '8px';
+    restartBtn.style.border = 'none';
+    restartBtn.style.background = '#e74c3c';
+    restartBtn.style.color = 'white';
+    restartBtn.onclick = () => {
+        document.location.reload();
+    };
+    menu.appendChild(restartBtn);
+
+    document.body.appendChild(menu);
+}
+
+export function removePauseMenu() {
+    const menu = document.getElementById('pause-menu');
+    if (menu) menu.remove();
+}
