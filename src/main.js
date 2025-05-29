@@ -24,8 +24,18 @@ let isGameOver = false;
 let isShopOpen = false; // Flag to pause game logic when shop is open
 let enemySpawnIntervalId;
 
+const BASE_LASER_DAMAGE = 1; // Basis-Schaden für Laser auf Level 0
+window.BASE_LASER_DAMAGE = BASE_LASER_DAMAGE; // Global verfügbar machen
+
 // --- SMOOTH SHIP MOVEMENT MIT BESCHLEUNIGUNG & DRIFT ---
 const keys = { up: false, down: false, left: false, right: false, shooting: false };
+
+// --- Welt-Offset für unendliche Map ---
+let worldOffsetX = 0;
+let worldOffsetY = 0;
+// Randbereich (z.B. 20% vom Canvas)
+const marginX = canvas.width * 0.2;
+const marginY = canvas.height * 0.2;
 
 window.addEventListener('keydown', (event) => {
     if (event.code === 'Space') {
@@ -103,8 +113,50 @@ function updateShipMovement() {
     // Friction/Drift
     ship.vx *= ship.friction;
     ship.vy *= ship.friction;
-    ship.x += ship.vx;
-    ship.y += ship.vy;
+
+    // --- NEU: Welt verschieben, wenn Schiff Randbereich erreicht ---
+    let nextX = ship.x + ship.vx;
+    let nextY = ship.y + ship.vy;
+    let offsetX = 0, offsetY = 0;
+    // Links
+    if (nextX < marginX) {
+        offsetX = marginX - nextX;
+        nextX = marginX;
+    }
+    // Rechts
+    if (nextX > canvas.width - marginX) {
+        offsetX = (canvas.width - marginX) - nextX;
+        nextX = canvas.width - marginX;
+    }
+    // Oben
+    if (nextY < marginY) {
+        offsetY = marginY - nextY;
+        nextY = marginY;
+    }
+    // Unten
+    if (nextY > canvas.height - marginY) {
+        offsetY = (canvas.height - marginY) - nextY;
+        nextY = canvas.height - marginY;
+    }
+    // Wenn Offset != 0, verschiebe Welt
+    if (offsetX !== 0 || offsetY !== 0) {
+        worldOffsetX += -offsetX;
+        worldOffsetY += -offsetY;
+        // Alle Weltobjekte verschieben
+        starLayers.forEach(layer => {
+            layer.stars.forEach(star => {
+                star.x += offsetX;
+                star.y += offsetY;
+            });
+        });
+        enemies.forEach(e => { e.x += offsetX; e.y += offsetY; });
+        xpPoints.forEach(xp => { xp.x += offsetX; xp.y += offsetY; });
+        lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
+        enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
+        xpParticles.forEach(p => { p.x += offsetX; p.y += offsetY; });
+    }
+    ship.x = nextX;
+    ship.y = nextY;
 }
 
 let upgrades = {

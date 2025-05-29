@@ -128,7 +128,18 @@ export function displayShopModal(onUpgrade) {
     title.style.color = 'white';
     modal.appendChild(title);
 
-    const upgrades = [
+    // Globale Zustände für aktuelle Upgrade-Level und Basisschaden abrufen
+    const currentLaserUpgradeLevel = (typeof window !== 'undefined' && window.upgrades) ? window.upgrades.laser : 0;
+    const baseLaserDmg = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
+
+    const calculateLaserDamage = (level) => {
+        return baseLaserDmg * Math.pow(1.05, level);
+    };
+
+    const currentDamageText = calculateLaserDamage(currentLaserUpgradeLevel).toFixed(2);
+    const nextLevelDamageText = calculateLaserDamage(currentLaserUpgradeLevel + 1).toFixed(2);
+
+    const upgradesData = [
         {
             key: 'magnet',
             label: 'Magnet-Sphäre (zieht XP an)',
@@ -136,8 +147,8 @@ export function displayShopModal(onUpgrade) {
         },
         {
             key: 'laser',
-            label: 'Laser-Upgrade',
-            desc: 'Erhöht Laserschaden, Geschwindigkeit oder feuert 2 Strahlen.'
+            label: `Laser-Upgrade (Schaden)`,
+            desc: `Erhöht den Laserschaden. Aktuell: ${currentDamageText} / Nächstes Lvl: ${nextLevelDamageText}.`
         },
         {
             key: 'speed',
@@ -146,7 +157,7 @@ export function displayShopModal(onUpgrade) {
         }
     ];
 
-    upgrades.forEach(upg => {
+    upgradesData.forEach(upg => {
         const btn = document.createElement('button');
         btn.innerHTML = `<b>${upg.label}</b><br><small>${upg.desc}</small>`;
         btn.style.margin = '16px';

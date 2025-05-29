@@ -43,10 +43,10 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.size = 30;
-        // Ultra-langsames Scaling: Nur alle 10 Level +1% Speed
-        this.hp = type.baseHp + Math.floor((level-1) * 0.12 * type.baseHp);
+        // HP skaliert mit Spielerlevel: 10% kompoundierte Steigerung pro Spielerlevel über 1
+        // level ist hier das aktuelle Spielerlevel
+        this.hp = Math.max(1, Math.round(type.baseHp * Math.pow(1.10, level - 1)));
         this.maxHp = this.hp;
-        this.speed = type.baseSpeed * (1 + Math.floor((level-1)/10) * 0.01);
         this.color = type.color;
         this.alive = true;
         this.exploding = false;
@@ -55,6 +55,8 @@ class Enemy {
         this.particles = [];
         this.canShoot = !!type.canShoot;
         this.shootCooldown = 0;
+        // Speed-Skalierung bleibt wie zuvor oder kann angepasst werden
+        this.speed = type.baseSpeed * (1 + Math.floor((level-1)/10) * 0.01);
 
         // Für Hit-Flash
         this.isHit = false;
@@ -239,7 +241,8 @@ class Enemy {
         const hit = Math.sqrt(dx*dx + dy*dy) < enemyLaserHitbox;
         if (this.alive && hit) {
             if (!this.isHit) { // Verhindere, dass mehrere Laser im selben Frame den Flash neu auslösen
-                this.hp--;
+                this.hp -= laser.damage; // Schaden des Lasers verwenden
+                this.hp = Math.max(0, this.hp); // Verhindere negative HP
                 if (this.hp <= 0) {
                     this.destroy();
                 } else {

@@ -9,6 +9,12 @@ class Laser {
         this.angle = angle;
         this.isActive = true;
         this.upgradeLevel = upgradeLevel;
+
+        // Schaden berechnen basierend auf Basisschaden und Upgrade-Level
+        // Annahme: window.BASE_LASER_DAMAGE ist in main.js gesetzt
+        const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
+        // Kompoundierte Steigerung: 5% pro Level
+        this.damage = baseDamage * Math.pow(1.05, this.upgradeLevel);
     }
 
     update() {
