@@ -184,25 +184,6 @@ class Ship {
         ctx.fill();
 
         ctx.restore();
-        // --- DEBUG: Hitboxen anzeigen ---
-        // XP-Hitbox (groß, cyan)
-        ctx.save();
-        ctx.globalAlpha = 0.4;
-        ctx.strokeStyle = 'cyan';
-        const xpHitbox = this.width * 0.5;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, xpHitbox, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-        // Kollision-Hitbox (klein, lime)
-        ctx.save();
-        ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = 'lime';
-        const collisionHitbox = this.width * 0.28;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, collisionHitbox, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
     }
 
     moveTo(x, y) {

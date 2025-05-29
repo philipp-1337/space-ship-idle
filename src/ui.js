@@ -33,8 +33,9 @@ export function displayLevel(level, pop = false) {
         levelDisplay.style.padding = '6px 18px';
         levelDisplay.style.borderRadius = '16px';
         levelDisplay.style.background = 'rgba(30,40,60,0.85)';
-        levelDisplay.style.boxShadow = '0 0 16px 4px deepskyblue, 0 2px 8px 0 #222';
-        levelDisplay.style.textShadow = '0 0 8px #00eaff, 0 2px 4px #222';
+        // Glow/BoxShadow entfernt, nur noch dezenter Schatten
+        levelDisplay.style.boxShadow = '0 2px 8px 0 #222';
+        levelDisplay.style.textShadow = '0 2px 4px #222';
         levelDisplay.style.transition = 'transform 0.18s cubic-bezier(.4,1.6,.4,1), box-shadow 0.18s';
         document.body.appendChild(levelDisplay);
     }
@@ -42,10 +43,10 @@ export function displayLevel(level, pop = false) {
     // Pop-Animation bei Level-Up
     if (pop) {
         levelDisplay.style.transform = 'scale(1.25)';
-        levelDisplay.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+        levelDisplay.style.boxShadow = '0 2px 16px 0 #222';
         setTimeout(() => {
             levelDisplay.style.transform = 'scale(1)';
-            levelDisplay.style.boxShadow = '0 0 16px 4px deepskyblue, 0 2px 8px 0 #222';
+            levelDisplay.style.boxShadow = '0 2px 8px 0 #222';
         }, 180);
     }
 }
@@ -178,3 +179,72 @@ export function displayShopModal(onUpgrade) {
     });
     document.body.appendChild(modal);
 }
+
+export function displayPauseButton(onPause) {
+    if (document.getElementById('pause-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'pause-btn';
+    btn.innerText = '⏸️';
+    btn.style.position = 'fixed';
+    btn.style.top = '12px';
+    btn.style.left = '120px'; // Rechts neben Level-Anzeige
+    btn.style.zIndex = '1100';
+    btn.style.fontSize = '20px';
+    btn.style.padding = '6px 14px';
+    btn.style.borderRadius = '16px';
+    btn.style.border = 'none';
+    btn.style.background = '#222';
+    btn.style.color = 'white';
+    btn.style.cursor = 'pointer';
+    btn.onclick = onPause;
+    document.body.appendChild(btn);
+}
+
+export function removePauseButton() {
+    const btn = document.getElementById('pause-btn');
+    if (btn) btn.remove();
+}
+
+export function displayPauseMenu(stats, onResume, onRestart) {
+    if (document.getElementById('pause-menu')) return;
+    const menu = document.createElement('div');
+    menu.id = 'pause-menu';
+    menu.style.position = 'fixed';
+    menu.style.top = '0';
+    menu.style.left = '0';
+    menu.style.width = '100vw';
+    menu.style.height = '100vh';
+    menu.style.background = 'rgba(0,0,0,0.8)';
+    menu.style.display = 'flex';
+    menu.style.flexDirection = 'column';
+    menu.style.justifyContent = 'center';
+    menu.style.alignItems = 'center';
+    menu.style.zIndex = '4000';
+    menu.style.backdropFilter = 'blur(2px)';
+    menu.style.borderRadius = '0 0 32px 32px';
+    menu.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+
+    const title = document.createElement('h2');
+    title.innerText = 'Pause';
+    title.style.color = 'white';
+    menu.appendChild(title);
+
+    // Statistiken
+    const statsDiv = document.createElement('div');
+    statsDiv.style.color = 'white';
+    statsDiv.style.fontSize = '18px';
+    statsDiv.style.margin = '18px 0 28px 0';
+    statsDiv.style.textAlign = 'center';
+    statsDiv.innerHTML = `
+        <b>Level:</b> ${stats.level}<br>
+        <b>Erfahrung:</b> ${stats.experience} / ${stats.maxXP}<br>
+        <b>Gegner besiegt:</b> ${stats.kills}<br>
+        <b>Gesammelte XP:</b> ${stats.xpCollected}
+    `;
+    menu.appendChild(statsDiv);
+
+    // Resume Button
+    const resumeBtn = document.createElement('button');
+    resumeBtn.innerText = 'Weiterspielen';
+    resumeBtn.style.margin = '8px';
+    resumeBtn.style.padding = '12px 28px';

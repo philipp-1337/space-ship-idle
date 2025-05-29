@@ -203,28 +203,11 @@ class Enemy {
             }
             ctx.restore();
         }
-        // --- DEBUG: Hitboxen anzeigen ---
-        // Laser-Hitbox (groß, orange)
-        ctx.save();
-        ctx.globalAlpha = 0.4;
-        ctx.strokeStyle = 'orange';
-        const laserHitbox = this.size * 0.7;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, laserHitbox, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-        // Kollisions-Hitbox (klein, rot)
-        ctx.save();
-        ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = 'red';
-        const collisionHitbox = this.size * 0.38;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, collisionHitbox, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
     }
 
     checkCollision(ship) {
+        // Hitbox ist nur aktiv, wenn der Gegner NICHT explodiert
+        if (this.exploding) return false;
         // Kleine Hitbox für Kollision mit Schiff
         const dx = this.x - ship.x;
         const dy = this.y - ship.y;
@@ -234,6 +217,8 @@ class Enemy {
     }
 
     checkLaserHit(laser) {
+        // Hitbox ist nur aktiv, wenn der Gegner NICHT explodiert
+        if (this.exploding) return false;
         // Große Hitbox für Lasertreffer
         const dx = this.x - laser.x;
         const dy = this.y - laser.y;
