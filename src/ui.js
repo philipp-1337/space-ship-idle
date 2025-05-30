@@ -434,6 +434,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     closeBtn.onclick = () => {
         modal.remove();
         // Spiel fortsetzen, falls pausiert
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
         if (typeof window.resumeGame === 'function') window.resumeGame();
     };
     modal.appendChild(closeBtn);

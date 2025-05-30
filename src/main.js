@@ -193,7 +193,8 @@ window.addEventListener('keydown', (e) => {
 
 function pauseGame() {
     if (isPaused || isGameOver || isShopOpen) return;
-    isPaused = true;
+    isPaused = true; // Lokaler Status für das Pausenmenü-UI
+    isPausedRef.value = true; // Damit der gameLoop pausiert
     removePauseButton();
     displayPauseMenu({
         level,
@@ -202,13 +203,22 @@ function pauseGame() {
         kills,
         xpCollected
     }, resumeGame, restartGame);
+    // Der gameLoop wird anhalten, da isPausedRef.value jetzt true ist.
 }
 
 function resumeGame() {
-    if (!isPaused) return;
-    isPaused = false;
-    removePauseMenu();
-    displayPauseButton(() => pauseGame());
+    // Wenn das Haupt-Pausensystem (ESC/Button) aktiv war, dessen UI behandeln
+    if (isPaused) {
+        isPaused = false; // Haupt-Pausenstatus zurücksetzen
+        removePauseMenu();
+        displayPauseButton(() => pauseGame());
+    }
+
+    // Sicherstellen, dass die steuernde Referenz des gameLoops auf false gesetzt ist
+    isPausedRef.value = false;
+
+    // Den gameLoop neu starten.
+    // Dies ist essentiell, falls die Schleife angehalten hatte, weil isPausedRef.value true war.
     requestAnimationFrame(gameLoop);
 }
 
@@ -284,17 +294,6 @@ loadTechUpgrades();
 loadPlasmaCount();
 setupPlasmaUI();
 updatePlasmaUI(upgrades.plasmaCount);
-
-window.updatePlasmaUI = function (count) {
-    updatePlasmaUI(count);
-    if (count > 0) {
-        showTechTreeButton(() => {
-            showTechTreeModal(techUpgrades, handleTechUpgrade);
-        });
-    } else {
-        hideTechTreeButton();
-    }
-}
 
 // Initialisiere Gegner-Spawning
 startEnemySpawning(canvas, { value: level }, { value: techUpgrades });

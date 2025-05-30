@@ -66,7 +66,12 @@ export function handleTechUpgrade(key, cost) {
 export function setupPlasmaUI() {
     window.updatePlasmaUI = function (count) {
         updatePlasmaUI(count);
-        if (count > 0) {
+        // Tech-Tree-Button immer anzeigen, wenn mindestens 1 Plasmazelle im Local Storage ist
+        let stored = 0;
+        try {
+            stored = parseInt(localStorage.getItem('plasmaCount'), 10) || 0;
+        } catch (e) {}
+        if ((count > 0) || (stored > 0)) {
             showTechTreeButton(() => {
                 showTechTreeModal(techUpgrades, handleTechUpgrade);
             });
