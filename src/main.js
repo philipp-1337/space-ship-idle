@@ -298,50 +298,10 @@ window.updatePlasmaUI(upgrades.plasmaCount);
 // Initialisiere Gegner-Spawning
 startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
 
-// Automatisches Schießen aktivieren, wenn freigeschaltet
-let autoShootTimer = 0;
-function autoShootLogic() {
-    if (techUpgrades.autoShoot && !ship.isExploding && !isPaused && !isGameOver && !isShopOpen) {
-        if (!autoShootTimer || performance.now() - autoShootTimer > GAME_CONFIG.AUTO_SHOOT_COOLDOWN
-        ) {
-            const shots = ship.shoot();
-            if (Array.isArray(shots)) {
-                shots.forEach(l => lasers.push(l));
-            } else {
-                lasers.push(shots);
-            }
-            autoShootTimer = performance.now();
-        }
-    }
-}
-
-// Automatisches Anvisieren: Sucht den nächsten Gegner und dreht das Schiff darauf
-function autoAimLogic() {
-    if (techUpgrades.autoAim && !ship.isExploding && !isPaused && !isGameOver && !isShopOpen && enemies.length > 0) {
-        // Finde nächsten Gegner
-        let closest = null;
-        let minDist = Infinity;
-        enemies.forEach(e => {
-            if (e.alive) {
-                const dx = e.x - ship.x;
-                const dy = e.y - ship.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = e;
-                }
-            }
-        });
-        if (closest) {
-            const targetAngle = Math.atan2(closest.y - ship.y, closest.x - ship.x);
-            // Smoothes Drehen
-            let da = targetAngle - ship.angle;
-            while (da > Math.PI) da -= 2 * Math.PI;
-            while (da < -Math.PI) da += 2 * Math.PI;
-            ship.angle += da * 0.18; // sanftes Nachführen
-        }
-    }
-}
-
+// --- NEU: Callback für TechTree-Änderungen ---
+window.onTechTreeChanged = function() {
+    // Starte das Gegner-Spawning mit aktuellen Upgrades neu
+    startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
+};
 // Nach jedem Shop-Upgrade und Level-Up synchronisieren
 window.addEventListener('focus', syncRefsToVars);
