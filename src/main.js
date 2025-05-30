@@ -7,7 +7,7 @@ import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen,
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
-import { applyUpgrade, upgrades, magnetRadius, magnetStrength, plasmaCount, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI } from './upgrades.js';
+import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
 
@@ -84,6 +84,7 @@ function updateShipMovement() {
             xpPoints.forEach(xp => { xp.x += offsetX; xp.y += offsetY; });
             lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
             enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
+            plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
             xpParticles.forEach(p => { p.x += offsetX; p.y += offsetY; });
         }
         ship.x = nextX;
@@ -162,6 +163,7 @@ function updateShipMovement() {
         xpPoints.forEach(xp => { xp.x += offsetX; xp.y += offsetY; });
         lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
         enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
+        plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
     }
     ship.x = nextX;
     ship.y = nextY;
@@ -181,8 +183,11 @@ const marginY = canvas.height * 0.3;
 displayPauseButton(() => pauseGame());
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        if (!isPaused) pauseGame();
-        else resumeGame();
+        if (!isPaused && !isGameOver && !isShopOpen) {
+            pauseGame();
+        } else if (isPaused && !isGameOver && !isShopOpen) {
+            resumeGame();
+        }
     }
 });
 
@@ -206,6 +211,9 @@ function resumeGame() {
     displayPauseButton(() => pauseGame());
     requestAnimationFrame(gameLoop);
 }
+
+// Mache resumeGame global verfügbar, damit das Tech-Tree-Modal es aufrufen kann
+window.resumeGame = resumeGame;
 
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
@@ -231,6 +239,7 @@ function restartGame() {
 
 // Referenzen für primitive Werte, damit sie im GameLoop veränderbar bleiben
 const isPausedRef = { value: isPaused };
+window.isPausedRef = isPausedRef;
 const isGameOverRef = { value: isGameOver };
 const isShopOpenRef = { value: isShopOpen };
 const killsRef = { value: kills };
@@ -240,10 +249,25 @@ const experienceRef = { value: experience };
 const maxXPRef = { value: maxXP };
 let autoShootTimerRef = { value: 0 };
 
+// Synchronisiere die Werte mit den Refs im GameLoop
+function syncRefsToVars() {
+    isPaused = isPausedRef.value;
+    isGameOver = isGameOverRef.value;
+    isShopOpen = isShopOpenRef.value;
+    kills = killsRef.value;
+    xpCollected = xpCollectedRef.value;
+    level = levelRef.value;
+    experience = experienceRef.value;
+    maxXP = maxXPRef.value;
+}
+
+// Patch: Synchronisiere nach jedem Level-Up die Werte zurück in die Hauptvariablen
+window.syncRefsToVars = syncRefsToVars;
+
 const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
-    effectsSystem, inputManager, upgrades, magnetRadius, GAME_CONFIG, EFFECTS,
-    ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
+    effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
+    PHYSICS, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
     displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -259,7 +283,7 @@ gameLoop();
 loadTechUpgrades();
 loadPlasmaCount();
 setupPlasmaUI();
-updatePlasmaUI(plasmaCount);
+updatePlasmaUI(upgrades.plasmaCount);
 
 window.updatePlasmaUI = function (count) {
     updatePlasmaUI(count);
@@ -319,3 +343,6 @@ function autoAimLogic() {
         }
     }
 }
+
+// Nach jedem Shop-Upgrade und Level-Up synchronisieren
+window.addEventListener('focus', syncRefsToVars);

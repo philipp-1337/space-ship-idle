@@ -17,6 +17,7 @@ export const PHYSICS = {
     SHIP_MAX_SPEED: 4,
     SHIP_FRICTION: 0.90,
     SHIP_ROTATION_SPEED: 0.07,
+    ACCELERATION_UPGRADE_INCREASE: 0.02, // Zuwachs der Beschleunigung pro Upgrade-Level
     BACKWARD_THRUST_FACTOR: 0.7,
     SPEED_UPGRADE_INCREASE: 1.2,
     MARGIN_FACTOR: 0.2 // 20% of canvas for world boundaries
@@ -74,16 +75,12 @@ export const ENEMY_LASER = {
 };
 
 export const COLORS = {
+    ELITE_ENEMY_COLOR: 'gold',
     LASER_NORMAL: 'red',
     LASER_UPGRADED: 'cyan',
-    XP_COLOR: 'deepskyblue',
+    MAGNET_COLOR: 'deepskyblue',
     PLASMA_COLOR: 'aqua',
-    MAGNET_COLOR: 'deepskyblue',
-    ELITE_ENEMY_COLOR: 'gold',
     XP_COLOR: 'deepskyblue',
-    MAGNET_COLOR: 'deepskyblue',
-    LASER_NORMAL: 'red',
-    LASER_UPGRADED: 'cyan'
 };
 
 export const PROGRESSION = {

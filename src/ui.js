@@ -132,6 +132,8 @@ export function displayGameOverScreen(currentLevel) {
 
 export function displayShopModal(onUpgrade) {
     if (document.getElementById('shop-modal')) return;
+    // Spiel pausieren, wenn Shop geöffnet wird
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
     const modal = document.createElement('div');
     modal.id = 'shop-modal';
     modal.style.position = 'fixed';
@@ -174,7 +176,7 @@ export function displayShopModal(onUpgrade) {
         {
             key: 'laser',
             label: `Laser-Upgrade (Schaden)`,
-            desc: `Erhöht den Laserschaden. Aktuell: ${currentDamageText} / Nächstes Lvl: ${nextLevelDamageText}.`
+            desc: `Erhöht den Laserschaden.`
         },
         {
             key: 'speed',
@@ -198,6 +200,8 @@ export function displayShopModal(onUpgrade) {
         btn.onmouseleave = () => btn.style.background = '#222';
         btn.onclick = () => {
             document.body.removeChild(modal);
+            // Spiel fortsetzen, wenn Shop geschlossen wird
+            if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
             onUpgrade(upg.key);
         };
         modal.appendChild(btn);
@@ -232,6 +236,8 @@ export function removePauseButton() {
 
 export function displayPauseMenu(stats, onResume, onRestart) {
     if (document.getElementById('pause-menu')) return;
+    // Spiel pausieren, wenn Pause-Menü geöffnet wird
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
     const menu = document.createElement('div');
     menu.id = 'pause-menu';
     menu.style.position = 'fixed';
@@ -280,6 +286,8 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     resumeBtn.style.color = 'white';
     resumeBtn.onclick = () => {
         menu.remove();
+        // Spiel fortsetzen, wenn Pause-Menü geschlossen wird
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
         onResume();
     };
     menu.appendChild(resumeBtn);
@@ -340,6 +348,8 @@ export function hideTechTreeButton() {
 
 export function showTechTreeModal(upgrades, onUpgrade) {
     if (document.getElementById('tech-tree-modal')) return;
+    // Setze Pause-Status beim Öffnen
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
     const modal = document.createElement('div');
     modal.id = 'tech-tree-modal';
     modal.style.position = 'fixed';
@@ -408,17 +418,23 @@ export function showTechTreeModal(upgrades, onUpgrade) {
         modal.appendChild(btn);
     });
 
+    // Schließen-Button
     const closeBtn = document.createElement('button');
     closeBtn.innerText = 'Schließen';
-    closeBtn.style.margin = '24px';
-    closeBtn.style.padding = '12px 28px';
+    closeBtn.style.marginTop = '24px';
     closeBtn.style.fontSize = '18px';
-    closeBtn.style.borderRadius = '8px';
+    closeBtn.style.padding = '10px 22px';
+    closeBtn.style.borderRadius = '12px';
     closeBtn.style.border = 'none';
-    closeBtn.style.background = '#e74c3c';
-    closeBtn.style.color = 'white';
+    closeBtn.style.background = 'aqua';
+    closeBtn.style.color = '#003';
+    closeBtn.style.fontWeight = 'bold';
+    closeBtn.style.boxShadow = '0 2px 8px 0 #0ff';
+    closeBtn.style.cursor = 'pointer';
     closeBtn.onclick = () => {
-        document.body.removeChild(modal);
+        modal.remove();
+        // Spiel fortsetzen, falls pausiert
+        if (typeof window.resumeGame === 'function') window.resumeGame();
     };
     modal.appendChild(closeBtn);
 

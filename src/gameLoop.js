@@ -1,9 +1,11 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
+import { PROGRESSION } from './constants.js';
+import { magnetRadius } from './upgrades.js';
 
 export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
-        effectsSystem, inputManager, upgrades, magnetRadius, GAME_CONFIG, EFFECTS,
+        effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, // magnetRadius hier entfernt
         ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
         displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
@@ -21,11 +23,17 @@ export function createGameLoop(context) {
     function levelUp() {
         levelRef.value++;
         experienceRef.value = 0;
-        maxXPRef.value += 5;
+        maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
         isShopOpenRef.value = true;
         displayShopModal((upgradeKey) => {
-            applyUpgrade(upgradeKey);
+            applyUpgrade(upgradeKey, ship, PHYSICS);
             isShopOpenRef.value = false;
+            // Fix: Reset shooting flag when shop closes
+            if (inputManager && inputManager.keys) {
+                inputManager.keys.shooting = false;
+            }
+            // GameLoop nach Shop schließen fortsetzen
+            requestAnimationFrame(gameLoop);
         });
     }
 
@@ -84,7 +92,7 @@ export function createGameLoop(context) {
         }
         ship.update();
         ship.draw(ctx);
-        effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet);
+        effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet); // Korrigiert: magnetRadius direkt verwenden
         if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN)) {
             const shots = ship.shoot();
             if (Array.isArray(shots)) {
@@ -145,7 +153,15 @@ export function createGameLoop(context) {
                 enemies.splice(eIdx, 1);
             }
         });
-        handleXpCollection(ship, xpPoints, effectsSystem, ctx, { experience: experienceRef.value, xpCollected: xpCollectedRef.value, maxXP: maxXPRef.value }, () => levelUp());
+        handleXpCollection(
+            ship, xpPoints, effectsSystem, ctx,
+            { experienceRef, xpCollectedRef, maxXPRef }, // Übergebe die Referenzobjekte direkt
+            () => {
+                levelUp();
+                if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
+            }
+        );
+        if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
         handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx);
         enemyLasers.forEach((l, idx) => {
             l.x += Math.cos(l.angle) * l.speed;

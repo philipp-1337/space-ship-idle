@@ -1,19 +1,22 @@
 // collectibles.js
 // Verwaltung von XP- und Plasma-Handling (Sammeln, Magnet, UI)
-import { upgrades, magnetRadius, magnetStrength, plasmaCount, savePlasmaCount } from './upgrades.js';
+import { upgrades, savePlasmaCount, magnetRadius, magnetStrength } from './upgrades.js';
 import { COLORS } from './constants.js';
-import { updatePlasmaUI } from './ui.js';
+import { updateExperienceBar } from './ui.js';
 
 export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienceObj, levelUpCallback) {
+    // ACHTUNG: Niemals xpPoints während des forEach direkt verändern!
+    // Stattdessen: Indizes merken und nach der Schleife entfernen
+    const toRemove = [];
     xpPoints.forEach((xp, xIdx) => {
         // Magnetwirkung
         if (upgrades.magnet > 0 && !xp.collected) {
             const dx = ship.x - xp.x;
             const dy = ship.y - xp.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < magnetRadius) {
-                xp.x += dx * magnetStrength;
-                xp.y += dy * magnetStrength;
+            if (dist < magnetRadius) { // Korrigiert: magnetRadius direkt verwenden
+                xp.x += dx * magnetStrength; // Korrigiert: magnetStrength direkt verwenden
+                xp.y += dy * magnetStrength; // Verwende upgrades.magnetStrength
             }
         }
         // Mit Glow-Effekt zeichnen
@@ -24,14 +27,20 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
         if (Math.sqrt(dx * dx + dy * dy) < ship.getXpRadius() + xp.radius && !xp.collected) {
             effectsSystem.spawnXpParticles(xp.x, xp.y, COLORS.XP_COLOR);
             xp.collect();
-            experienceObj.experience++;
-            experienceObj.xpCollected++;
-            xpPoints.splice(xIdx, 1);
-            if (experienceObj.experience >= experienceObj.maxXP) {
+            // Modifiziere die .value Eigenschaften der übergebenen Referenzobjekte
+            experienceObj.experienceRef.value++;
+            experienceObj.xpCollectedRef.value++;
+            updateExperienceBar(experienceObj.experienceRef.value, experienceObj.maxXPRef.value);
+            toRemove.push(xIdx);
+            if (experienceObj.experienceRef.value >= experienceObj.maxXPRef.value) {
                 levelUpCallback();
             }
         }
     });
+    // Nach der Schleife entfernen, damit kein Crash durch Array-Modifikation während Iteration
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+        xpPoints.splice(toRemove[i], 1);
+    }
 }
 
 export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx) {
@@ -47,9 +56,9 @@ export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx) {
             const dx = ship.x - plasma.x;
             const dy = ship.y - plasma.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < magnetRadius) {
-                plasma.x += dx * magnetStrength;
-                plasma.y += dy * magnetStrength;
+            if (dist < magnetRadius) { // Korrigiert: magnetRadius direkt verwenden
+                plasma.x += dx * magnetStrength; // Korrigiert: magnetStrength direkt verwenden
+                plasma.y += dy * magnetStrength; // Verwende upgrades.magnetStrength
             }
         }
         // Einsammelradius

@@ -1,4 +1,5 @@
 import Laser from './laser.js';
+import { upgrades } from './upgrades.js'; // Importiere das upgrades Objekt
 
 class Ship {
     constructor(x, y) {
@@ -196,7 +197,7 @@ class Ship {
         const tipX = this.x + Math.cos(this.angle) * this.width/2;
         const tipY = this.y + Math.sin(this.angle) * this.width/2;
         // Laser-Upgrade: Doppellaser ab Level 2
-        if (typeof window !== 'undefined' && window.upgrades && window.upgrades.laser >= 2) {
+        if (upgrades.laser >= 2) { // Verwende das importierte upgrades Objekt
             // Zwei Laser leicht versetzt
             const offset = 7;
             return [
@@ -204,17 +205,17 @@ class Ship {
                     this.x + Math.cos(this.angle) * this.width/2 - Math.sin(this.angle) * offset,
                     this.y + Math.sin(this.angle) * this.width/2 + Math.cos(this.angle) * offset,
                     this.angle,
-                    window.upgrades.laser
+                    upgrades.laser // Verwende das importierte upgrades Objekt
                 ),
                 new Laser(
                     this.x + Math.cos(this.angle) * this.width/2 + Math.sin(this.angle) * offset,
                     this.y + Math.sin(this.angle) * this.width/2 - Math.cos(this.angle) * offset,
                     this.angle,
-                    window.upgrades.laser
+                    upgrades.laser // Verwende das importierte upgrades Objekt
                 )
             ];
         }
-        return [new Laser(tipX, tipY, this.angle, window.upgrades ? window.upgrades.laser : 0)];
+        return [new Laser(tipX, tipY, this.angle, upgrades.laser)]; // Verwende das importierte upgrades Objekt
     }
 
     getCollisionRadius() {
