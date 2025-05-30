@@ -153,9 +153,10 @@ export function createGameLoop(context) {
                 enemies.splice(eIdx, 1);
             }
         });
+        // XP und Plasma nach den Gegnern zeichnen, damit sie darüber liegen
         handleXpCollection(
             ship, xpPoints, effectsSystem, ctx,
-            { experienceRef, xpCollectedRef, maxXPRef }, // Übergebe die Referenzobjekte direkt
+            { experienceRef, xpCollectedRef, maxXPRef },
             () => {
                 levelUp();
                 if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();

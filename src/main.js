@@ -3,7 +3,7 @@ import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, 
 import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, hideTechTreeButton, showTechTreeModal } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -293,7 +293,7 @@ gameLoop();
 loadTechUpgrades();
 loadPlasmaCount();
 setupPlasmaUI();
-updatePlasmaUI(upgrades.plasmaCount);
+window.updatePlasmaUI(upgrades.plasmaCount);
 
 // Initialisiere Gegner-Spawning
 startEnemySpawning(canvas, { value: level }, { value: techUpgrades });

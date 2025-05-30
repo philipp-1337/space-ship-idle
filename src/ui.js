@@ -341,11 +341,6 @@ export function showTechTreeButton(onClick) {
     btn.style.display = 'block';
 }
 
-export function hideTechTreeButton() {
-    let btn = document.getElementById('tech-tree-btn');
-    if (btn) btn.style.display = 'none';
-}
-
 export function showTechTreeModal(upgrades, onUpgrade) {
     if (document.getElementById('tech-tree-modal')) return;
     // Setze Pause-Status beim Öffnen

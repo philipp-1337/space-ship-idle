@@ -1,7 +1,7 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
 import { MAGNET } from './constants.js';
-import { updatePlasmaUI, showTechTreeButton, hideTechTreeButton, showTechTreeModal } from './ui.js';
+import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 
 export let upgrades = {
     magnet: 0,
@@ -14,7 +14,8 @@ export let magnetStrength = 0;
 
 export let techUpgrades = {
     autoShoot: false,
-    autoAim: false
+    autoAim: false,
+    eliteHint: false // Konsistenz mit ui.js Modal
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {
@@ -35,7 +36,7 @@ export function applyUpgrade(key, ship, PHYSICS) {
 
 export function loadTechUpgrades() {
     const val = localStorage.getItem('techUpgrades');
-    techUpgrades = val ? JSON.parse(val) : { autoShoot: false, autoAim: false };
+    techUpgrades = val ? JSON.parse(val) : { autoShoot: false, autoAim: false, eliteHint: false };
 }
 export function saveTechUpgrades() {
     localStorage.setItem('techUpgrades', JSON.stringify(techUpgrades));
@@ -66,17 +67,9 @@ export function handleTechUpgrade(key, cost) {
 export function setupPlasmaUI() {
     window.updatePlasmaUI = function (count) {
         updatePlasmaUI(count);
-        // Tech-Tree-Button immer anzeigen, wenn mindestens 1 Plasmazelle im Local Storage ist
-        let stored = 0;
-        try {
-            stored = parseInt(localStorage.getItem('plasmaCount'), 10) || 0;
-        } catch (e) {}
-        if ((count > 0) || (stored > 0)) {
-            showTechTreeButton(() => {
-                showTechTreeModal(techUpgrades, handleTechUpgrade);
-            });
-        } else {
-            hideTechTreeButton();
-        }
+        // Tech-Tree-Button immer anzeigen
+        showTechTreeButton(() => {
+            showTechTreeModal(techUpgrades, handleTechUpgrade);
+        });
     };
 }
