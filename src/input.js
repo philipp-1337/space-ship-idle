@@ -34,6 +34,12 @@ export class InputManager {
             if (["ArrowDown", "s", "S"].includes(event.key)) this.keys.down = true;
             if (["ArrowLeft", "a", "A"].includes(event.key)) this.keys.left = true;
             if (["ArrowRight", "d", "D"].includes(event.key)) this.keys.right = true;
+            if (event.key === 'q' || event.key === 'Q') {
+                if (typeof this.onAutoAimToggle === 'function') {
+                    this.onAutoAimToggle();
+                }
+                event.preventDefault();
+            }
         });
 
         window.addEventListener('keyup', (event) => {
@@ -259,5 +265,9 @@ export class InputManager {
     isMoving() {
         return this.keys.up || this.keys.down || this.keys.left || this.keys.right || 
                (this.joystickMove && (Math.abs(this.joystickMove.x) > 0 || Math.abs(this.joystickMove.y) > 0));
+    }
+
+    setAutoAimToggleCallback(cb) {
+        this.onAutoAimToggle = cb;
     }
 }

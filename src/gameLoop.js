@@ -1,6 +1,7 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
 import { PROGRESSION } from './constants.js';
 import { magnetRadius } from './upgrades.js';
+import HomingMissile from './homingMissile.js';
 
 export function createGameLoop(context) {
     const {
@@ -12,6 +13,9 @@ export function createGameLoop(context) {
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef
     } = context;
+
+    let homingMissiles = [];
+    let lastMissileTime = 0;
 
     function endGame() {
         if (isGameOverRef.value) return;
@@ -52,7 +56,7 @@ export function createGameLoop(context) {
     }
 
     function autoAimLogic() {
-        if (techUpgrades.autoAim && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value && enemies.length > 0) {
+        if (techUpgrades.autoAim && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value && enemies.length > 0 && !inputManager.isMoving()) {
             let closest = null;
             let minDist = Infinity;
             enemies.forEach(e => {
@@ -72,6 +76,36 @@ export function createGameLoop(context) {
                 while (da > Math.PI) da -= 2 * Math.PI;
                 while (da < -Math.PI) da += 2 * Math.PI;
                 ship.angle += da * 0.18;
+            }
+        }
+    }
+
+    function autoHomingMissileLogic() {
+        if (techUpgrades.homingMissile && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value && enemies.length > 0) {
+            const now = performance.now();
+            if (!lastMissileTime || now - lastMissileTime > 1200) { // Viel langsamer als Laser
+                // Ziel suchen
+                let closest = null, minDist = Infinity;
+                for (const e of enemies) {
+                    if (e.alive) {
+                        const dx = e.x - ship.x;
+                        const dy = e.y - ship.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = e;
+                        }
+                    }
+                }
+                if (closest) {
+                    homingMissiles.push(new HomingMissile(
+                        ship.x + Math.cos(ship.angle)*28,
+                        ship.y + Math.sin(ship.angle)*28,
+                        closest,
+                        { speed: 2.2, explosionRadius: 60, damage: 6 }
+                    ));
+                    lastMissileTime = now;
+                }
             }
         }
     }
@@ -190,6 +224,28 @@ export function createGameLoop(context) {
                 }
             }
         });
+        // Update & Draw Homing Missiles
+        for (let i = homingMissiles.length-1; i >= 0; i--) {
+            const m = homingMissiles[i];
+            if (!m.exploded) {
+                m.update(enemies);
+                m.draw(ctx);
+                // Explodiere bei Kontakt mit Ziel oder nach Ablauf
+                if (m.target && m.target.alive) {
+                    const dx = m.x - m.target.x;
+                    const dy = m.y - m.target.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < m.radius + m.target.size/2) {
+                        m.explode(ctx, enemies);
+                    }
+                }
+                if (m.life <= 0) {
+                    m.explode(ctx, enemies);
+                }
+            } else {
+                // Nach Explosion entfernen
+                homingMissiles.splice(i, 1);
+            }
+        }
         if (shakeActive) {
             effectsSystem.restoreScreenShake();
         }
@@ -197,6 +253,7 @@ export function createGameLoop(context) {
         displayLevel(levelRef.value);
         autoAimLogic();
         autoShootLogic();
+        autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);
     }
     return gameLoop;

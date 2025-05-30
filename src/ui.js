@@ -385,6 +385,12 @@ export function showTechTreeModal(upgrades, onUpgrade) {
             label: 'Elite-Gegner-Scanner',
             desc: 'Zeigt an, wenn ein Elite-Gegner erscheint.',
             cost: 3
+        },
+        {
+            key: 'homingMissile',
+            label: 'Lenkraketen',
+            desc: 'Feuert automatisch Lenkraketen, die Gegner auf Kreisbahn verfolgen und Flächenschaden verursachen.',
+            cost: 4
         }
         // Weitere Upgrades können hier ergänzt werden
     ];
@@ -435,4 +441,27 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     modal.appendChild(closeBtn);
 
     document.body.appendChild(modal);
+}
+
+export function displayAutoAimButton(isActive, onToggle) {
+    let btn = document.getElementById('auto-aim-btn');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'auto-aim-btn';
+        btn.style.position = 'fixed';
+        btn.style.top = '44px';
+        btn.style.left = '10px';
+        btn.style.zIndex = '1100';
+        btn.style.fontSize = '16px';
+        btn.style.padding = '6px 14px';
+        btn.style.borderRadius = '16px';
+        btn.style.border = 'none';
+        btn.style.background = '#222';
+        btn.style.color = 'white';
+        btn.style.cursor = 'pointer';
+        btn.onclick = onToggle;
+        document.body.appendChild(btn);
+    }
+    btn.innerText = isActive ? 'Auto-Aim: AN' : 'Auto-Aim: AUS';
+    btn.style.background = isActive ? 'limegreen' : '#222';
 }

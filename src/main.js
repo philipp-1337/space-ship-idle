@@ -3,7 +3,7 @@ import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, 
 import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, displayAutoAimButton } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -12,6 +12,7 @@ import { handleXpCollection, handlePlasmaCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
 
 initializeUI();
+displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -284,13 +285,19 @@ const gameLoop = createGameLoop({
     startEnemySpawning, autoShootTimerRef,
     updateShipMovement
 });
-
 // --- GAME LOOP START ---
 inputManager.resizeCanvasForMobile();
+displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
+inputManager.setAutoAimToggleCallback(toggleAutoAim);
+function toggleAutoAim() {
+    techUpgrades.autoAim = !techUpgrades.autoAim;
+    displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
+    saveTechUpgrades();
+}
 gameLoop();
 // --- GAME LOOP ENDE ---
-
 loadTechUpgrades();
+displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
 loadPlasmaCount();
 setupPlasmaUI();
 window.updatePlasmaUI(upgrades.plasmaCount);
@@ -300,8 +307,12 @@ startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
 
 // --- NEU: Callback für TechTree-Änderungen ---
 window.onTechTreeChanged = function() {
-    // Starte das Gegner-Spawning mit aktuellen Upgrades neu
     startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
+    displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
 };
+
 // Nach jedem Shop-Upgrade und Level-Up synchronisieren
 window.addEventListener('focus', syncRefsToVars);
+
+// Nach initializeUI();
+inputManager.setAutoAimToggleCallback(toggleAutoAim);
