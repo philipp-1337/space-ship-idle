@@ -164,9 +164,12 @@ class Enemy {
         if (this.alive) {
             ctx.save();
             ctx.translate(this.x, this.y);
-
+            if (this.isElite) {
+                ctx.strokeStyle = 'gold';
+                ctx.lineWidth = 4;
+            }
             if (this.isHit && this.hitTimer > 0) {
-                ctx.fillStyle = 'white'; // Flash-Farbe
+                ctx.fillStyle = 'white';
             } else {
                 ctx.fillStyle = this.color;
             }
@@ -200,6 +203,11 @@ class Enemy {
                 ctx.fillRect(-this.size/2, -this.size/2-8, this.size, 5);
                 ctx.fillStyle = 'lime'; // HP-Balken Füllfarbe explizit setzen
                 ctx.fillRect(-this.size/2, -this.size/2-8, this.size * (this.hp/this.maxHp), 5);
+            }
+            if (this.isElite) {
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size/2 + 6, 0, Math.PI*2);
+                ctx.stroke();
             }
             ctx.restore();
         }

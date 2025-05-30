@@ -54,6 +54,31 @@ export function displayLevel(level, pop = false) {
 export function initializeUI() {
     updateExperienceBar(0, 1);
     displayLevel(1);
+    // Plasmazellen-Anzeige initialisieren
+    updatePlasmaUI(0);
+}
+
+// Plasmazellen-Anzeige
+export function updatePlasmaUI(count) {
+    let plasmaDisplay = document.getElementById('plasma-display');
+    if (!plasmaDisplay) {
+        plasmaDisplay = document.createElement('div');
+        plasmaDisplay.id = 'plasma-display';
+        plasmaDisplay.style.position = 'fixed';
+        plasmaDisplay.style.top = '12px';
+        plasmaDisplay.style.right = '18px';
+        plasmaDisplay.style.color = 'aqua';
+        plasmaDisplay.style.fontSize = '20px';
+        plasmaDisplay.style.zIndex = '1000';
+        plasmaDisplay.style.fontWeight = 'bold';
+        plasmaDisplay.style.padding = '6px 18px';
+        plasmaDisplay.style.borderRadius = '16px';
+        plasmaDisplay.style.background = 'rgba(0,40,60,0.85)';
+        plasmaDisplay.style.boxShadow = '0 2px 8px 0 #0ff';
+        plasmaDisplay.style.textShadow = '0 2px 4px #0ff';
+        document.body.appendChild(plasmaDisplay);
+    }
+    plasmaDisplay.innerText = `Plasmazellen: ${count}`;
 }
 
 export function displayGameOverScreen(currentLevel) {
@@ -280,4 +305,122 @@ export function displayPauseMenu(stats, onResume, onRestart) {
 export function removePauseMenu() {
     const menu = document.getElementById('pause-menu');
     if (menu) menu.remove();
+}
+
+// Tech-Tree-Button und Modal
+export function showTechTreeButton(onClick) {
+    let btn = document.getElementById('tech-tree-btn');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'tech-tree-btn';
+        btn.innerText = 'Tech-Tree';
+        btn.style.position = 'fixed';
+        btn.style.top = '60px';
+        btn.style.right = '18px';
+        btn.style.zIndex = '1200';
+        btn.style.fontSize = '18px';
+        btn.style.padding = '10px 22px';
+        btn.style.borderRadius = '12px';
+        btn.style.border = 'none';
+        btn.style.background = 'aqua';
+        btn.style.color = '#003';
+        btn.style.fontWeight = 'bold';
+        btn.style.boxShadow = '0 2px 8px 0 #0ff';
+        btn.style.cursor = 'pointer';
+        btn.onclick = onClick;
+        document.body.appendChild(btn);
+    }
+    btn.style.display = 'block';
+}
+
+export function hideTechTreeButton() {
+    let btn = document.getElementById('tech-tree-btn');
+    if (btn) btn.style.display = 'none';
+}
+
+export function showTechTreeModal(upgrades, onUpgrade) {
+    if (document.getElementById('tech-tree-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'tech-tree-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.85)';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '5000';
+    modal.style.backdropFilter = 'blur(2px)';
+    modal.style.borderRadius = '0 0 32px 32px';
+    modal.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+
+    const title = document.createElement('h2');
+    title.innerText = 'Tech-Tree: Upgrades freischalten';
+    title.style.color = 'aqua';
+    modal.appendChild(title);
+
+    const upgradesList = [
+        {
+            key: 'autoShoot',
+            label: 'Automatisches Schießen',
+            desc: 'Das Schiff schießt automatisch auf Gegner.',
+            cost: 1
+        },
+        {
+            key: 'autoAim',
+            label: 'Automatisches Anvisieren',
+            desc: 'Das Schiff visiert Gegner automatisch an (dreht sich automatisch).',
+            cost: 2
+        },
+        {
+            key: 'eliteHint',
+            label: 'Elite-Gegner-Scanner',
+            desc: 'Zeigt an, wenn ein Elite-Gegner erscheint.',
+            cost: 3
+        }
+        // Weitere Upgrades können hier ergänzt werden
+    ];
+
+    upgradesList.forEach(upg => {
+        const unlocked = upgrades[upg.key];
+        const btn = document.createElement('button');
+        btn.innerHTML = `<b>${upg.label}</b><br><small>${upg.desc}</small><br>Kosten: ${upg.cost} Plasmazelle(n)`;
+        btn.style.margin = '16px';
+        btn.style.padding = '18px 32px';
+        btn.style.fontSize = '18px';
+        btn.style.borderRadius = '8px';
+        btn.style.border = 'none';
+        btn.style.background = unlocked ? '#0f0' : '#222';
+        btn.style.color = unlocked ? '#003' : 'aqua';
+        btn.style.cursor = unlocked ? 'default' : 'pointer';
+        btn.disabled = unlocked;
+        if (unlocked) {
+            btn.innerHTML += '<br><span style="color:#0f0">Freigeschaltet</span>';
+        }
+        btn.onclick = () => {
+            if (!unlocked) {
+                onUpgrade(upg.key, upg.cost);
+            }
+        };
+        modal.appendChild(btn);
+    });
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = 'Schließen';
+    closeBtn.style.margin = '24px';
+    closeBtn.style.padding = '12px 28px';
+    closeBtn.style.fontSize = '18px';
+    closeBtn.style.borderRadius = '8px';
+    closeBtn.style.border = 'none';
+    closeBtn.style.background = '#e74c3c';
+    closeBtn.style.color = 'white';
+    closeBtn.onclick = () => {
+        document.body.removeChild(modal);
+    };
+    modal.appendChild(closeBtn);
+
+    document.body.appendChild(modal);
 }
