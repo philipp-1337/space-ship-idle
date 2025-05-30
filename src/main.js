@@ -1,9 +1,9 @@
 import { Ship } from './ship.js';
-import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, stopEnemySpawning } from './enemyManager.js';
+import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, stopEnemySpawning, spawnEnemyWave } from './enemyManager.js';
 import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, displayAutoAimButton } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -12,7 +12,6 @@ import { handleXpCollection, handlePlasmaCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
 
 initializeUI();
-displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -39,6 +38,7 @@ window.BASE_LASER_DAMAGE = GAME_CONFIG.BASE_LASER_DAMAGE;
 const inputManager = new InputManager();
 
 // Ship-Physik-Parameter
+// ship.angle wird in updateShipMovement oder autoAimLogic gesetzt
 ship.vx = 0;
 ship.vy = 0;
 ship.acceleration = PHYSICS.SHIP_ACCELERATION;
@@ -46,6 +46,9 @@ ship.maxSpeed = PHYSICS.SHIP_MAX_SPEED;
 ship.friction = PHYSICS.SHIP_FRICTION;
 // ship.maxSpeed wird nur durch applyUpgrade('speed') erhöht, nicht automatisch!
 
+let marginX, marginY; // Deklarieren für spätere Zuweisung
+let worldOffsetX = 0; // Für Sternen-Parallax und Weltverschiebung
+let worldOffsetY = 0;
 function updateShipMovement() {
     if (ship.isExploding) return;
 
@@ -59,7 +62,7 @@ function updateShipMovement() {
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) {
             // Reduzierter Geschwindigkeitsfaktor für mobile Steuerung
-            const speed = Math.min(dist * 0.01, ship.maxSpeed);
+            const speed = Math.min(dist * PHYSICS.MOBILE_JOYSTICK_SENSITIVITY, ship.maxSpeed);
             const nx = dx / dist, ny = dy / dist;
             ship.vx += nx * speed;
             ship.vy += ny * speed;
@@ -80,13 +83,13 @@ function updateShipMovement() {
         if (offsetX !== 0 || offsetY !== 0) {
             worldOffsetX += -offsetX;
             worldOffsetY += -offsetY;
-            starLayers.forEach(layer => { layer.stars.forEach(star => { star.x += offsetX; star.y += offsetY; }); });
+            effectsSystem.moveStars(offsetX, offsetY); // Korrekt über EffectsSystem
             enemies.forEach(e => { e.x += offsetX; e.y += offsetY; });
             xpPoints.forEach(xp => { xp.x += offsetX; xp.y += offsetY; });
             lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
             enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
             plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
-            xpParticles.forEach(p => { p.x += offsetX; p.y += offsetY; });
+            effectsSystem.moveXpParticles(offsetX, offsetY); // Korrekt über EffectsSystem
         }
         ship.x = nextX;
         ship.y = nextY;
@@ -173,13 +176,6 @@ function updateShipMovement() {
 // --- STERNENHINTERGRUND (PARALLAX) ---
 
 const effectsSystem = new EffectsSystem(canvas);
-let worldOffsetX = 0;
-let worldOffsetY = 0;
-
-// Margin für Weltverschiebung
-const marginX = canvas.width * 0.3;
-const marginY = canvas.height * 0.3;
-
 // --- PAUSE BUTTON & ESC HANDLING ---
 displayPauseButton(() => pauseGame());
 window.addEventListener('keydown', (e) => {
@@ -278,7 +274,7 @@ window.syncRefsToVars = syncRefsToVars;
 const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
-    PHYSICS, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
+    PHYSICS, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection, spawnEnemyWave, showWaveHint,
     displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -287,32 +283,23 @@ const gameLoop = createGameLoop({
 });
 // --- GAME LOOP START ---
 inputManager.resizeCanvasForMobile();
-displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
-inputManager.setAutoAimToggleCallback(toggleAutoAim);
-function toggleAutoAim() {
-    techUpgrades.autoAim = !techUpgrades.autoAim;
-    displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
-    saveTechUpgrades();
-}
+
+// Margin für Weltverschiebung NACH Canvas-Skalierung berechnen
+marginX = canvas.width * PHYSICS.MARGIN_FACTOR;
+marginY = canvas.height * PHYSICS.MARGIN_FACTOR;
 gameLoop();
 // --- GAME LOOP ENDE ---
 loadTechUpgrades();
-displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
 loadPlasmaCount();
 setupPlasmaUI();
 window.updatePlasmaUI(upgrades.plasmaCount);
 
 // Initialisiere Gegner-Spawning
 startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
-
 // --- NEU: Callback für TechTree-Änderungen ---
 window.onTechTreeChanged = function() {
     startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
-    displayAutoAimButton(techUpgrades.autoAim, toggleAutoAim);
 };
 
 // Nach jedem Shop-Upgrade und Level-Up synchronisieren
 window.addEventListener('focus', syncRefsToVars);
-
-// Nach initializeUI();
-inputManager.setAutoAimToggleCallback(toggleAutoAim);

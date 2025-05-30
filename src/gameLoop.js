@@ -8,7 +8,7 @@ export function createGameLoop(context) {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, // magnetRadius hier entfernt
         ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
-        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
+        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, // displayAutoAimButton entfernt
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef
@@ -16,6 +16,7 @@ export function createGameLoop(context) {
 
     let homingMissiles = [];
     let lastMissileTime = 0;
+    const { spawnEnemyWave } = context; // spawnEnemyWave aus dem Kontext holen
 
     function endGame() {
         if (isGameOverRef.value) return;
@@ -28,10 +29,19 @@ export function createGameLoop(context) {
         levelRef.value++;
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
+        displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
         isShopOpenRef.value = true;
         displayShopModal((upgradeKey) => {
             applyUpgrade(upgradeKey, ship, PHYSICS);
             isShopOpenRef.value = false;
+
+            // Prüfen, ob eine Gegnerwelle ausgelöst werden soll, NACHDEM der Shop geschlossen wurde
+            if (levelRef.value > 1 && levelRef.value % GAME_CONFIG.ENEMY_WAVE_INTERVAL === 0) {
+                spawnEnemyWave(canvas, levelRef.value);
+                if (typeof showWaveHint === 'function') {
+                    showWaveHint();
+                }
+            }
             // Fix: Reset shooting flag when shop closes
             if (inputManager && inputManager.keys) {
                 inputManager.keys.shooting = false;
@@ -55,35 +65,10 @@ export function createGameLoop(context) {
         }
     }
 
-    function autoAimLogic() {
-        if (techUpgrades.autoAim && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value && enemies.length > 0 && !inputManager.isMoving()) {
-            let closest = null;
-            let minDist = Infinity;
-            enemies.forEach(e => {
-                if (e.alive) {
-                    const dx = e.x - ship.x;
-                    const dy = e.y - ship.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closest = e;
-                    }
-                }
-            });
-            if (closest) {
-                const targetAngle = Math.atan2(closest.y - ship.y, closest.x - ship.x);
-                let da = targetAngle - ship.angle;
-                while (da > Math.PI) da -= 2 * Math.PI;
-                while (da < -Math.PI) da += 2 * Math.PI;
-                ship.angle += da * 0.18;
-            }
-        }
-    }
-
     function autoHomingMissileLogic() {
         if (techUpgrades.homingMissile && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value && enemies.length > 0) {
             const now = performance.now();
-            if (!lastMissileTime || now - lastMissileTime > 1200) { // Viel langsamer als Laser
+            if (!lastMissileTime || now - lastMissileTime > 2500) { // Erhöhter Cooldown für weniger Raketen
                 // Ziel suchen
                 let closest = null, minDist = Infinity;
                 for (const e of enemies) {
@@ -139,13 +124,13 @@ export function createGameLoop(context) {
         lasers.forEach((laser, lIdx) => {
             if (Array.isArray(laser)) {
                 laser.forEach(l => {
-                    l.update();
+                    l.update(canvas.width, canvas.height);
                     effectsSystem.drawLaserWithGlow(l, l.upgradeLevel);
                 });
                 lasers.splice(lIdx, 1);
                 return;
             }
-            laser.update();
+            laser.update(canvas.width, canvas.height);
             effectsSystem.drawLaserWithGlow(laser, laser.upgradeLevel);
             if (!laser.isActive) {
                 lasers.splice(lIdx, 1);
@@ -161,26 +146,33 @@ export function createGameLoop(context) {
             }
             lasers.forEach((laser, lIdx) => {
                 if (enemy.checkLaserHit(laser)) {
-                    enemy.destroy();
-                    lasers.splice(lIdx, 1);
-                    xpPoints.push(new XP(enemy.x, enemy.y));
-                    if (Math.random() < GAME_CONFIG.PLASMA_DROP_CHANCE) {
-                        let px = enemy.x;
-                        let py = enemy.y;
-                        const centerX = canvas.width / 2;
-                        const centerY = canvas.height / 2;
-                        const dx = centerX - enemy.x;
-                        const dy = centerY - enemy.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist > 0) {
-                            px += dx / dist * 40;
-                            py += dy / dist * 40;
+                    // enemy.destroy() wird jetzt korrekt innerhalb von enemy.checkLaserHit() aufgerufen,
+                    // wenn die Lebenspunkte des Gegners tatsächlich <= 0 sind.
+                    // Laser wird verbraucht
+                    lasers.splice(lIdx, 1); 
+
+                    // Nur XP und Kill geben, wenn HP <= 0 und XP noch nicht vergeben wurde
+                    if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
+                        xpPoints.push(new XP(enemy.x, enemy.y));
+                        if (Math.random() < GAME_CONFIG.PLASMA_DROP_CHANCE) {
+                            let px = enemy.x;
+                            let py = enemy.y;
+                            const centerX = canvas.width / 2;
+                            const centerY = canvas.height / 2;
+                            const dxPlasma = centerX - enemy.x;
+                            const dyPlasma = centerY - enemy.y;
+                            const distPlasma = Math.sqrt(dxPlasma * dxPlasma + dyPlasma * dyPlasma);
+                            if (distPlasma > 0) {
+                                px += dxPlasma / distPlasma * 40;
+                                py += dyPlasma / distPlasma * 40;
+                            }
+                            px = Math.max(24, Math.min(canvas.width - 24, px));
+                            py = Math.max(24, Math.min(canvas.height - 24, py));
+                            plasmaCells.push(new PlasmaCell(px, py));
                         }
-                        px = Math.max(24, Math.min(canvas.width - 24, px));
-                        py = Math.max(24, Math.min(canvas.height - 24, py));
-                        plasmaCells.push(new PlasmaCell(px, py));
+                        killsRef.value++;
+                        enemy.alreadyAwardedXP = true; // XP für diesen Gegner wurde vergeben
                     }
-                    killsRef.value++;
                 }
             });
             if (!enemy.alive) {
@@ -227,23 +219,40 @@ export function createGameLoop(context) {
         // Update & Draw Homing Missiles
         for (let i = homingMissiles.length-1; i >= 0; i--) {
             const m = homingMissiles[i];
-            if (!m.exploded) {
-                m.update(enemies);
-                m.draw(ctx);
-                // Explodiere bei Kontakt mit Ziel oder nach Ablauf
-                if (m.target && m.target.alive) {
-                    const dx = m.x - m.target.x;
-                    const dy = m.y - m.target.y;
-                    if (Math.sqrt(dx*dx + dy*dy) < m.radius + m.target.size/2) {
-                        m.explode(ctx, enemies);
+
+            m.update(enemies); // Update kümmert sich auch um die Explosionsanimation
+
+            if (m.shouldBeRemoved()) {
+                homingMissiles.splice(i, 1);
+            } else {
+                m.draw(ctx); // Zeichnet entweder die Rakete oder ihre Explosion
+
+                // Detonationslogik, nur wenn noch nicht explodiert (logisch)
+                if (!m.exploded) {
+                    let detonateThisFrame = false;
+                    if (m.target && m.target.alive) {
+                        const dx = m.x - m.target.x;
+                        const dy = m.y - m.target.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < m.radius + m.target.size/2) {
+                            detonateThisFrame = true;
+                        }
+                    }
+                    if (m.life <= 0) { // Eigene Lebenszeit abgelaufen
+                        detonateThisFrame = true;
+                    }
+
+                    if (detonateThisFrame) {
+                        m.detonate(enemies, effectsSystem, {
+                            xpPoints,
+                            XP,
+                            killsRef,
+                            GAME_CONFIG,
+                            plasmaCells,
+                            PlasmaCell,
+                            canvas // für Plasmakoordinaten
+                        });
                     }
                 }
-                if (m.life <= 0) {
-                    m.explode(ctx, enemies);
-                }
-            } else {
-                // Nach Explosion entfernen
-                homingMissiles.splice(i, 1);
             }
         }
         if (shakeActive) {
@@ -251,7 +260,6 @@ export function createGameLoop(context) {
         }
         updateExperienceBar(experienceRef.value, maxXPRef.value);
         displayLevel(levelRef.value);
-        autoAimLogic();
         autoShootLogic();
         autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);

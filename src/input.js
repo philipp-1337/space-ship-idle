@@ -34,12 +34,6 @@ export class InputManager {
             if (["ArrowDown", "s", "S"].includes(event.key)) this.keys.down = true;
             if (["ArrowLeft", "a", "A"].includes(event.key)) this.keys.left = true;
             if (["ArrowRight", "d", "D"].includes(event.key)) this.keys.right = true;
-            if (event.key === 'q' || event.key === 'Q') {
-                if (typeof this.onAutoAimToggle === 'function') {
-                    this.onAutoAimToggle();
-                }
-                event.preventDefault();
-            }
         });
 
         window.addEventListener('keyup', (event) => {
@@ -156,9 +150,28 @@ export class InputManager {
 
         base.addEventListener('touchstart', (e) => {
             if (joystickTouchId !== null) return;
+
+            // Defensive checks for touch data
+            if (!e.changedTouches || e.changedTouches.length === 0) {
+                console.error("Joystick touchstart: No changedTouches found in event.", e);
+                return; 
+            }
             const touch = e.changedTouches[0];
+            if (!touch) { 
+                console.error("Joystick touchstart: First touch point (e.changedTouches[0]) is invalid.", e);
+                return;
+            }
+
             joystickTouchId = touch.identifier;
             baseRect = base.getBoundingClientRect();
+
+            // Further check for valid coordinates and baseRect
+            if (typeof touch.clientX !== 'number' || typeof touch.clientY !== 'number' || !baseRect) {
+                console.error("Joystick touchstart: Invalid touch coordinates or baseRect is missing.", { touchClientX: touch.clientX, touchClientY: touch.clientY, baseRectExists: !!baseRect });
+                joystickTouchId = null; // Reset to allow a new touch attempt
+                return;
+            }
+
             const x = touch.clientX - baseRect.left;
             const y = touch.clientY - baseRect.top;
             moveStick(x, y);
@@ -265,9 +278,5 @@ export class InputManager {
     isMoving() {
         return this.keys.up || this.keys.down || this.keys.left || this.keys.right || 
                (this.joystickMove && (Math.abs(this.joystickMove.x) > 0 || Math.abs(this.joystickMove.y) > 0));
-    }
-
-    setAutoAimToggleCallback(cb) {
-        this.onAutoAimToggle = cb;
     }
 }

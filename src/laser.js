@@ -13,14 +13,14 @@ class Laser {
         // Schaden berechnen basierend auf Basisschaden und Upgrade-Level
         // Annahme: window.BASE_LASER_DAMAGE ist in main.js gesetzt
         const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
-        // Stärkere kompoundierte Steigerung: 10% pro Level (oder z.B. 15% additiv: baseDamage * (1 + 0.15 * this.upgradeLevel))
+        // Reduzierte kompoundierte Steigerung: z.B. 5% pro Level
         this.damage = baseDamage * Math.pow(1.10, this.upgradeLevel);
     }
 
-    update() {
+    update(canvasWidth, canvasHeight) {
         this.x += Math.cos(this.angle) * this.speed;
         this.y += Math.sin(this.angle) * this.speed;
-        if (this.x < 0 || this.x > window.innerWidth || this.y < 0 || this.y > window.innerHeight) {
+        if (this.x < 0 || this.x > canvasWidth || this.y < 0 || this.y > canvasHeight) {
             this.isActive = false;
         }
     }

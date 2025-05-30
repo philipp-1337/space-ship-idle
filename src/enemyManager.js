@@ -1,7 +1,7 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
-import Enemy from './enemy.js';
-import { GAME_CONFIG, COLORS } from './constants.js'; // Added COLORS
+import Enemy from './enemy.js'; // Added COLORS
+import { GAME_CONFIG, COLORS } from './constants.js';
 
 export let enemies = [];
 export let enemyLasers = [];
@@ -43,7 +43,7 @@ export function spawnEnemy(canvas, level, techUpgrades) {
         const elitePos = getRandomSpawnPosition(canvas);
         const elite = new Enemy(elitePos.x, elitePos.y, level + GAME_CONFIG.ELITE_ENEMY_HP_BONUS);
         elite.color = COLORS.ELITE_ENEMY_COLOR; // Use constant
-        elite.size = 44; // Consider making this a constant, e.g., GAME_CONFIG.ELITE_ENEMY_SIZE
+    elite.size = GAME_CONFIG.ELITE_ENEMY_SIZE; 
         elite.isElite = true;
         enemies.push(elite);
 
@@ -68,6 +68,16 @@ export function spawnEnemy(canvas, level, techUpgrades) {
     }
 }
 
+export function spawnEnemyWave(canvas, level) {
+    console.log(`Spawning enemy wave for level ${level}!`);
+    for (let i = 0; i < GAME_CONFIG.ENEMY_WAVE_SIZE; i++) {
+        const pos = getRandomSpawnPosition(canvas);
+        // Spawnt reguläre Gegner, skaliert auf das aktuelle Level
+        enemies.push(new Enemy(pos.x, pos.y, level));
+    }
+    // Hier könnte man optional eine kleine Verzögerung zwischen den Spawns einbauen,
+    // aber für den Anfang spawnen wir alle gleichzeitig.
+}
 export function startEnemySpawning(canvas, levelRef, techUpgradesRef) {
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
     enemySpawnIntervalId = setInterval(() => {

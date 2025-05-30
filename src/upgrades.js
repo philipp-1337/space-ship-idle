@@ -14,7 +14,6 @@ export let magnetStrength = 0;
 
 export let techUpgrades = {
     autoShoot: false,
-    autoAim: false,
     eliteHint: false,
     homingMissile: false // Lenkraketen-Upgrade
 };

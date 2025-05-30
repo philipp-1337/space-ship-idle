@@ -3,7 +3,7 @@ const ENEMY_TYPES = [
         name: 'triangle',
         minLevel: 1,
         shape: 'triangle',
-        baseHp: 1,
+        baseHp: 4, // Erhöht
         baseSpeed: 0.7,
         color: 'darkred',
     },
@@ -11,7 +11,7 @@ const ENEMY_TYPES = [
         name: 'square',
         minLevel: 5,
         shape: 'square',
-        baseHp: 3,
+        baseHp: 10, // Erhöht
         baseSpeed: 0.6,
         color: 'darkblue',
     },
@@ -19,7 +19,7 @@ const ENEMY_TYPES = [
         name: 'pentagon',
         minLevel: 10,
         shape: 'pentagon',
-        baseHp: 7,
+        baseHp: 18, // Erhöht
         baseSpeed: 0.5,
         color: 'darkgreen',
     },
@@ -27,7 +27,7 @@ const ENEMY_TYPES = [
         name: 'shooter',
         minLevel: 18,
         shape: 'circle',
-        baseHp: 10,
+        baseHp: 25, // Erhöht
         baseSpeed: 0.45,
         color: 'purple',
         canShoot: true
@@ -50,6 +50,7 @@ class Enemy {
         this.color = type.color;
         this.alive = true;
         this.exploding = false;
+        this.alreadyAwardedXP = false; // NEU: Flag um doppelte XP-Vergabe zu verhindern
         this.explosionFrame = 0;
         this.maxExplosionFrames = 14;
         this.particles = [];
@@ -121,7 +122,6 @@ class Enemy {
             this.y += dy * 0.5;
             // Shooter-Logik
             if (this.canShoot && this.shootCooldown <= 0) {
-                // TODO: Implementiere Schusslogik (z.B. alle 2.5s schießen)
                 this.shootCooldown = 150 + Math.random()*60;
                 if (typeof window !== 'undefined' && window.spawnEnemyLaser) {
                     window.spawnEnemyLaser(this.x, this.y, angle);

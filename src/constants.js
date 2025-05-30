@@ -1,15 +1,18 @@
 // constants.js - Game Configuration and Constants
 
 export const GAME_CONFIG = {
-    BASE_LASER_DAMAGE: 1,
-    ENEMY_SPAWN_INTERVAL: 2000,
-    LASER_SHOOT_COOLDOWN: 180,
-    AUTO_SHOOT_COOLDOWN: 220,
+    BASE_LASER_DAMAGE: 0.8,
+    ENEMY_SPAWN_INTERVAL: 2500, // Erhöht die Spawn-Frequenz der Gegner
+    LASER_SHOOT_COOLDOWN: 280,
+    AUTO_SHOOT_COOLDOWN: 320,
     EXPLOSION_DURATION: 1000,
     PLASMA_DROP_CHANCE: 0.05,
     ELITE_ENEMY_INTERVAL: 10, // Every 10 levels
     ELITE_ENEMY_HP_BONUS: 8,
-    ELITE_HINT_DURATION: 3500
+    ELITE_HINT_DURATION: 3500,
+    ELITE_ENEMY_SIZE: 44,
+    ENEMY_WAVE_INTERVAL: 5, // Every 5 levels for an enemy wave
+    ENEMY_WAVE_SIZE: 10     // Number of enemies in a wave
 };
 
 export const PHYSICS = {
@@ -92,5 +95,6 @@ export const PROGRESSION = {
 
 export const MOBILE = {
     CANVAS_SCALE_FACTOR: 2,
-    TOUCH_Z_INDEX: 5000
+    TOUCH_Z_INDEX: 5000,
+    UI_SCALE_FACTOR: 1.8 // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
 };

@@ -1,4 +1,12 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/ui.js
+import { MOBILE } from './constants.js';
+
+const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
+
+function scale(value) { return `${value * _uiScale}px`; }
+function scaleNum(value) { return value * _uiScale; }
+
 export function updateExperienceBar(currentXP, maxXP) {
     let experienceBar = document.getElementById('experience-bar');
     if (!experienceBar) {
@@ -7,12 +15,12 @@ export function updateExperienceBar(currentXP, maxXP) {
         experienceBar.style.position = 'fixed';
         experienceBar.style.top = '0';
         experienceBar.style.left = '0';
-        experienceBar.style.height = '12px';
+        experienceBar.style.height = scale(12);
         experienceBar.style.background = 'linear-gradient(90deg, #00ff99 0%, #00eaff 100%)';
         experienceBar.style.zIndex = '1000';
-        experienceBar.style.boxShadow = '0 0 16px 4px #00eaff, 0 2px 8px 0 #222';
+        experienceBar.style.boxShadow = `0 0 ${scaleNum(16)}px ${scaleNum(4)}px #00eaff, 0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #222`;
         experienceBar.style.transition = 'width 0.35s cubic-bezier(.4,1.6,.4,1)';
-        experienceBar.style.borderRadius = '0 0 12px 0';
+        experienceBar.style.borderRadius = `0 0 ${scale(12)} 0`;
         document.body.appendChild(experienceBar);
     }
     experienceBar.style.width = `${(currentXP / maxXP) * 100}%`;
@@ -26,16 +34,15 @@ export function displayLevel(level, pop = false) {
         levelDisplay.style.position = 'fixed';
         levelDisplay.style.top = '12px';
         levelDisplay.style.left = '10px';
-        levelDisplay.style.color = 'white';
-        levelDisplay.style.fontSize = '20px';
+        levelDisplay.style.color = 'white'; // Farbe bleibt
+        levelDisplay.style.fontSize = scale(20);
         levelDisplay.style.zIndex = '1000';
         levelDisplay.style.fontWeight = 'bold';
-        levelDisplay.style.padding = '6px 18px';
-        levelDisplay.style.borderRadius = '16px';
+        levelDisplay.style.padding = `${scale(6)} ${scale(18)}`;
+        levelDisplay.style.borderRadius = scale(16);
         levelDisplay.style.background = 'rgba(30,40,60,0.85)';
-        // Glow/BoxShadow entfernt, nur noch dezenter Schatten
-        levelDisplay.style.boxShadow = '0 2px 8px 0 #222';
-        levelDisplay.style.textShadow = '0 2px 4px #222';
+        levelDisplay.style.boxShadow = `0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #222`;
+        levelDisplay.style.textShadow = `0 ${scaleNum(2)}px ${scaleNum(4)}px #222`;
         levelDisplay.style.transition = 'transform 0.18s cubic-bezier(.4,1.6,.4,1), box-shadow 0.18s';
         document.body.appendChild(levelDisplay);
     }
@@ -43,10 +50,10 @@ export function displayLevel(level, pop = false) {
     // Pop-Animation bei Level-Up
     if (pop) {
         levelDisplay.style.transform = 'scale(1.25)';
-        levelDisplay.style.boxShadow = '0 2px 16px 0 #222';
+        levelDisplay.style.boxShadow = `0 ${scaleNum(2)}px ${scaleNum(16)}px 0 #222`;
         setTimeout(() => {
             levelDisplay.style.transform = 'scale(1)';
-            levelDisplay.style.boxShadow = '0 2px 8px 0 #222';
+            levelDisplay.style.boxShadow = `0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #222`;
         }, 180);
     }
 }
@@ -68,14 +75,14 @@ export function updatePlasmaUI(count) {
         plasmaDisplay.style.top = '12px';
         plasmaDisplay.style.right = '18px';
         plasmaDisplay.style.color = 'aqua';
-        plasmaDisplay.style.fontSize = '20px';
+        plasmaDisplay.style.fontSize = scale(20);
         plasmaDisplay.style.zIndex = '1000';
         plasmaDisplay.style.fontWeight = 'bold';
-        plasmaDisplay.style.padding = '6px 18px';
-        plasmaDisplay.style.borderRadius = '16px';
+        plasmaDisplay.style.padding = `${scale(6)} ${scale(18)}`;
+        plasmaDisplay.style.borderRadius = scale(16);
         plasmaDisplay.style.background = 'rgba(0,40,60,0.85)';
-        plasmaDisplay.style.boxShadow = '0 2px 8px 0 #0ff';
-        plasmaDisplay.style.textShadow = '0 2px 4px #0ff';
+        plasmaDisplay.style.boxShadow = `0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #0ff`;
+        plasmaDisplay.style.textShadow = `0 ${scaleNum(2)}px ${scaleNum(4)}px #0ff`;
         document.body.appendChild(plasmaDisplay);
     }
     plasmaDisplay.innerText = `Plasmazellen: ${count}`;
@@ -103,21 +110,21 @@ export function displayGameOverScreen(currentLevel) {
 
     const gameOverText = document.createElement('h1');
     gameOverText.innerText = 'Game Over!';
-    gameOverText.style.fontSize = '48px';
-    gameOverText.style.marginBottom = '20px';
+    gameOverText.style.fontSize = scale(48);
+    gameOverText.style.marginBottom = scale(20);
 
     const levelText = document.createElement('p');
     levelText.innerText = `Du hast Level ${currentLevel} erreicht!`;
-    levelText.style.fontSize = '24px';
-    levelText.style.marginBottom = '30px';
+    levelText.style.fontSize = scale(24);
+    levelText.style.marginBottom = scale(30);
 
     const restartButton = document.createElement('button');
     restartButton.innerText = 'Spiel neustarten';
-    restartButton.style.padding = '15px 30px';
-    restartButton.style.fontSize = '20px';
+    restartButton.style.padding = `${scale(15)} ${scale(30)}`;
+    restartButton.style.fontSize = scale(20);
     restartButton.style.cursor = 'pointer';
     restartButton.style.border = 'none';
-    restartButton.style.borderRadius = '5px';
+    restartButton.style.borderRadius = scale(5);
     restartButton.style.backgroundColor = 'limegreen';
     restartButton.style.color = 'white';
     restartButton.onclick = () => {
@@ -147,9 +154,9 @@ export function displayShopModal(onUpgrade) {
     modal.style.justifyContent = 'center';
     modal.style.alignItems = 'center';
     modal.style.zIndex = '3000';
-    modal.style.backdropFilter = 'blur(2px)';
-    modal.style.borderRadius = '0 0 32px 32px';
-    modal.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+    modal.style.backdropFilter = `blur(${scaleNum(2)}px)`;
+    modal.style.borderRadius = `0 0 ${scale(32)} ${scale(32)}`;
+    modal.style.boxShadow = `0 0 ${scaleNum(32)}px ${scaleNum(8)}px #00eaff, 0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #222`;
 
     const title = document.createElement('h2');
     title.innerText = 'Level Up! Wähle ein Upgrade:';
@@ -188,10 +195,10 @@ export function displayShopModal(onUpgrade) {
     upgradesData.forEach(upg => {
         const btn = document.createElement('button');
         btn.innerHTML = `<b>${upg.label}</b><br><small>${upg.desc}</small>`;
-        btn.style.margin = '16px';
-        btn.style.padding = '18px 32px';
-        btn.style.fontSize = '18px';
-        btn.style.borderRadius = '8px';
+        btn.style.margin = scale(16);
+        btn.style.padding = `${scale(18)} ${scale(32)}`;
+        btn.style.fontSize = scale(18);
+        btn.style.borderRadius = scale(8);
         btn.style.border = 'none';
         btn.style.background = '#222';
         btn.style.color = 'white';
@@ -218,11 +225,11 @@ export function displayPauseButton(onPause) {
     btn.style.top = '12px';
     btn.style.left = '120px'; // Rechts neben Level-Anzeige
     btn.style.zIndex = '1100';
-    btn.style.fontSize = '20px';
-    btn.style.padding = '6px 14px';
-    btn.style.borderRadius = '16px';
+    btn.style.fontSize = scale(20);
+    btn.style.padding = `${scale(6)} ${scale(14)}`;
+    btn.style.borderRadius = scale(16);
     btn.style.border = 'none';
-    btn.style.background = '#222';
+    btn.style.background = 'rgba(30,40,60,0.85)'; // Passend zu Level Display
     btn.style.color = 'white';
     btn.style.cursor = 'pointer';
     btn.onclick = onPause;
@@ -251,9 +258,9 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     menu.style.justifyContent = 'center';
     menu.style.alignItems = 'center';
     menu.style.zIndex = '4000';
-    menu.style.backdropFilter = 'blur(2px)';
-    menu.style.borderRadius = '0 0 32px 32px';
-    menu.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+    menu.style.backdropFilter = `blur(${scaleNum(2)}px)`;
+    menu.style.borderRadius = `0 0 ${scale(32)} ${scale(32)}`;
+    menu.style.boxShadow = `0 0 ${scaleNum(32)}px ${scaleNum(8)}px #00eaff, 0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #222`;
 
     const title = document.createElement('h2');
     title.innerText = 'Pause';
@@ -263,8 +270,8 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     // Statistiken
     const statsDiv = document.createElement('div');
     statsDiv.style.color = 'white';
-    statsDiv.style.fontSize = '18px';
-    statsDiv.style.margin = '18px 0 28px 0';
+    statsDiv.style.fontSize = scale(18);
+    statsDiv.style.margin = `${scale(18)} 0 ${scale(28)} 0`;
     statsDiv.style.textAlign = 'center';
     statsDiv.innerHTML = `
         <b>Level:</b> ${stats.level}<br>
@@ -277,10 +284,10 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     // Resume Button
     const resumeBtn = document.createElement('button');
     resumeBtn.innerText = 'Weiterspielen';
-    resumeBtn.style.margin = '8px';
-    resumeBtn.style.padding = '12px 28px';
-    resumeBtn.style.fontSize = '18px';
-    resumeBtn.style.borderRadius = '8px';
+    resumeBtn.style.margin = scale(8);
+    resumeBtn.style.padding = `${scale(12)} ${scale(28)}`;
+    resumeBtn.style.fontSize = scale(18);
+    resumeBtn.style.borderRadius = scale(8);
     resumeBtn.style.border = 'none';
     resumeBtn.style.background = 'limegreen';
     resumeBtn.style.color = 'white';
@@ -295,10 +302,10 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     // Restart Button
     const restartBtn = document.createElement('button');
     restartBtn.innerText = 'Neustarten';
-    restartBtn.style.margin = '8px';
-    restartBtn.style.padding = '12px 28px';
-    restartBtn.style.fontSize = '18px';
-    restartBtn.style.borderRadius = '8px';
+    restartBtn.style.margin = scale(8);
+    restartBtn.style.padding = `${scale(12)} ${scale(28)}`;
+    restartBtn.style.fontSize = scale(18);
+    restartBtn.style.borderRadius = scale(8);
     restartBtn.style.border = 'none';
     restartBtn.style.background = '#e74c3c';
     restartBtn.style.color = 'white';
@@ -326,14 +333,14 @@ export function showTechTreeButton(onClick) {
         btn.style.top = '60px';
         btn.style.right = '18px';
         btn.style.zIndex = '1200';
-        btn.style.fontSize = '18px';
-        btn.style.padding = '10px 22px';
-        btn.style.borderRadius = '12px';
+        btn.style.fontSize = scale(18);
+        btn.style.padding = `${scale(10)} ${scale(22)}`;
+        btn.style.borderRadius = scale(12);
         btn.style.border = 'none';
         btn.style.background = 'aqua';
         btn.style.color = '#003';
         btn.style.fontWeight = 'bold';
-        btn.style.boxShadow = '0 2px 8px 0 #0ff';
+        btn.style.boxShadow = `0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #0ff`;
         btn.style.cursor = 'pointer';
         btn.onclick = onClick;
         document.body.appendChild(btn);
@@ -358,9 +365,9 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     modal.style.justifyContent = 'center';
     modal.style.alignItems = 'center';
     modal.style.zIndex = '5000';
-    modal.style.backdropFilter = 'blur(2px)';
-    modal.style.borderRadius = '0 0 32px 32px';
-    modal.style.boxShadow = '0 0 32px 8px #00eaff, 0 2px 8px 0 #222';
+    modal.style.backdropFilter = `blur(${scaleNum(2)}px)`;
+    modal.style.borderRadius = `0 0 ${scale(32)} ${scale(32)}`;
+    modal.style.boxShadow = `0 0 ${scaleNum(32)}px ${scaleNum(8)}px #00eaff, 0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #222`;
 
     const title = document.createElement('h2');
     title.innerText = 'Tech-Tree: Upgrades freischalten';
@@ -369,28 +376,22 @@ export function showTechTreeModal(upgrades, onUpgrade) {
 
     const upgradesList = [
         {
-            key: 'autoShoot',
-            label: 'Automatisches Schießen',
-            desc: 'Das Schiff schießt automatisch auf Gegner.',
-            cost: 1
-        },
-        {
-            key: 'autoAim',
-            label: 'Automatisches Anvisieren',
-            desc: 'Das Schiff visiert Gegner automatisch an (dreht sich automatisch).',
-            cost: 2
-        },
-        {
             key: 'eliteHint',
             label: 'Elite-Gegner-Scanner',
             desc: 'Zeigt an, wenn ein Elite-Gegner erscheint.',
-            cost: 3
+            cost: 1
+        },
+        {
+            key: 'autoShoot',
+            label: 'Automatisches Schießen',
+            desc: 'Das Schiff schießt automatisch auf Gegner.',
+            cost: 4
         },
         {
             key: 'homingMissile',
             label: 'Lenkraketen',
             desc: 'Feuert automatisch Lenkraketen, die Gegner auf Kreisbahn verfolgen und Flächenschaden verursachen.',
-            cost: 4
+            cost: 10
         }
         // Weitere Upgrades können hier ergänzt werden
     ];
@@ -399,10 +400,10 @@ export function showTechTreeModal(upgrades, onUpgrade) {
         const unlocked = upgrades[upg.key];
         const btn = document.createElement('button');
         btn.innerHTML = `<b>${upg.label}</b><br><small>${upg.desc}</small><br>Kosten: ${upg.cost} Plasmazelle(n)`;
-        btn.style.margin = '16px';
-        btn.style.padding = '18px 32px';
-        btn.style.fontSize = '18px';
-        btn.style.borderRadius = '8px';
+        btn.style.margin = scale(16);
+        btn.style.padding = `${scale(18)} ${scale(32)}`;
+        btn.style.fontSize = scale(18);
+        btn.style.borderRadius = scale(8);
         btn.style.border = 'none';
         btn.style.background = unlocked ? '#0f0' : '#222';
         btn.style.color = unlocked ? '#003' : 'aqua';
@@ -422,15 +423,15 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     // Schließen-Button
     const closeBtn = document.createElement('button');
     closeBtn.innerText = 'Schließen';
-    closeBtn.style.marginTop = '24px';
-    closeBtn.style.fontSize = '18px';
-    closeBtn.style.padding = '10px 22px';
-    closeBtn.style.borderRadius = '12px';
+    closeBtn.style.marginTop = scale(24);
+    closeBtn.style.fontSize = scale(18);
+    closeBtn.style.padding = `${scale(10)} ${scale(22)}`;
+    closeBtn.style.borderRadius = scale(12);
     closeBtn.style.border = 'none';
     closeBtn.style.background = 'aqua';
     closeBtn.style.color = '#003';
     closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.boxShadow = '0 2px 8px 0 #0ff';
+    closeBtn.style.boxShadow = `0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #0ff`;
     closeBtn.style.cursor = 'pointer';
     closeBtn.onclick = () => {
         modal.remove();
@@ -443,25 +444,35 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     document.body.appendChild(modal);
 }
 
-export function displayAutoAimButton(isActive, onToggle) {
-    let btn = document.getElementById('auto-aim-btn');
-    if (!btn) {
-        btn = document.createElement('button');
-        btn.id = 'auto-aim-btn';
-        btn.style.position = 'fixed';
-        btn.style.top = '44px';
-        btn.style.left = '10px';
-        btn.style.zIndex = '1100';
-        btn.style.fontSize = '16px';
-        btn.style.padding = '6px 14px';
-        btn.style.borderRadius = '16px';
-        btn.style.border = 'none';
-        btn.style.background = '#222';
-        btn.style.color = 'white';
-        btn.style.cursor = 'pointer';
-        btn.onclick = onToggle;
-        document.body.appendChild(btn);
-    }
-    btn.innerText = isActive ? 'Auto-Aim: AN' : 'Auto-Aim: AUS';
-    btn.style.background = isActive ? 'limegreen' : '#222';
+export function showWaveHint() {
+    let hint = document.getElementById('wave-hint');
+    if (hint) hint.remove(); // Entferne existierenden Hint, um Timer zurückzusetzen
+
+    hint = document.createElement('div');
+    hint.id = 'wave-hint';
+    Object.assign(hint.style, {
+        position: 'fixed',
+        top: '120px', // Position anpassen bei Bedarf
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: '2000',
+        background: 'rgba(200, 0, 0, 0.9)',
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: scale(22),
+        padding: `${scale(10)} ${scale(25)}`,
+        borderRadius: scale(10),
+        boxShadow: `0 ${scaleNum(2)}px ${scaleNum(8)}px 0 #800`,
+        textAlign: 'center',
+        border: `${scaleNum(2)}px solid #ff4444`,
+        textShadow: `0 0 ${scaleNum(5)}px black`
+    });
+    document.body.appendChild(hint);
+
+    hint.innerText = `ACHTUNG: Gegnerwelle!`;
+    setTimeout(() => {
+        if (document.getElementById('wave-hint') === hint) {
+            hint.remove();
+        }
+    }, 3500); // Dauer der Anzeige: 3.5 Sekunden
 }
