@@ -1,18 +1,20 @@
 import Laser from './laser.js';
-import { upgrades } from './upgrades.js'; // Importiere das upgrades Objekt
+import { upgrades } from './upgrades.js';
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 
-// Pixel-art Schiffsgrafik im Space-Shuttle-Stil: schlanker weißer Rumpf,
-// schwarze Nasenkappe, weit hinten sitzende Delta-Flügel und ein Seitenleitwerk.
-const SHIP_X_MIN = -22, SHIP_X_MAX = 20, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
+const SHIP_X_MIN = -22, SHIP_X_MAX = 22, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
 const SHIP_DISPLAY_W = SHIP_X_MAX - SHIP_X_MIN;
 const SHIP_DISPLAY_H = SHIP_Y_MAX - SHIP_Y_MIN;
 const SHIP_SPRITE_W = 18, SHIP_SPRITE_H = 16;
 
+// Erweiterte Palette mit Akzentfarbe (Rot) und Mid-Tone Grau
+const palette = ['#2b2d31', '#d7dbe0', '#c0c5ce', '#f2f3f5', '#8b8f97', '#1f3a52', '#8fe0ff', '#e23d28'];
+const outlineColor = '#15181e'; // Etwas weicheres, bläuliches Dunkelgrau statt hartem Schwarz
+
 const shipSprite = makePixelSprite(
     SHIP_SPRITE_W, SHIP_SPRITE_H,
-    ['#2b2d31', '#d7dbe0', '#f2f3f5', '#8b8f97', '#1f3a52', '#8fe0ff'],
-    '#0d0e10',
+    palette,
+    outlineColor,
     (ctx) => {
         const mx = x => (x - SHIP_X_MIN) / (SHIP_X_MAX - SHIP_X_MIN) * SHIP_SPRITE_W;
         const my = y => (y - SHIP_Y_MIN) / (SHIP_Y_MAX - SHIP_Y_MIN) * SHIP_SPRITE_H;
@@ -27,54 +29,43 @@ const shipSprite = makePixelSprite(
             ctx.fill();
         };
 
-        // Triebwerksgehäuse (Heck, symmetrisch für den Triebwerksstrahl)
+        // Triebwerksgehäuse
         [-1, 1].forEach(side => {
-            path([
-                [-19, side * 2.6], [-15, side * 2.6], [-15, side * 4.4], [-19, side * 4.4],
-            ], '#2b2d31');
+            path([[-19, side * 2.6], [-15, side * 2.6], [-15, side * 4.4], [-19, side * 4.4]], '#2b2d31');
         });
 
-        // Delta-Flügel (weit hinten am Rumpf, stark gepfeilt)
+        // Delta-Flügel
         [-1, 1].forEach(side => {
-            path([
-                [4, side * 4.2], [-11, side * 17], [-15, side * 4.6],
-            ], '#d7dbe0');
+            path([[4, side * 4.2], [-11, side * 17], [-15, side * 4.6]], '#d7dbe0');
+            // Flügelspitzen (Akzent)
+            path([[-7, side * 12], [-11, side * 17], [-12, side * 12]], '#e23d28');
         });
 
-        // Seitenleitwerk (Heckflosse)
-        path([
-            [-15, -2.2], [-21, 0], [-15, 2.2],
-        ], '#2b2d31');
+        // Seitenleitwerk
+        path([[-15, -2.2], [-21, 0], [-15, 2.2]], '#2b2d31');
 
-        // Rumpf
-        path([
-            [16, -3.8], [-15, -4.2], [-15, 4.2], [16, 3.8],
-        ], '#d7dbe0');
+        // Rumpf Grundform
+        path([[16, -3.8], [-15, -4.2], [-15, 4.2], [16, 3.8]], '#d7dbe0');
+
+        // Mid-Tone für runderen Look
+        path([[16, 0], [-15, 0], [-15, 2.5], [15, 2.5]], '#c0c5ce');
 
         // Rumpf-Highlight (oben)
-        path([
-            [16, -3.8], [-15, -4.2], [-15, -2], [15, -2],
-        ], '#f2f3f5');
+        path([[16, -3.8], [-15, -4.2], [-15, -1.5], [15, -1.5]], '#f2f3f5');
 
-        // Rumpf-Schatten (unten, Hitzekachel-Andeutung)
-        path([
-            [15, 2], [-15, 2], [-15, 4.2], [16, 3.8],
-        ], '#8b8f97');
+        // Rumpf-Schatten (Hitzekacheln)
+        path([[15, 2.5], [-15, 2.5], [-15, 4.2], [16, 3.8]], '#8b8f97');
 
-        // Schwarze Nasenkappe
-        path([
-            [19, 0], [16, -3.5], [16, 3.5],
-        ], '#2b2d31');
+        // Racing-Stripe (Akzent)
+        path([[10, -0.5], [-12, -0.5], [-12, 0.5], [10, 0.5]], '#e23d28');
 
-        // Cockpitfenster
-        ctx.fillStyle = '#1f3a52';
-        ctx.beginPath();
-        ctx.ellipse(mx(12), my(0), 1.6, 1.4, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#8fe0ff';
-        ctx.beginPath();
-        ctx.arc(mx(12.6), my(-0.6), 0.6, 0, Math.PI * 2);
-        ctx.fill();
+        // Nasenkappe (Spitzer)
+        path([[22, 0], [16, -3.2], [16, 3.2]], '#2b2d31');
+
+        // Cockpitfenster (Pixel-perfect Polygone statt Vektor-Kreise)
+        path([[10, -1.5], [13, -1.5], [14, 0], [13, 1.5], [10, 1.5]], '#1f3a52');
+        // Lichtreflexion im Cockpit
+        path([[11, -1], [13, -1], [13, 0], [11, 0]], '#8fe0ff');
     }
 );
 
@@ -82,22 +73,23 @@ class Ship {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 40; // Vergrößert für ein imposanteres Schiff
-        this.height = 28; // Vergrößert für ein imposanteres Schiff
+        this.width = 40;
+        this.height = 28;
         this.angle = 0;
         this.speed = 5;
-        // Explosion
+        
         this.isExploding = false;
         this.explosionFrame = 0;
         this.maxExplosionFrames = 24;
         this.particles = [];
-        this.thrustState = 'none'; // 'none', 'forward', 'backward'
+        
+        this.thrustState = 'none'; 
+        this.thrustParticles = [];
     }
 
     update() {
         if (this.isExploding) {
             this.explosionFrame++;
-            // Partikel animieren
             this.particles.forEach(p => {
                 p.x += Math.cos(p.angle) * p.speed;
                 p.y += Math.sin(p.angle) * p.speed;
@@ -105,6 +97,42 @@ class Ship {
             });
             this.particles = this.particles.filter(p => p.life > 0);
         }
+
+        // Triebwerkspartikel (Weltkoordinaten) generieren
+        if (this.thrustState !== 'none' && !this.isExploding) {
+            const isFwd = this.thrustState === 'forward';
+            const color = isFwd ? (Math.random() > 0.5 ? '#ff5722' : '#ffc107') : '#03a9f4';
+            const speedMult = isFwd ? 1.5 : 0.8;
+            
+            const localX = -this.width * 0.45; 
+            
+            for(let i=0; i<2; i++) {
+                const localY = (Math.random() - 0.5) * this.height * 0.3;
+                
+                const worldX = this.x + Math.cos(this.angle) * localX - Math.sin(this.angle) * localY;
+                const worldY = this.y + Math.sin(this.angle) * localX + Math.cos(this.angle) * localY;
+                
+                const thrustAngle = this.angle + (Math.random() - 0.5) * 0.4;
+                
+                this.thrustParticles.push({
+                    x: worldX,
+                    y: worldY,
+                    vx: -Math.cos(thrustAngle) * (2 + Math.random() * 3) * speedMult,
+                    vy: -Math.sin(thrustAngle) * (2 + Math.random() * 3) * speedMult,
+                    life: 10 + Math.random() * 10,
+                    maxLife: 20,
+                    color: color,
+                    size: 2 + Math.random() * 2
+                });
+            }
+        }
+
+        this.thrustParticles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+        });
+        this.thrustParticles = this.thrustParticles.filter(p => p.life > 0);
     }
 
     explode() {
@@ -112,93 +140,62 @@ class Ship {
         this.isExploding = true;
         this.explosionFrame = 0;
         this.particles = [];
-        for (let i = 0; i < 22; i++) {
+        for (let i = 0; i < 30; i++) {
             this.particles.push({
                 x: 0,
                 y: 0,
                 angle: Math.random() * Math.PI * 2,
-                speed: 2 + Math.random() * 2.5,
-                color: i % 2 === 0 ? 'orange' : 'yellow',
-                size: 2 + Math.random() * 2,
-                life: 14 + Math.random() * 12
+                speed: 2 + Math.random() * 3.5,
+                color: Math.random() > 0.5 ? '#ff5722' : '#ffc107',
+                size: 2 + Math.random() * 3,
+                life: 14 + Math.random() * 15
             });
         }
     }
 
     draw(ctx) {
-        if (this.isExploding) {
-            ctx.save();
-            // Glow nur in den ersten 60% der Explosion anzeigen
-            const glowCutoff = Math.floor(this.maxExplosionFrames * 0.6);
-            if (this.explosionFrame < glowCutoff) {
-                ctx.globalAlpha = 1 - this.explosionFrame / glowCutoff;
-                ctx.translate(this.x, this.y);
-                // Explosionseffekt (Feuerball)
-                const r = this.width/2 + this.explosionFrame * 1.2;
-                let grad = ctx.createRadialGradient(0,0,0, 0,0,r);
-                grad.addColorStop(0, 'yellow');
-                grad.addColorStop(0.4, 'orange');
-                grad.addColorStop(1, 'rgba(80,0,0,0)');
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI*2);
-                ctx.fillStyle = grad;
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            } else {
-                ctx.translate(this.x, this.y);
-            }
-            // Partikel
-            this.particles.forEach(p => {
+        // Triebwerkspartikel unrotiert im Hintergrund zeichnen
+        if (!this.isExploding) {
+            this.thrustParticles.forEach(p => {
                 ctx.save();
-                ctx.globalAlpha = Math.max(0, p.life/20);
+                ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
                 ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                ctx.fill();
+                ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.floor(p.size), Math.floor(p.size));
                 ctx.restore();
             });
+        }
+
+        if (this.isExploding) {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            const glowCutoff = Math.floor(this.maxExplosionFrames * 0.5);
+            if (this.explosionFrame < glowCutoff) {
+                const alpha = 1 - this.explosionFrame / glowCutoff;
+                ctx.fillStyle = `rgba(255, 150, 0, ${alpha})`;
+                const r = this.width * 0.5 + this.explosionFrame * 1.5;
+                ctx.fillRect(-r/2, -r/2, r, r);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillRect(-r/4, -r/4, r/2, r/2);
+            }
+            
+            this.particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life / 30);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.floor(p.size), Math.floor(p.size));
+                ctx.restore();
+            });
+            
             ctx.restore();
             return;
         }
+
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        // Triebwerke (Positionsberechnung für den Triebwerksstrahl, Gehäuse ist Teil des Sprites)
-        const nacelleLength = 4;      // Länge des Triebwerkgehäuses im Sprite
-        const nacelleThickness = 1.8; // Dicke des Gehäuses im Sprite
-        const nacelleOffsetY = 3.5;   // Y-Abstand von der Schiffsmitte im Sprite
-        const nacelleStartX = -19;    // Beginnt am Heck des Rumpfes im Sprite
-
-        // Pixel-Art Rumpf, Flügel und Triebwerksgehäuse
         drawPixelSprite(ctx, shipSprite, SHIP_DISPLAY_W, SHIP_DISPLAY_H);
-
-        // Triebwerksstrahl/-glühen basierend auf thrustState
-        if (this.thrustState === 'forward') {
-            ctx.save();
-            ctx.shadowBlur = 18;
-            ctx.shadowColor = 'orangered';
-            ctx.fillStyle = 'orangered';
-            const glowDepth = nacelleLength * 0.8; // Etwas längerer Strahl
-            const glowThickness = nacelleThickness * 0.85; // Etwas dickerer Strahl
-            // Oberer Strahl
-            ctx.fillRect(nacelleStartX + nacelleLength, -nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
-            // Unterer Strahl
-            ctx.fillRect(nacelleStartX + nacelleLength, nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
-            ctx.restore();
-        } else if (this.thrustState === 'backward') {
-            ctx.save();
-            ctx.shadowBlur = 14;
-            ctx.shadowColor = 'lightblue';
-            ctx.fillStyle = 'lightblue'; // Andere Farbe für Rückwärtsschub
-            const glowDepth = nacelleLength * 0.5; // Kürzerer Strahl
-            const glowThickness = nacelleThickness * 0.7; // Etwas schmalerer Strahl
-            // Oberer Strahl (Rückwärts)
-            ctx.fillRect(nacelleStartX + nacelleLength, -nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
-            // Unterer Strahl (Rückwärts)
-            ctx.fillRect(nacelleStartX + nacelleLength, nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
-            ctx.restore();
-        }
 
         ctx.restore();
     }
@@ -209,29 +206,26 @@ class Ship {
     }
 
     shoot() {
-        // Laser spawns at tip of ship
         const tipX = this.x + Math.cos(this.angle) * this.width/2;
         const tipY = this.y + Math.sin(this.angle) * this.width/2;
-        // Laser-Upgrade: Doppellaser ab Level 2
-        if (upgrades.laser >= 2) { // Verwende das importierte upgrades Objekt
-            // Zwei Laser leicht versetzt
+        if (upgrades.laser >= 2) {
             const offset = 7;
             return [
                 new Laser(
                     this.x + Math.cos(this.angle) * this.width/2 - Math.sin(this.angle) * offset,
                     this.y + Math.sin(this.angle) * this.width/2 + Math.cos(this.angle) * offset,
                     this.angle,
-                    upgrades.laser // Verwende das importierte upgrades Objekt
+                    upgrades.laser
                 ),
                 new Laser(
                     this.x + Math.cos(this.angle) * this.width/2 + Math.sin(this.angle) * offset,
                     this.y + Math.sin(this.angle) * this.width/2 - Math.cos(this.angle) * offset,
                     this.angle,
-                    upgrades.laser // Verwende das importierte upgrades Objekt
+                    upgrades.laser
                 )
             ];
         }
-        return [new Laser(tipX, tipY, this.angle, upgrades.laser)]; // Verwende das importierte upgrades Objekt
+        return [new Laser(tipX, tipY, this.angle, upgrades.laser)];
     }
 
     getCollisionRadius() {
