@@ -1,3 +1,103 @@
+import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
+
+// Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
+// Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
+const ENEMY_SPRITE_RES = 12;
+const ENEMY_RANGE = 16; // lokale Koordinaten laufen von -ENEMY_RANGE..ENEMY_RANGE
+const enemyMx = x => (x + ENEMY_RANGE) / (2 * ENEMY_RANGE) * ENEMY_SPRITE_RES;
+const enemyMy = y => (y + ENEMY_RANGE) / (2 * ENEMY_RANGE) * ENEMY_SPRITE_RES;
+const enemyPath = (ctx, pts, color) => {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => {
+        const px = enemyMx(x), py = enemyMy(y);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fill();
+};
+
+const triangleSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#c62828', '#8e1f1f', '#e05a5a', '#ffe082'], '#2b0a0a',
+    (ctx) => {
+        const s = 15;
+        enemyPath(ctx, [[0, -s / 2], [-s / 2, s / 2], [s / 2, s / 2]], '#c62828');
+        enemyPath(ctx, [[0, -s / 2], [s / 2, s / 2], [0, s / 2]], '#8e1f1f');
+        enemyPath(ctx, [[0, -s / 2], [-s / 2, s / 2], [-s / 2 * 0.4, s / 2]], '#e05a5a');
+        ctx.fillStyle = '#ffe082';
+        ctx.fillRect(enemyMx(-4.5) - 0.5, enemyMy(2.5) - 0.5, 1.3, 1.3);
+        ctx.fillRect(enemyMx(3.2) - 0.5, enemyMy(2.5) - 0.5, 1.3, 1.3);
+    }
+);
+
+const squareSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#1f4fa0', '#123166', '#3f7bd1', '#ffe082'], '#08142e',
+    (ctx) => {
+        const s = 15;
+        const x0 = enemyMx(-s / 2), y0 = enemyMy(-s / 2);
+        const size = enemyMx(s / 2) - enemyMx(-s / 2);
+        ctx.fillStyle = '#1f4fa0';
+        ctx.fillRect(x0, y0, size, size);
+        ctx.fillStyle = '#123166';
+        ctx.fillRect(x0, enemyMy(0), size, enemyMy(s / 2) - enemyMy(0));
+        ctx.fillStyle = '#3f7bd1';
+        ctx.fillRect(x0, y0, size, enemyMy(-s / 2 + 3) - y0);
+        ctx.fillStyle = '#ffe082';
+        ctx.fillRect(enemyMx(-2), enemyMy(-2), enemyMx(2) - enemyMx(-2), enemyMy(2) - enemyMy(-2));
+    }
+);
+
+const pentagonSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#1b6b34', '#0f4a22', '#7bffb0'], '#04220f',
+    (ctx) => {
+        const s = 15;
+        const pts = [];
+        for (let i = 0; i < 5; i++) {
+            const a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+            pts.push([Math.cos(a) * s / 2, Math.sin(a) * s / 2]);
+        }
+        enemyPath(ctx, pts, '#1b6b34');
+        enemyPath(ctx, [pts[2], pts[3], pts[4], [0, 0]], '#0f4a22');
+        ctx.fillStyle = '#7bffb0';
+        ctx.beginPath();
+        ctx.arc(enemyMx(0), enemyMy(0), Math.max(0.6, ENEMY_SPRITE_RES / (2 * ENEMY_RANGE) * 2.2), 0, Math.PI * 2);
+        ctx.fill();
+    }
+);
+
+const circleSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#6a1b9a', '#4a1170', '#a24fd6', '#2a0a40', '#ffe082'], '#180524',
+    (ctx) => {
+        const s = 15;
+        const r = enemyMx(s / 2) - enemyMx(0);
+        ctx.fillStyle = '#2a0a40';
+        ctx.fillRect(enemyMx(-1.5), enemyMy(-s / 2 - 2), enemyMx(1.5) - enemyMx(-1.5), enemyMy(-s / 2 + 2) - enemyMy(-s / 2 - 2));
+        ctx.fillStyle = '#6a1b9a';
+        ctx.beginPath();
+        ctx.arc(enemyMx(0), enemyMy(0), r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4a1170';
+        ctx.beginPath();
+        ctx.arc(enemyMx(1.5), enemyMy(1.5), r * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#a24fd6';
+        ctx.beginPath();
+        ctx.arc(enemyMx(-3), enemyMy(-3), r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffe082';
+        ctx.beginPath();
+        ctx.arc(enemyMx(0), enemyMy(1), Math.max(0.6, r * 0.18), 0, Math.PI * 2);
+        ctx.fill();
+    }
+);
+
+const ENEMY_SPRITES = {
+    triangle: { normal: triangleSprite, hit: makeFlashSprite(triangleSprite, '#ffffff') },
+    square: { normal: squareSprite, hit: makeFlashSprite(squareSprite, '#ffffff') },
+    pentagon: { normal: pentagonSprite, hit: makeFlashSprite(pentagonSprite, '#ffffff') },
+    circle: { normal: circleSprite, hit: makeFlashSprite(circleSprite, '#ffffff') },
+};
+
 const ENEMY_TYPES = [
     {
         name: 'triangle',
@@ -168,35 +268,10 @@ class Enemy {
                 ctx.strokeStyle = 'gold';
                 ctx.lineWidth = 4;
             }
-            if (this.isHit && this.hitTimer > 0) {
-                ctx.fillStyle = 'white';
-            } else {
-                ctx.fillStyle = this.color;
-            }
 
-            // Verschiedene Formen je nach Typ
-            if (this.type.shape === 'triangle') {
-                ctx.beginPath();
-                ctx.moveTo(0, -this.size / 2);
-                ctx.lineTo(-this.size / 2, this.size / 2);
-                ctx.lineTo(this.size / 2, this.size / 2);
-                ctx.closePath();
-                ctx.fill();
-            } else if (this.type.shape === 'square') {
-                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
-            } else if (this.type.shape === 'pentagon') {
-                ctx.beginPath();
-                for (let i = 0; i < 5; i++) {
-                    const angle = -Math.PI/2 + i * 2*Math.PI/5;
-                    ctx.lineTo(Math.cos(angle)*this.size/2, Math.sin(angle)*this.size/2);
-                }
-                ctx.closePath();
-                ctx.fill();
-            } else if (this.type.shape === 'circle') {
-                ctx.beginPath();
-                ctx.arc(0, 0, this.size/2, 0, Math.PI*2);
-                ctx.fill();
-            }
+            const sprites = ENEMY_SPRITES[this.type.shape];
+            const sprite = (this.isHit && this.hitTimer > 0) ? sprites.hit : sprites.normal;
+            drawPixelSprite(ctx, sprite, this.size, this.size);
             // HP-Balken
             if (this.maxHp > 1) {
                 ctx.fillStyle = 'black'; // HP-Balken Hintergrundfarbe explizit setzen

@@ -1,4 +1,28 @@
 // Plasmazellen-Objekt für Idle-Game-Mechanik
+import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+
+const PLASMA_SPRITE_RES = 9;
+const plasmaSprite = makePixelSprite(
+    PLASMA_SPRITE_RES, PLASMA_SPRITE_RES,
+    ['#0a8a8a', '#22e6e6', '#c8ffff'],
+    '#04302f',
+    (ctx) => {
+        const c = PLASMA_SPRITE_RES / 2;
+        ctx.fillStyle = '#0a8a8a';
+        ctx.beginPath();
+        ctx.arc(c, c, c - 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#22e6e6';
+        ctx.beginPath();
+        ctx.arc(c - 0.5, c - 0.5, c - 1.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#c8ffff';
+        ctx.beginPath();
+        ctx.arc(c - 1.6, c - 1.6, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+);
+
 class PlasmaCell {
     constructor(x, y) {
         this.x = x;
@@ -10,12 +34,10 @@ class PlasmaCell {
     draw(ctx) {
         if (!this.collected) {
             ctx.save();
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'aqua';
             ctx.shadowBlur = 16;
             ctx.shadowColor = 'cyan';
-            ctx.fill();
+            ctx.translate(this.x, this.y);
+            drawPixelSprite(ctx, plasmaSprite, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
     }

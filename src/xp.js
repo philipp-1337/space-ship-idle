@@ -1,4 +1,28 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/xp.js
+import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+
+const XP_SPRITE_RES = 8;
+const xpSprite = makePixelSprite(
+    XP_SPRITE_RES, XP_SPRITE_RES,
+    ['#c9960c', '#ffd700', '#fff59d'],
+    '#5c4400',
+    (ctx) => {
+        const c = XP_SPRITE_RES / 2;
+        ctx.fillStyle = '#c9960c';
+        ctx.beginPath();
+        ctx.arc(c, c, c - 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(c - 0.4, c - 0.4, c - 1.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff59d';
+        ctx.beginPath();
+        ctx.arc(c - 1.4, c - 1.4, 1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+);
+
 class XP {
     constructor(x, y) {
         this.x = x;
@@ -10,10 +34,8 @@ class XP {
     draw(ctx) {
         if (!this.collected) {
             ctx.save();
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'yellow';
-            ctx.fill();
+            ctx.translate(this.x, this.y);
+            drawPixelSprite(ctx, xpSprite, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
     }

@@ -1,5 +1,82 @@
 import Laser from './laser.js';
 import { upgrades } from './upgrades.js'; // Importiere das upgrades Objekt
+import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+
+// Pixel-art Schiffsgrafik im Space-Shuttle-Stil: schlanker weißer Rumpf,
+// schwarze Nasenkappe, weit hinten sitzende Delta-Flügel und ein Seitenleitwerk.
+const SHIP_X_MIN = -22, SHIP_X_MAX = 20, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
+const SHIP_DISPLAY_W = SHIP_X_MAX - SHIP_X_MIN;
+const SHIP_DISPLAY_H = SHIP_Y_MAX - SHIP_Y_MIN;
+const SHIP_SPRITE_W = 18, SHIP_SPRITE_H = 16;
+
+const shipSprite = makePixelSprite(
+    SHIP_SPRITE_W, SHIP_SPRITE_H,
+    ['#2b2d31', '#d7dbe0', '#f2f3f5', '#8b8f97', '#1f3a52', '#8fe0ff'],
+    '#0d0e10',
+    (ctx) => {
+        const mx = x => (x - SHIP_X_MIN) / (SHIP_X_MAX - SHIP_X_MIN) * SHIP_SPRITE_W;
+        const my = y => (y - SHIP_Y_MIN) / (SHIP_Y_MAX - SHIP_Y_MIN) * SHIP_SPRITE_H;
+        const path = (pts, color) => {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            pts.forEach(([x, y], i) => {
+                const px = mx(x), py = my(y);
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            });
+            ctx.closePath();
+            ctx.fill();
+        };
+
+        // Triebwerksgehäuse (Heck, symmetrisch für den Triebwerksstrahl)
+        [-1, 1].forEach(side => {
+            path([
+                [-19, side * 2.6], [-15, side * 2.6], [-15, side * 4.4], [-19, side * 4.4],
+            ], '#2b2d31');
+        });
+
+        // Delta-Flügel (weit hinten am Rumpf, stark gepfeilt)
+        [-1, 1].forEach(side => {
+            path([
+                [4, side * 4.2], [-11, side * 17], [-15, side * 4.6],
+            ], '#d7dbe0');
+        });
+
+        // Seitenleitwerk (Heckflosse)
+        path([
+            [-15, -2.2], [-21, 0], [-15, 2.2],
+        ], '#2b2d31');
+
+        // Rumpf
+        path([
+            [16, -3.8], [-15, -4.2], [-15, 4.2], [16, 3.8],
+        ], '#d7dbe0');
+
+        // Rumpf-Highlight (oben)
+        path([
+            [16, -3.8], [-15, -4.2], [-15, -2], [15, -2],
+        ], '#f2f3f5');
+
+        // Rumpf-Schatten (unten, Hitzekachel-Andeutung)
+        path([
+            [15, 2], [-15, 2], [-15, 4.2], [16, 3.8],
+        ], '#8b8f97');
+
+        // Schwarze Nasenkappe
+        path([
+            [19, 0], [16, -3.5], [16, 3.5],
+        ], '#2b2d31');
+
+        // Cockpitfenster
+        ctx.fillStyle = '#1f3a52';
+        ctx.beginPath();
+        ctx.ellipse(mx(12), my(0), 1.6, 1.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#8fe0ff';
+        ctx.beginPath();
+        ctx.arc(mx(12.6), my(-0.6), 0.6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+);
 
 class Ship {
     constructor(x, y) {
@@ -87,67 +164,14 @@ class Ship {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        const bodyLength = this.width;      // Länge des Rumpfes, jetzt 40
-        const bodyWidth = this.height * 0.8; // Breite des Rumpfes, etwas breiter relativ zur Höhe, ca. 22.4
+        // Triebwerke (Positionsberechnung für den Triebwerksstrahl, Gehäuse ist Teil des Sprites)
+        const nacelleLength = 4;      // Länge des Triebwerkgehäuses im Sprite
+        const nacelleThickness = 1.8; // Dicke des Gehäuses im Sprite
+        const nacelleOffsetY = 3.5;   // Y-Abstand von der Schiffsmitte im Sprite
+        const nacelleStartX = -19;    // Beginnt am Heck des Rumpfes im Sprite
 
-        // Rumpf
-        ctx.fillStyle = 'slategray'; // Eine etwas "raumschiffigere" Farbe
-        ctx.beginPath();
-        ctx.moveTo(bodyLength / 2, 0);                      // Nasenspitze (20, 0)
-        ctx.lineTo(bodyLength / 3.5, -bodyWidth / 2);       // Obere Schulter (ca. 11.4, -11.2) - schlankere Front
-        ctx.lineTo(-bodyLength / 2, -bodyWidth / 2.8);      // Oberes Heck (ca. -20, -8) - etwas breiteres Heck für Triebwerke
-        ctx.lineTo(-bodyLength / 2, bodyWidth / 2.8);       // Unteres Heck (ca. -20, 8)
-        ctx.lineTo(bodyLength / 3.5, bodyWidth / 2);        // Untere Schulter (ca. 11.4, 11.2)
-        ctx.closePath();
-        ctx.fill();
-
-        // Flügel (nach hinten geneigt)
-        const wingOuterTipX = -bodyLength * 0.15; // X-Position der Flügelspitze (stärker nach hinten, ca. -6)
-        const wingOuterTipY = this.height * 0.85;  // Y-Position der Flügelspitze (breitere Flügel, ca. 23.8)
-        const wingInnerAttachX = bodyLength * 0.20; // Vordere Befestigung am Rumpf (ca. 8)
-        const wingInnerAttachY = bodyWidth / 2.4;   // Y-Position der vorderen Befestigung (ca. 9.3)
-        const wingRearAttachX = -bodyLength * 0.45; // Hintere Befestigung am Rumpf (stärkerer Pfeilwinkel, ca. -18)
-
-        ctx.fillStyle = '#4682B4'; // Stahlblau für die Flügel
-
-        // Oberer Flügel
-        ctx.beginPath();
-        ctx.moveTo(wingInnerAttachX, -wingInnerAttachY);      // Vorne innen
-        ctx.lineTo(wingOuterTipX, -wingOuterTipY);            // Außen an der Spitze (weiter außen)
-        ctx.lineTo(wingRearAttachX, -wingInnerAttachY * 0.9); // Hinten innen (leicht verjüngt)
-        ctx.closePath();
-        ctx.fill();
-
-        // Unterer Flügel
-        ctx.beginPath();
-        ctx.moveTo(wingInnerAttachX, wingInnerAttachY);       // Vorne innen (weiter außen)
-        ctx.lineTo(wingOuterTipX, wingOuterTipY);             // Außen an der Spitze (weiter außen)
-        ctx.lineTo(wingRearAttachX, wingInnerAttachY * 0.9);  // Hinten innen
-        ctx.closePath();
-        ctx.fill();
-
-        // Triebwerke
-        const nacelleLength = bodyLength * 0.20;    // Länge des Triebwerkgehäuses (ca. 8)
-        const nacelleThickness = bodyWidth * 0.22;  // Dicke des Gehäuses (ca. 4.9)
-        const nacelleOffsetY = bodyWidth * 0.18;    // Y-Abstand von der Schiffsmitte (ca. 4)
-        const nacelleStartX = -bodyLength / 2;      // Beginnt am Heck des Rumpfes (-20)
-
-        // Triebwerkgehäuse
-        ctx.fillStyle = 'darkslategrey';
-        // Oberes Gehäuse
-        ctx.fillRect(
-            nacelleStartX,
-            -nacelleOffsetY - nacelleThickness / 2,
-            nacelleLength,
-            nacelleThickness
-        );
-        // Unteres Gehäuse
-        ctx.fillRect(
-            nacelleStartX,
-            nacelleOffsetY - nacelleThickness / 2,
-            nacelleLength,
-            nacelleThickness
-        );
+        // Pixel-Art Rumpf, Flügel und Triebwerksgehäuse
+        drawPixelSprite(ctx, shipSprite, SHIP_DISPLAY_W, SHIP_DISPLAY_H);
 
         // Triebwerksstrahl/-glühen basierend auf thrustState
         if (this.thrustState === 'forward') {
@@ -175,14 +199,6 @@ class Ship {
             ctx.fillRect(nacelleStartX + nacelleLength, nacelleOffsetY - glowThickness / 2, glowDepth, glowThickness);
             ctx.restore();
         }
-
-        // Cockpit
-        ctx.fillStyle = 'skyblue';
-        ctx.beginPath();
-        const cockpitX = bodyLength * 0.28; // Weiter vorne auf der längeren Nase (ca. 11.2)
-        const cockpitRadius = bodyWidth * 0.18; // Etwas kleiner relativ zum Rumpf (ca. 4)
-        ctx.arc(cockpitX, 0, cockpitRadius, 0, Math.PI * 2);
-        ctx.fill();
 
         ctx.restore();
     }

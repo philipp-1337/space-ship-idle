@@ -1,6 +1,8 @@
 // homingMissile.js
 // Modul für Lenkraketen
 
+import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+
 // Konstanten für Raketenaussehen und Explosion
 const EXPLOSION_ANIMATION_DURATION = 30; // Frames
 const EXPLOSION_PARTICLE_COUNT = 35;
@@ -8,6 +10,77 @@ const EXPLOSION_SHOCKWAVE_MAX_RADIUS_FACTOR = 1.3; // Multiplikator für explosi
 
 const MISSILE_TRAIL_OPACITY = 0.7;
 const MISSILE_TRAIL_WIDTH_FACTOR = 0.6;
+
+// Pixel-Art Raketengrafik: einmalig aus den ursprünglichen Formen (radius=7,
+// der einzige im Spiel verwendete Wert) in niedriger Auflösung gerendert.
+const M_X_MIN = -16, M_X_MAX = 13, M_Y_MIN = -10, M_Y_MAX = 10;
+const MISSILE_SPRITE_W = 10, MISSILE_SPRITE_H = 7;
+const MISSILE_DISPLAY_W = M_X_MAX - M_X_MIN;
+const MISSILE_DISPLAY_H = M_Y_MAX - M_Y_MIN;
+
+const missileSprite = makePixelSprite(
+    MISSILE_SPRITE_W, MISSILE_SPRITE_H,
+    ['#8c1c1c', '#7c8896', '#4d5560', '#ff8a3d', '#ffc38a'],
+    '#1a1414',
+    (ctx) => {
+        const mx = x => (x - M_X_MIN) / (M_X_MAX - M_X_MIN) * MISSILE_SPRITE_W;
+        const my = y => (y - M_Y_MIN) / (M_Y_MAX - M_Y_MIN) * MISSILE_SPRITE_H;
+        const path = (pts, color) => {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            pts.forEach(([x, y], i) => {
+                const px = mx(x), py = my(y);
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            });
+            ctx.closePath();
+            ctx.fill();
+        };
+
+        const radius = 7;
+        const M_LENGTH = radius * 2.8;
+        const M_WIDTH = radius * 1.2;
+        const finSize = M_WIDTH * 0.8;
+
+        // Heckflossen
+        path([
+            [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
+            [-M_LENGTH * 0.4 - finSize, -M_WIDTH * 0.5 - finSize * 0.7],
+            [-M_LENGTH * 0.4 - finSize * 0.2, -M_WIDTH * 0.5],
+        ], '#8c1c1c');
+        path([
+            [-M_LENGTH * 0.4, M_WIDTH * 0.5],
+            [-M_LENGTH * 0.4 - finSize, M_WIDTH * 0.5 + finSize * 0.7],
+            [-M_LENGTH * 0.4 - finSize * 0.2, M_WIDTH * 0.5],
+        ], '#8c1c1c');
+
+        // Rumpf
+        path([
+            [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
+            [M_LENGTH * 0.5, -M_WIDTH * 0.5],
+            [M_LENGTH * 0.5, M_WIDTH * 0.5],
+            [-M_LENGTH * 0.4, M_WIDTH * 0.5],
+        ], '#7c8896');
+        // Rumpf-Schatten (unten)
+        path([
+            [-M_LENGTH * 0.4, 0],
+            [M_LENGTH * 0.5, 0],
+            [M_LENGTH * 0.5, M_WIDTH * 0.5],
+            [-M_LENGTH * 0.4, M_WIDTH * 0.5],
+        ], '#4d5560');
+
+        // Nasenspitze
+        path([
+            [M_LENGTH * 0.6, 0],
+            [M_LENGTH * 0.15, -M_WIDTH * 0.5],
+            [M_LENGTH * 0.15, M_WIDTH * 0.5],
+        ], '#ff8a3d');
+        path([
+            [M_LENGTH * 0.6, 0],
+            [M_LENGTH * 0.3, -M_WIDTH * 0.35],
+            [M_LENGTH * 0.35, 0],
+        ], '#ffc38a');
+    }
+);
 
 
 export default class HomingMissile {
@@ -156,44 +229,7 @@ export default class HomingMissile {
         const M_LENGTH = this.radius * 2.8; // Länge der Rakete
         const M_WIDTH = this.radius * 1.2;  // Breite des Rumpfes
 
-        // Haupt-Rumpf
-        ctx.fillStyle = "slateGray";
-        ctx.strokeStyle = "#444";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.rect(-M_LENGTH * 0.4, -M_WIDTH * 0.5, M_LENGTH * 0.9, M_WIDTH); // Startet etwas hinter der Spitze
-        ctx.fill();
-        ctx.stroke();
-
-        // Nasenspitze
-        ctx.fillStyle = this.color; // z.B. 'orange'
-        ctx.beginPath();
-        ctx.moveTo(M_LENGTH * 0.6, 0); // Spitze
-        ctx.lineTo(M_LENGTH * 0.6 - M_LENGTH * 0.45, -M_WIDTH * 0.5); // Basis der Spitze, verbindet mit Rumpf
-        ctx.lineTo(M_LENGTH * 0.6 - M_LENGTH * 0.45, M_WIDTH * 0.5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Heckflossen
-        ctx.fillStyle = "darkRed";
-        const finSize = M_WIDTH * 0.8;
-        // Obere Flosse
-        ctx.beginPath();
-        ctx.moveTo(-M_LENGTH * 0.4, -M_WIDTH * 0.5);
-        ctx.lineTo(-M_LENGTH * 0.4 - finSize, -M_WIDTH * 0.5 - finSize * 0.7);
-        ctx.lineTo(-M_LENGTH * 0.4 - finSize * 0.2, -M_WIDTH * 0.5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        // Untere Flosse
-        ctx.beginPath();
-        ctx.moveTo(-M_LENGTH * 0.4, M_WIDTH * 0.5);
-        ctx.lineTo(-M_LENGTH * 0.4 - finSize, M_WIDTH * 0.5 + finSize * 0.7);
-        ctx.lineTo(-M_LENGTH * 0.4 - finSize * 0.2, M_WIDTH * 0.5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        drawPixelSprite(ctx, missileSprite, MISSILE_DISPLAY_W * (this.radius / 7), MISSILE_DISPLAY_H * (this.radius / 7));
 
         // Kleiner Triebwerksstrahl
         const flameSize = M_WIDTH * 0.5;
