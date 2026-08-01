@@ -8,7 +8,7 @@
 		"zip": "npm run build && mkdir -p dist && zip -r dist/game.zip dist -x \"**/.DS_Store\""
 	},
 	"devDependencies": {
-		"@types/node": "^22.15.24",
+		"@types/node": "^26.1.2",
 		"vite": "^8.2.0"
 	}
 }
