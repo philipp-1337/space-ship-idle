@@ -1,18 +1,10 @@
-// homingMissile.js
-// Modul für Lenkraketen
-
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 
-// Konstanten für Raketenaussehen und Explosion
-const EXPLOSION_ANIMATION_DURATION = 30; // Frames
+const EXPLOSION_ANIMATION_DURATION = 30; 
 const EXPLOSION_PARTICLE_COUNT = 35;
-const EXPLOSION_SHOCKWAVE_MAX_RADIUS_FACTOR = 1.3; // Multiplikator für explosionRadius
+const EXPLOSION_SHOCKWAVE_MAX_RADIUS_FACTOR = 1.3; 
 
-const MISSILE_TRAIL_OPACITY = 0.7;
-const MISSILE_TRAIL_WIDTH_FACTOR = 0.6;
-
-// Pixel-Art Raketengrafik: einmalig aus den ursprünglichen Formen (radius=7,
-// der einzige im Spiel verwendete Wert) in niedriger Auflösung gerendert.
+// Erweiterte Palette mit Highlight-Grau ('#cdd2da') für mehr Plastizität
 const M_X_MIN = -16, M_X_MAX = 13, M_Y_MIN = -10, M_Y_MAX = 10;
 const MISSILE_SPRITE_W = 10, MISSILE_SPRITE_H = 7;
 const MISSILE_DISPLAY_W = M_X_MAX - M_X_MIN;
@@ -20,8 +12,8 @@ const MISSILE_DISPLAY_H = M_Y_MAX - M_Y_MIN;
 
 const missileSprite = makePixelSprite(
     MISSILE_SPRITE_W, MISSILE_SPRITE_H,
-    ['#8c1c1c', '#7c8896', '#4d5560', '#ff8a3d', '#ffc38a'],
-    '#1a1414',
+    ['#8c1c1c', '#7c8896', '#cdd2da', '#4d5560', '#ff8a3d', '#ffc38a'], 
+    '#15181e', // Kühlere, dunkle Outline (wie beim Schiff)
     (ctx) => {
         const mx = x => (x - M_X_MIN) / (M_X_MAX - M_X_MIN) * MISSILE_SPRITE_W;
         const my = y => (y - M_Y_MIN) / (M_Y_MAX - M_Y_MIN) * MISSILE_SPRITE_H;
@@ -53,17 +45,26 @@ const missileSprite = makePixelSprite(
             [-M_LENGTH * 0.4 - finSize * 0.2, M_WIDTH * 0.5],
         ], '#8c1c1c');
 
-        // Rumpf
+        // Rumpf Grundfarbe
         path([
             [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
             [M_LENGTH * 0.5, -M_WIDTH * 0.5],
             [M_LENGTH * 0.5, M_WIDTH * 0.5],
             [-M_LENGTH * 0.4, M_WIDTH * 0.5],
         ], '#7c8896');
+        
+        // Rumpf Highlight (Oben) - NEU für 3D Look
+        path([
+            [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
+            [M_LENGTH * 0.5, -M_WIDTH * 0.5],
+            [M_LENGTH * 0.5, 0],
+            [-M_LENGTH * 0.4, 0],
+        ], '#cdd2da');
+
         // Rumpf-Schatten (unten)
         path([
-            [-M_LENGTH * 0.4, 0],
-            [M_LENGTH * 0.5, 0],
+            [-M_LENGTH * 0.4, M_WIDTH * 0.2],
+            [M_LENGTH * 0.5, M_WIDTH * 0.2],
             [M_LENGTH * 0.5, M_WIDTH * 0.5],
             [-M_LENGTH * 0.4, M_WIDTH * 0.5],
         ], '#4d5560');
@@ -82,7 +83,6 @@ const missileSprite = makePixelSprite(
     }
 );
 
-
 export default class HomingMissile {
     constructor(x, y, target, options = {}) {
         this.x = x;
@@ -91,26 +91,25 @@ export default class HomingMissile {
         this.speed = options.speed || 2.2;
         this.angle = options.angle || 0;
         this.target = target;
-        this.turnSpeed = options.turnSpeed || 0.045; // wie stark die Rakete sich pro Frame drehen kann
-        this.life = options.life || 240; // Etwas längere Lebensdauer für mehr Orbit-Verhalten
-        this.exploded = false; // True, wenn Schaden angewendet wurde und Explosion beginnt
+        this.turnSpeed = options.turnSpeed || 0.045; 
+        this.life = options.life || 240; 
+        this.exploded = false; 
         this.explosionRadius = options.explosionRadius || 60;
         this.damage = options.damage || 6;
         this.color = options.color || 'orange';
-        this.trail = [];
-        this.trailMax = 12;
+        
+        // Trail wurde zu einem Partikelsystem umgebaut
+        this.trailParticles = []; 
         this.orbitPhase = Math.random() * Math.PI * 2;
         this.orbitRadius = options.orbitRadius || 50 + Math.random()*20;
 
-        // Für Explosionsanimation
-        this.isExploding = false; // True, während die Animation läuft
+        this.isExploding = false; 
         this.explosionFrame = 0;
         this.maxExplosionFrames = EXPLOSION_ANIMATION_DURATION;
         this.explosionParticles = [];
 
-        // Neue Eigenschaften für Verhalten bei Zielverlust
-        this.lostTargetGracePeriod = 0; // Zähler für Frames ohne Ziel
-        this.MAX_LOST_TARGET_GRACE_FRAMES = options.maxLostTargetGraceFrames || 90; // Ca. 1.5 Sekunden bei 60fps
+        this.lostTargetGracePeriod = 0; 
+        this.MAX_LOST_TARGET_GRACE_FRAMES = options.maxLostTargetGraceFrames || 90; 
     }
 
     update(enemies) {
@@ -119,12 +118,11 @@ export default class HomingMissile {
             this.updateExplosionParticles();
             return;
         }
-        if (this.exploded) return; // Wenn logisch explodiert, aber Animation noch nicht gestartet/beendet
+        if (this.exploded) return; 
 
         if (!this.target || !this.target.alive) {
-            this.target = null; // Ziel explizit entfernen
+            this.target = null; 
 
-            // Versuche, ein neues Ziel zu finden
             let closestNewTarget = null;
             let minDist = Infinity;
             for (const e of enemies) {
@@ -141,27 +139,22 @@ export default class HomingMissile {
 
             if (closestNewTarget) {
                 this.target = closestNewTarget;
-                this.lostTargetGracePeriod = 0; // Gnadenfrist zurücksetzen
-                // Orbit-Phase für sanfteren Übergang zum neuen Ziel anpassen
+                this.lostTargetGracePeriod = 0; 
                 this.orbitPhase = Math.atan2(this.target.y - this.y, this.target.x - this.x);
             } else {
-                // Kein neues Ziel gefunden, während der Gnadenfrist geradeaus fliegen
                 this.lostTargetGracePeriod++;
-                this.x += Math.cos(this.angle) * this.speed; // In aktueller Richtung weiterfliegen
+                this.x += Math.cos(this.angle) * this.speed; 
                 this.y += Math.sin(this.angle) * this.speed;
 
                 if (this.lostTargetGracePeriod > this.MAX_LOST_TARGET_GRACE_FRAMES) {
-                    this.life = 0; // Markiert für Detonation durch Ablaufen der Lebenszeit
+                    this.life = 0; 
                 }
             }
         }
 
-        // Wenn ein Ziel vorhanden ist (ursprünglich oder neu erfasst), Orbit-Logik ausführen
         if (this.target) {
-            // Sicherstellen, dass die Gnadenfrist zurückgesetzt ist, wenn ein Ziel vorhanden ist
             this.lostTargetGracePeriod = 0;
 
-            // Kreisbahn um Ziel
             this.orbitPhase += 0.13;
             const tx = this.target.x + Math.cos(this.orbitPhase) * this.orbitRadius;
             const ty = this.target.y + Math.sin(this.orbitPhase) * this.orbitRadius;
@@ -173,13 +166,27 @@ export default class HomingMissile {
             this.x += Math.cos(this.angle) * this.speed;
             this.y += Math.sin(this.angle) * this.speed;
         }
-        // Falls kein Ziel vorhanden ist, wurde die Bewegung bereits im Block "Kein neues Ziel gefunden" gehandhabt.
 
         this.life--;
 
-        // Trail
-        this.trail.push({x: this.x, y: this.y});
-        if (this.trail.length > this.trailMax) this.trail.shift();
+        // Blockiger Retro-Trail generieren
+        const M_LENGTH = this.radius * 2.8;
+        const tailX = this.x - Math.cos(this.angle) * (M_LENGTH * 0.4);
+        const tailY = this.y - Math.sin(this.angle) * (M_LENGTH * 0.4);
+        
+        // Füge jeden Frame ein Trail-Partikel hinzu
+        this.trailParticles.push({
+            x: tailX + (Math.random() - 0.5) * 2,
+            y: tailY + (Math.random() - 0.5) * 2,
+            size: 2 + Math.random() * 2,
+            life: 15,
+            maxLife: 15,
+            color: Math.random() > 0.4 ? '#ff8a3d' : '#8c1c1c'
+        });
+
+        // Trail updaten
+        this.trailParticles.forEach(p => p.life--);
+        this.trailParticles = this.trailParticles.filter(p => p.life > 0);
     }
 
     updateExplosionParticles() {
@@ -197,46 +204,23 @@ export default class HomingMissile {
             this.drawExplosion(ctx);
             return;
         }
-        if (this.exploded) return; // Nicht zeichnen, wenn logisch explodiert und Animation vorbei
+        if (this.exploded) return; 
 
-        // Raketenschweif (in Weltkoordinaten)
-        if (this.trail.length > 1) {
+        // Raketenschweif (Pixel-Partikel statt Vektorlinien)
+        this.trailParticles.forEach(p => {
             ctx.save();
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            for (let i = 0; i < this.trail.length - 1; i++) {
-                const p1 = this.trail[i];
-                const p2 = this.trail[i+1];
-                const segmentProgress = (i + 1) / this.trailMax;
-                const alpha = MISSILE_TRAIL_OPACITY * (1 - segmentProgress * 0.8);
-                const lineWidth = Math.max(1, (this.radius * MISSILE_TRAIL_WIDTH_FACTOR) * (1 - segmentProgress * 0.7));
-
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.strokeStyle = `rgba(255, ${165 + Math.floor(90 * (1-segmentProgress))}, 0, ${alpha})`;
-                ctx.lineWidth = lineWidth;
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-            }
+            ctx.globalAlpha = p.life / p.maxLife;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(Math.floor(p.x), Math.floor(p.y), Math.floor(p.size), Math.floor(p.size));
             ctx.restore();
-        }
+        });
 
         // Rakete zeichnen
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        const M_LENGTH = this.radius * 2.8; // Länge der Rakete
-        const M_WIDTH = this.radius * 1.2;  // Breite des Rumpfes
-
         drawPixelSprite(ctx, missileSprite, MISSILE_DISPLAY_W * (this.radius / 7), MISSILE_DISPLAY_H * (this.radius / 7));
-
-        // Kleiner Triebwerksstrahl
-        const flameSize = M_WIDTH * 0.5;
-        ctx.fillStyle = `rgba(255, ${Math.floor(180 + Math.random()*75)}, 0, 0.9)`;
-        ctx.beginPath();
-        ctx.ellipse(-M_LENGTH*0.4 - flameSize*0.6, 0, flameSize, flameSize*0.7, 0, 0, Math.PI*2);
-        ctx.fill();
 
         ctx.restore();
     }
@@ -249,68 +233,64 @@ export default class HomingMissile {
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // 1. Haupt-Feuerball
-        const fireballRadius = this.explosionRadius * Math.sin(progress * Math.PI * 0.5); // Smooth expansion
+        // 1. Blockiger Haupt-Feuerball (Quadrate statt Kreise/Gradienten)
+        const fireballRadius = this.explosionRadius * Math.sin(progress * Math.PI * 0.5); 
         const fireballAlpha = 1 - progress;
 
-        let grad = ctx.createRadialGradient(0, 0, 0, 0, 0, fireballRadius);
-        grad.addColorStop(0, `rgba(255, 255, 224, ${fireballAlpha * 0.95})`); // Hellgelb
-        grad.addColorStop(0.25, `rgba(255, 215, 0, ${fireballAlpha * 0.9})`);  // Gold
-        grad.addColorStop(0.55, `rgba(255, 140, 0, ${fireballAlpha * 0.8})`);  // Dunkelorange
-        grad.addColorStop(1, `rgba(255, 69, 0, ${fireballAlpha * 0.4})`);    // Rot-Orange, ausklingend
+        ctx.fillStyle = `rgba(255, 140, 0, ${fireballAlpha})`;
+        ctx.fillRect(-fireballRadius, -fireballRadius, fireballRadius * 2, fireballRadius * 2);
+        
+        ctx.fillStyle = `rgba(255, 215, 0, ${fireballAlpha * 0.9})`;
+        ctx.fillRect(-fireballRadius * 0.7, -fireballRadius * 0.7, fireballRadius * 1.4, fireballRadius * 1.4);
 
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(0, 0, fireballRadius, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = `rgba(255, 255, 224, ${fireballAlpha * 0.8})`;
+        ctx.fillRect(-fireballRadius * 0.3, -fireballRadius * 0.3, fireballRadius * 0.6, fireballRadius * 0.6);
 
-        // 2. Schockwelle
+        // 2. Blockige Schockwelle
         if (progress < 0.8) {
             const shockwaveRadius = this.explosionRadius * EXPLOSION_SHOCKWAVE_MAX_RADIUS_FACTOR * (progress / 0.8);
             const shockwaveAlpha = (1 - (progress / 0.8)) * 0.6;
             ctx.strokeStyle = `rgba(255, 220, 180, ${shockwaveAlpha})`;
-            ctx.lineWidth = 2 + 6 * (1 - (progress / 0.8)); // Wird dünner
-            ctx.beginPath();
-            ctx.arc(0, 0, shockwaveRadius, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.lineWidth = Math.max(1, Math.floor(6 * (1 - (progress / 0.8)))); 
+            
+            // Eckige Schockwelle
+            ctx.strokeRect(-shockwaveRadius, -shockwaveRadius, shockwaveRadius * 2, shockwaveRadius * 2);
         }
 
-        // 3. Partikel
+        // 3. Pixel-Partikel
         this.explosionParticles.forEach(p => {
             ctx.fillStyle = p.color;
             ctx.globalAlpha = p.alpha;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * (1 - progress * 0.5), 0, Math.PI * 2); // Partikel schrumpfen leicht
-            ctx.fill();
+            // Gefüllte Quadrate für Splitter
+            const size = Math.floor(p.size * (1 - progress * 0.5));
+            ctx.fillRect(Math.floor(p.x), Math.floor(p.y), size, size); 
         });
         ctx.globalAlpha = 1.0;
 
         ctx.restore();
     }
 
-    detonate(enemies, effectsSystem, rewardContext) { // rewardContext hinzugefügt
-        if (this.exploded || this.isExploding) return; // Verhindert mehrfache Detonation oder während Animation
+    detonate(enemies, effectsSystem, rewardContext) { 
+        if (this.exploded || this.isExploding) return; 
 
         this.exploded = true;
         this.isExploding = true;
         this.explosionFrame = 0;
         this.explosionParticles = [];
 
-        // Bildschirmerschütterung auslösen
         if (effectsSystem && typeof effectsSystem.triggerScreenShake === 'function') {
-            effectsSystem.triggerScreenShake(9, 12); // Stärkere Erschütterung
+            effectsSystem.triggerScreenShake(9, 12); 
         }
 
-        // Explosionspartikel erzeugen
         for (let i = 0; i < EXPLOSION_PARTICLE_COUNT; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 1.5 + Math.random() * 3.5;
             const life = this.maxExplosionFrames * 0.6 + Math.random() * (this.maxExplosionFrames * 0.4);
             this.explosionParticles.push({
-                x: 0, y: 0, // Relativ zum Raketenzentrum
+                x: 0, y: 0, 
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
-                size: Math.random() * 3.5 + 1.5,
+                size: Math.random() * 4 + 2, // Etwas größere Partikel für blockigen Look
                 color: ['#FFD700', '#FFA500', '#FF6347', '#FF4500', '#FF8C00'][Math.floor(Math.random() * 5)],
                 life: life,
                 initialLife: life,
@@ -318,9 +298,7 @@ export default class HomingMissile {
             });
         }
 
-        // Schaden an Gegnern im Radius
         for (const e of enemies) {
-            // Nur agieren, wenn Gegner aktiv ist und nicht schon explodiert
             if (e.alive && !e.exploding) {
                 const dx = e.x - this.x;
                 const dy = e.y - this.y;
@@ -329,9 +307,9 @@ export default class HomingMissile {
                 if (distanceToExplosion < this.explosionRadius + (e.size/2)) {
                     const wasAliveBeforeHit = e.hp > 0;
                     e.hp -= this.damage;
-                    e.hp = Math.max(0, e.hp); // Verhindere negative HP
+                    e.hp = Math.max(0, e.hp); 
 
-                    if (e.hp <= 0) { // Gegner durch diese Rakete zerstört
+                    if (e.hp <= 0) { 
                         if (wasAliveBeforeHit && !e.alreadyAwardedXP && rewardContext) {
                             rewardContext.xpPoints.push(new rewardContext.XP(e.x, e.y));
                             if (Math.random() < rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE) {
@@ -353,8 +331,8 @@ export default class HomingMissile {
                             rewardContext.killsRef.value++;
                             e.alreadyAwardedXP = true;
                         }
-                        e.destroy(); // Starte Zerstörungsanimation des Gegners
-                    } else if (wasAliveBeforeHit) { // Getroffen, aber nicht zerstört
+                        e.destroy(); 
+                    } else if (wasAliveBeforeHit) { 
                         if (!e.isHit) {
                            e.isHit = true;
                            e.hitTimer = e.hitDuration;
