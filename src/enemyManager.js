@@ -2,6 +2,7 @@
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy from './enemy.js'; // Added COLORS
 import { GAME_CONFIG, COLORS } from './constants.js';
+import { showEliteHint } from './ui.js';
 
 export let enemies = [];
 export let enemyLasers = [];
@@ -49,21 +50,7 @@ export function spawnEnemy(canvas, level, techUpgrades) {
 
         // Display hint if the tech upgrade is active
         if (techUpgrades && techUpgrades.eliteHint) {
-            let hint = document.getElementById('elite-hint');
-            if (!hint) {
-                hint = document.createElement('div');
-                hint.id = 'elite-hint';
-                // Styling for the hint
-                Object.assign(hint.style, {
-                    position: 'fixed', top: '80px', right: '18px', zIndex: '2000',
-                    background: 'gold', color: '#222', fontWeight: 'bold',
-                    fontSize: '20px', padding: '10px 24px', borderRadius: '12px',
-                    boxShadow: '0 2px 8px 0 #ff0'
-                });
-                document.body.appendChild(hint);
-            }
-            hint.innerText = 'Elite-Gegner gesichtet!';
-            setTimeout(() => { if (hint) hint.remove(); }, GAME_CONFIG.ELITE_HINT_DURATION);
+            showEliteHint(GAME_CONFIG.ELITE_HINT_DURATION);
         }
     }
 }

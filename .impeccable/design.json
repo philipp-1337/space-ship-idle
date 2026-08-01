@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-01T00:00:00.000Z",
+  "title": "Design System: Space Ship Idle",
+  "extensions": {
+    "colorMeta": {
+      "phosphor": { "role": "primary", "displayName": "Phosphor Green", "canonical": "#39ff6a", "tonalRamp": ["#0b3315","#19702f","#27ad48","#34eb62","#61ff88","#98ffb2","#ccffd8","#ebfff0"] },
+      "scope": { "role": "secondary", "displayName": "Scope Cyan", "canonical": "#7fe8ff", "tonalRamp": ["#192e33","#386670","#569ead","#75d5eb","#99edff","#bcf3ff","#def9ff","#f2fdff"] },
+      "caution": { "role": "tertiary", "displayName": "Caution Amber", "canonical": "#ffb000", "tonalRamp": ["#332300","#704d00","#ad7800","#eba200","#ffc033","#ffd67a","#ffeabd","#fff7e5"] },
+      "danger": { "role": "tertiary", "displayName": "Danger Red", "canonical": "#ff3b30", "tonalRamp": ["#330c0a","#701a15","#ad2821","#eb362c","#ff6259","#ff9993","#ffccc9","#ffebea"] },
+      "gold": { "role": "tertiary", "displayName": "Target Gold", "canonical": "#ffd23f", "tonalRamp": ["#332a0d","#705c1c","#ad8f2b","#ebc13a","#ffdb65","#ffe89b","#fff3cd","#fffbec"] },
+      "panel": { "role": "neutral", "displayName": "Panel", "canonical": "#0a0d0c", "tonalRamp": ["#020302","#040605","#070908","#090c0b","#3b3d3d","#808181","#bfc0c0","#e6e7e7"] },
+      "panel-raised": { "role": "neutral", "displayName": "Panel Raised", "canonical": "#101512" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgba(120,255,170,0.28)" },
+      "hairline-dim": { "role": "neutral", "displayName": "Hairline Dim", "canonical": "rgba(120,255,170,0.14)" },
+      "scrim": { "role": "neutral", "displayName": "Scrim", "canonical": "rgba(2,4,3,0.86)" },
+      "void": { "role": "neutral", "displayName": "Void", "canonical": "#000000" },
+      "text-primary": { "role": "neutral", "displayName": "Text Primary", "canonical": "#e8fff0" },
+      "text-dim": { "role": "neutral", "displayName": "Text Dim", "canonical": "rgba(232,255,240,0.62)" }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Modal headers (Flight Paused, Tech Tree, Systems Failure, Upgrade Available)." },
+      "numeral": { "displayName": "Numeral", "purpose": "Dial sub-readouts and stat values — tabular figures." },
+      "body": { "displayName": "Body", "purpose": "Stat rows, modal descriptions, button copy." },
+      "label": { "displayName": "Label", "purpose": "Dial captions, XP tape mark, annunciator/cost text — tracked small caps." }
+    },
+    "shadows": [
+      { "name": "dial-glow", "value": "0 0 6px 0 <role-dim>, inset 0 0 10px 1px rgba(0,0,0,0.6)", "purpose": "Resting glow on the Level/Plasma dial faces, role-tinted." },
+      { "name": "button-backlit-idle", "value": "0 0 6px 0 <glow>", "purpose": "Resting glow on an idle (backlit-outline) console button." },
+      { "name": "button-backlit-hover", "value": "0 0 18px 3px <glow>", "purpose": "Hover glow on any console button." },
+      { "name": "button-backlit-engaged", "value": "0 0 14px 2px <glow>", "purpose": "Resting glow on an engaged (filled) console button." },
+      { "name": "modal-glow", "value": "0 0 36px 2px <accent>33, 0 4px 24px 0 rgba(0,0,0,0.6)", "purpose": "Accent-tinted halo plus real offset shadow for modal panel lift over the scrim." },
+      { "name": "xp-tape-fill-glow", "value": "0 0 10px 1px rgba(57,255,106,0.65)", "purpose": "Leading-edge glow on the XP tape fill." },
+      { "name": "annunciator-glow", "value": "0 0 16px 1px <role>66", "purpose": "Wave-caution and elite-contact toast glow, paired with a 1s opacity flash." }
+    ],
+    "motion": [
+      { "name": "needle-settle", "value": "transform, cubic-bezier(0.22, 1.12, 0.36, 1), 600ms", "purpose": "Instrument dial needle sweep-and-settle on Level/Plasma update — a subtle, physically-motivated overshoot (deliberately toned down from the old system's more aggressive bounce)." },
+      { "name": "tape-fill", "value": "width, cubic-bezier(0.22, 1.12, 0.36, 1), 400ms", "purpose": "XP tape fill transition, same damped-settle character as the needle." },
+      { "name": "lamp-flash", "value": "opacity, ease-in-out, 1s infinite (50% -> 0.72)", "purpose": "Annunciator toast status-lamp pulse." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Instrument Dial",
+      "kind": "custom",
+      "refersTo": "instrument-dial",
+      "description": "Level/Plasma readout — circular tick-marked gauge, glowing needle, tabular-mono digital sub-readout, tracked caption below.",
+      "html": "<div class=\"ds-dial\"><div class=\"ds-dial-face\"><div class=\"ds-dial-readout\">04</div></div><div class=\"ds-dial-label\">Level</div></div>",
+      "css": ".ds-dial { display: flex; flex-direction: column; align-items: center; width: 64px; font-family: 'IBM Plex Mono', monospace; } .ds-dial-face { position: relative; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #101512 0%, #0a0d0c 78%); border: 1px solid rgba(120,255,170,0.28); box-shadow: 0 0 10px 1px rgba(0,0,0,0.6) inset, 0 0 6px 0 rgba(57,255,106,0.65); box-sizing: border-box; } .ds-dial-readout { position: absolute; left: 50%; bottom: 11px; transform: translateX(-50%); font-weight: 600; font-size: 11px; color: #e8fff0; text-shadow: 0 0 4px rgba(57,255,106,0.65); font-variant-numeric: tabular-nums; } .ds-dial-label { margin-top: 4px; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(57,255,106,0.65); }"
+    },
+    {
+      "name": "Primary Button (engaged)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Confirm-forward action (Resume, Restart-on-game-over) — filled phosphor, void-black text, the 'engaged/lit switch' state.",
+      "html": "<button class=\"ds-btn-primary\">Resume</button>",
+      "css": ".ds-btn-primary { background: #39ff6a; color: #000000; font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 26px; border: 1px solid #39ff6a; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px); box-shadow: 0 0 14px 2px rgba(57,255,106,0.65); cursor: pointer; } .ds-btn-primary:hover { box-shadow: 0 0 18px 3px rgba(57,255,106,0.65); } .ds-btn-primary:focus-visible { outline: 2px solid #39ff6a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Danger Button (idle/backlit)",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action (pause-menu Restart) — dark panel, red hairline border and legend text, backlit-outline idle state.",
+      "html": "<button class=\"ds-btn-danger\">Restart</button>",
+      "css": ".ds-btn-danger { background: #0a0d0c; color: #ff3b30; font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 26px; border: 1px solid #ff3b30; clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px); box-shadow: 0 0 6px 0 rgba(255,59,48,0.5); cursor: pointer; } .ds-btn-danger:hover { box-shadow: 0 0 18px 3px rgba(255,59,48,0.5); } .ds-btn-danger:focus-visible { outline: 2px solid #39ff6a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Console Panel Modal",
+      "kind": "custom",
+      "refersTo": "console-panel-modal",
+      "description": "Shop / pause / tech-tree / game-over container — centered chamfered panel with a title bar and status lamp, over a full-viewport scrim.",
+      "html": "<div class=\"ds-modal-scrim\"><div class=\"ds-modal-panel\"><div class=\"ds-modal-title-bar\"><h2>Flight Paused</h2><div class=\"ds-modal-lamp\"></div></div></div></div>",
+      "css": ".ds-modal-scrim { position: fixed; inset: 0; background: rgba(2,4,3,0.86); display: flex; align-items: center; justify-content: center; } .ds-modal-panel { background: #0a0d0c; border: 1px solid rgba(57,255,106,0.33); clip-path: polygon(20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px); box-shadow: 0 0 36px 2px rgba(57,255,106,0.2), 0 4px 24px 0 rgba(0,0,0,0.6); padding: 28px 32px; max-width: min(92vw, 420px); } .ds-modal-title-bar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; margin-bottom: 18px; border-bottom: 1px solid rgba(120,255,170,0.14); } .ds-modal-title-bar h2 { margin: 0; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; color: #39ff6a; text-shadow: 0 0 6px #39ff6a55; } .ds-modal-lamp { width: 8px; height: 8px; border-radius: 50%; background: #39ff6a; box-shadow: 0 0 6px 1px #39ff6a; }"
+    },
+    {
+      "name": "Annunciator Toast",
+      "kind": "custom",
+      "refersTo": "annunciator-toast",
+      "description": "Wave-caution (amber) and elite-contact (gold) status toasts — chamfered panel, pulsing lamp, tracked-caps message.",
+      "html": "<div class=\"ds-annunciator\"><div class=\"ds-annunciator-lamp\"></div><span>Caution &mdash; Enemy Wave Incoming</span></div>",
+      "css": ".ds-annunciator { display: flex; align-items: center; gap: 10px; padding: 9px 20px; background: #0a0d0c; border: 1px solid #ffb000; clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px); box-shadow: 0 0 16px 1px #ffb00066; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #ffb000; animation: ds-lamp-flash 1s ease-in-out infinite; } .ds-annunciator-lamp { width: 8px; height: 8px; border-radius: 50%; background: #ffb000; box-shadow: 0 0 6px 1px #ffb000; flex-shrink: 0; } @keyframes ds-lamp-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Night-Flight Console",
+    "overview": "The HUD reads as an actual cockpit instrument panel, not a themed dashboard. You're not glancing at floating pills — you're cross-checking a glass panel at night with nothing outside the canopy but the void: round tick-marked dial gauges with damped needles, hard-edged chamfered (cut-corner) console panels, backlit-legend switches instead of solid pill buttons, and annunciator lamps that stay dark until something is genuinely wrong. A thin scanline + vignette overlay sits over the whole viewport, like looking through cockpit glass. The color system is literalized as real annunciator-panel convention: phosphor green means normal/go/life, amber means anticipatory caution, red means true danger or a destructive action, and gold marks a target of opportunity (the elite scanner). Nothing lights up amber or red unless it means it — that restraint is the point. The procedural pixel-art ship/enemy/pickup sprites and all gameplay-signal colors are a separate, untouched layer beneath this HUD redesign; this system governs chrome only.",
+    "keyCharacteristics": [
+      "Near-black gunmetal panels with a chamfered (cut-corner) silhouette everywhere a rounded corner used to be — the one exception is the circular instrument dials themselves.",
+      "Colored glow is still the system's only depth signal, but it now reads as a backlit legend (an annunciator lamp or an illuminated switch) rather than a decorative halo.",
+      "Round tick-marked dial gauges with a damped-needle settle animation for Level and Plasma, backed by a real tabular-mono digital sub-readout.",
+      "IBM Plex Mono is used everywhere: numerals, labels, titles, body copy — the project's first deliberate typeface choice.",
+      "Modals are centered chamfered console panels with a dark scrim behind them, not full-viewport flush-top sheets — this supersedes the old Flush-Top Modal Rule."
+    ],
+    "rules": [
+      { "name": "The Annunciator Rule", "body": "A color only appears when its status is true. Amber and red are never decorative — if nothing amber or red is lit, nothing needs your attention.", "section": "colors" },
+      { "name": "The Real-Data Rule", "body": "Monospace is only ever attached to a number, a measurement, or a control's own legend — never dropped onto prose to signal 'technical'.", "section": "typography" },
+      { "name": "The Backlit-Legend Rule", "body": "A zero-offset colored glow is only earned when it represents a real backlit instrument, never a generic 'lifted card' effect. Where real physical lift is needed (a modal over the scrim), pair the glow with an actual offset shadow.", "section": "elevation" },
+      { "name": "The Chamfer Rule", "body": "Corners are cut, not curved. A border-radius on a console surface is a regression to the old world; use clip-path chamfering instead. Dial gauges are the sole exception.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do clip new console surfaces with the chamfer clip-path, not border-radius — the one exception is a genuine circular gauge face.",
+      "Do keep amber and red strictly status-true: amber for anticipatory caution, red for real danger or destructive actions, never decorative.",
+      "Do route all new HUD text through IBM Plex Mono, and only reach for it because the content is a number, measurement, or control legend.",
+      "Do scale both element sizes and fixed position offsets through MOBILE.UI_SCALE_FACTOR — a size-only scale caused a real collision bug in this pass.",
+      "Do route new game-entity art through makePixelSprite/drawPixelSprite, and leave gameplay-signal colors (src/constants.js COLORS) alone.",
+      "Do give an 'engaged' (filled, void-text) state to any new confirm/unlocked control, distinct from the default backlit-outline idle state."
+    ],
+    "donts": [
+      "Don't bring back rounded pills, glassmorphism, or a flush-top full-bleed modal — those belong to the previous world and were deliberately replaced.",
+      "Don't add glossy gradients, embossed bevels, or skeuomorphic chrome — a rendered-console (CD-ROM-chrome-style) direction was explicitly considered and rejected for this reason.",
+      "Don't use red for anticipatory/warning states — that's Caution Amber's role now; red is reserved for true danger and destructive actions.",
+      "Don't introduce a second display typeface as a side effect of an unrelated task — IBM Plex Mono is now the system's one deliberate choice.",
+      "Don't add a neutral gray 'lifted card' shadow; every glow must represent a real backlit instrument."
+    ]
+  }
+}

@@ -93,12 +93,33 @@ export class InputManager {
         joystickBase.style.bottom = '36px';
         joystickBase.style.width = joystickSize + 'px';
         joystickBase.style.height = joystickSize + 'px';
-        joystickBase.style.background = 'rgba(60,60,60,0.18)';
+        joystickBase.style.background = 'rgba(10,13,12,0.55)';
         joystickBase.style.borderRadius = '50%';
         joystickBase.style.pointerEvents = 'auto';
         joystickBase.style.touchAction = 'none';
-        joystickBase.style.border = '2px solid #444';
+        joystickBase.style.border = '1px solid rgba(57,255,106,0.35)';
+        joystickBase.style.boxShadow = '0 0 12px 1px rgba(57,255,106,0.18) inset, 0 0 8px 0 rgba(57,255,106,0.15)';
         joystickBase.style.boxSizing = 'border-box';
+
+        // Crosshair ticks, matching the console's instrument-dial language.
+        for (let i = 0; i < 4; i++) {
+            const tick = document.createElement('div');
+            const horizontal = i % 2 === 0;
+            tick.style.position = 'absolute';
+            tick.style.background = 'rgba(57,255,106,0.3)';
+            if (horizontal) {
+                tick.style.width = '10px';
+                tick.style.height = '1px';
+                tick.style.top = '50%';
+                tick.style[i === 0 ? 'left' : 'right'] = '6px';
+            } else {
+                tick.style.width = '1px';
+                tick.style.height = '10px';
+                tick.style.left = '50%';
+                tick.style[i === 1 ? 'top' : 'bottom'] = '6px';
+            }
+            joystickBase.appendChild(tick);
+        }
 
         const joystickStick = document.createElement('div');
         joystickStick.style.position = 'absolute';
@@ -106,9 +127,10 @@ export class InputManager {
         joystickStick.style.top = (joystickSize/2 - stickSize/2) + 'px';
         joystickStick.style.width = stickSize + 'px';
         joystickStick.style.height = stickSize + 'px';
-        joystickStick.style.background = 'rgba(200,200,200,0.85)';
+        joystickStick.style.background = '#39ff6a';
         joystickStick.style.borderRadius = '50%';
-        joystickStick.style.border = '2px solid #888';
+        joystickStick.style.border = '1px solid rgba(232,255,240,0.9)';
+        joystickStick.style.boxShadow = '0 0 10px 3px rgba(57,255,106,0.7)';
         joystickStick.style.boxSizing = 'border-box';
         joystickStick.style.transition = 'left 0.08s, top 0.08s';
         
@@ -222,30 +244,57 @@ export class InputManager {
 
     createShootButton(container) {
         const shootBtn = document.createElement('button');
-        shootBtn.innerText = '⦿';
+        shootBtn.innerHTML = `<svg width="42%" height="42%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            <line x1="12" y1="0.5" x2="12" y2="4.5" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="12" y1="19.5" x2="12" y2="23.5" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="0.5" y1="12" x2="4.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="19.5" y1="12" x2="23.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
+        </svg>`;
+        shootBtn.setAttribute('aria-label', 'Fire');
         shootBtn.style.position = 'absolute';
         shootBtn.style.right = '64px';
         shootBtn.style.bottom = '96px';
         shootBtn.style.width = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
         shootBtn.style.height = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
-        shootBtn.style.fontSize = '76px';
+        shootBtn.style.display = 'flex';
+        shootBtn.style.alignItems = 'center';
+        shootBtn.style.justifyContent = 'center';
         shootBtn.style.borderRadius = '50%';
-        shootBtn.style.border = 'none';
-        shootBtn.style.background = '#e74c3c';
-        shootBtn.style.color = 'white';
+        shootBtn.style.boxSizing = 'border-box';
         shootBtn.style.pointerEvents = 'auto';
         shootBtn.style.touchAction = 'none';
-        
+
+        const idleStyle = () => {
+            shootBtn.style.border = '1px solid rgba(255,59,48,0.6)';
+            shootBtn.style.background = 'rgba(10,13,12,0.55)';
+            shootBtn.style.color = '#ff3b30';
+            shootBtn.style.boxShadow = '0 0 16px 1px rgba(255,59,48,0.25)';
+        };
+        const engagedStyle = () => {
+            shootBtn.style.border = '1px solid #ff3b30';
+            shootBtn.style.background = '#ff3b30';
+            shootBtn.style.color = '#0a0d0c';
+            shootBtn.style.boxShadow = '0 0 22px 5px rgba(255,59,48,0.6)';
+        };
+        idleStyle();
+        shootBtn.style.transition = 'transform 0.08s, box-shadow 0.08s, background 0.08s, color 0.08s';
+
         shootBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.keys.shooting = true;
+            shootBtn.style.transform = 'scale(0.92)';
+            engagedStyle();
         });
-        
+
         shootBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
             this.keys.shooting = false;
+            shootBtn.style.transform = 'scale(1)';
+            idleStyle();
         });
-        
+
         container.appendChild(shootBtn);
     }
 
