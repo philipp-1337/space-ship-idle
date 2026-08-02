@@ -101,7 +101,7 @@ export default class HomingMissile {
     constructor(x, y, target, options = {}) {
         this.x = x;
         this.y = y;
-        this.radius = options.radius || 7;
+        this.radius = options.radius || 4; // Reduziert von 7, damit die Rakete im Verhältnis zum Schiff kleiner ist
         this.speed = options.speed || 2.2;
         this.angle = options.angle || 0;
         this.target = target;
