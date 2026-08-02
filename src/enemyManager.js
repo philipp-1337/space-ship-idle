@@ -2,7 +2,6 @@
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy from './enemy.js'; // Added COLORS
 import { GAME_CONFIG, COLORS } from './constants.js';
-import { scale, INK, annunciator } from './ui.js';
 
 export let enemies = [];
 export let enemyLasers = [];
