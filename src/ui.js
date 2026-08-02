@@ -194,13 +194,7 @@ function buildInstrumentDial({ id, captionText, color, glowColor }) {
     return { wrap, needle, readout };
 }
 
-function sweepNeedle(needle) {
-    needle.style.transform = 'rotate(-46deg)';
-    requestAnimationFrame(() => {
-        setTimeout(() => { needle.style.transform = 'rotate(28deg)'; }, 160);
-        setTimeout(() => { needle.style.transform = 'rotate(0deg)'; }, 420);
-    });
-}
+// Der 'sweepNeedle'-Flourish wurde entfernt, stattdessen rotieren die Nadeln nun dynamisch.
 
 // ---------------------------------------------------------------------------
 // XP tape — a horizontal instrument strip along the top edge, ticked every
@@ -267,7 +261,8 @@ export function displayLevel(level, pop = false) {
         document.body.appendChild(_levelDial.wrap);
     }
     _levelDial.readout.innerText = String(level).padStart(2, '0');
-    if (pop) sweepNeedle(_levelDial.needle);
+    // 1 Level = 30 Grad (1 voller Kreis = 12 Level)
+    _levelDial.needle.style.transform = `rotate(${(level - 1) * 30}deg)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -282,7 +277,8 @@ export function updatePlasmaUI(count) {
         document.body.appendChild(_plasmaDial.wrap);
     }
     _plasmaDial.readout.innerText = String(count);
-    sweepNeedle(_plasmaDial.needle);
+    // 1 Plasma = 15 Grad (1 voller Kreis = 24 Plasma)
+    _plasmaDial.needle.style.transform = `rotate(${count * 15}deg)`;
 }
 
 export function initializeUI() {
