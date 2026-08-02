@@ -67,8 +67,14 @@ function updateShipMovement() {
             const nx = dx / dist, ny = dy / dist;
             ship.vx += nx * accel;
             ship.vy += ny * accel;
-            // Optional: Schiff in Bewegungsrichtung drehen
-            ship.angle = Math.atan2(ny, nx);
+            // Schiff geschmeidig in Bewegungsrichtung drehen (Lerp)
+            const targetAngle = Math.atan2(ny, nx);
+            let diff = targetAngle - ship.angle;
+            // Normalisiere den Winkel auf -PI bis PI, damit es nicht "außenrum" dreht
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            ship.angle += diff * 0.15;
+            
             ship.thrustState = 'forward';
         } else {
             ship.thrustState = 'none';
