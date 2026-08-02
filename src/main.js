@@ -3,12 +3,13 @@ import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, 
 import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
+import TractorItem from './tractorItem.js';
 import { updateExperienceBar, displayLevel, updateHullUI, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, displayStartScreen, displaySettingsButton, showSettingsMenu } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
 import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI } from './upgrades.js'; // plasmaCount entfernt
-import { handleXpCollection, handlePlasmaCollection } from './collectibles.js';
+import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
 
 initializeUI();
@@ -60,6 +61,7 @@ const ship = new Ship(window.logicalWidth / 2, window.logicalHeight / 2);
 const lasers = [];
 const xpPoints = [];
 const plasmaCells = [];
+const tractorItems = [];
 let experience = 0;
 let level = 1;
 let maxXP = 5;
@@ -97,7 +99,8 @@ function updateShipMovement() {
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) {
             // Accelerate based on joystick distance
-            const normalizedDist = Math.min(dist / 52, 1); // 52 is roughly max dist
+            const maxDist = TOUCH_CONTROLS.JOYSTICK_SIZE / 2 - TOUCH_CONTROLS.JOYSTICK_STICK_SIZE / 2;
+            const normalizedDist = Math.min(dist / maxDist, 1);
             const accel = normalizedDist * ship.acceleration;
             const nx = dx / dist, ny = dy / dist;
             ship.vx += nx * accel;
@@ -143,6 +146,7 @@ function updateShipMovement() {
             lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
             enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
             plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
+            tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
             effectsSystem.moveXpParticles(offsetX, offsetY); // Korrekt über EffectsSystem
         }
         ship.x = nextX;
@@ -229,6 +233,7 @@ function updateShipMovement() {
         lasers.forEach(l => { if (l && typeof l.x === 'number') { l.x += offsetX; l.y += offsetY; } });
         enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
         plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
+        tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
     }
     ship.x = nextX;
     ship.y = nextY;
@@ -354,9 +359,9 @@ function syncRefsToVars() {
 window.syncRefsToVars = syncRefsToVars;
 
 const gameLoop = createGameLoop({
-    ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
+    ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
-    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection, spawnEnemyWave, showWaveHint, showOverdriveHint,
+    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, showWaveHint, showOverdriveHint,
     displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -373,17 +378,17 @@ loadTechUpgrades();
 loadPlasmaCount();
 setupPlasmaUI();
 window.updatePlasmaUI(upgrades.plasmaCount);
+window.getPlasmaCount = () => upgrades.plasmaCount;
 
 // --- NEU: Callback für TechTree-Änderungen ---
 window.onTechTreeChanged = function() {
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 };
 
-// Pre-Flight Check: Schwierigkeit wählen, bevor Loop und Gegner-Spawning beginnen
-displayStartScreen((mode) => {
+function applySettings(mode, controlsVisible) {
     easyModeRef.value = mode === 'easy';
-    // Handicap statt sichtbarer Änderung: Gegner-HP wird beim Spawnen halbiert (enemy.js)
     if (easyModeRef.value) grantEasyModeArmorBonus();
+    if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(controlsVisible);
 
     gameLoop();
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
@@ -397,13 +402,29 @@ displayStartScreen((mode) => {
             onDifficultyChange: (nextMode) => {
                 easyModeRef.value = nextMode === 'easy';
                 if (easyModeRef.value) grantEasyModeArmorBonus();
+                const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
+                settings.mode = nextMode;
+                localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
             },
             onToggleControls: (visible) => {
                 if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(visible);
+                const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
+                settings.controlsVisible = visible;
+                localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
             }
         });
     });
-});
+}
+
+const savedSettings = JSON.parse(localStorage.getItem('spaceShipIdleSettings'));
+if (savedSettings && savedSettings.mode) {
+    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false);
+} else {
+    displayStartScreen((mode) => {
+        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true }));
+        applySettings(mode, true);
+    });
+}
 // --- GAME LOOP ENDE ---
 
 // Nach jedem Shop-Upgrade und Level-Up synchronisieren

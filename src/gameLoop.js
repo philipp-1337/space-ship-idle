@@ -12,9 +12,9 @@ const LASER_HIT_QUERY_RADIUS = 35;
 
 export function createGameLoop(context) {
     const {
-        ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
+        ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
-        ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
+        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave,
         displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -25,7 +25,6 @@ export function createGameLoop(context) {
     let lastMissileTime = 0;
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
-    const { spawnEnemyWave } = context; // spawnEnemyWave aus dem Kontext holen
 
     // Gemeinsame Belohnungslogik für einen getöteten Gegner — genutzt vom
     // direkten Lasertreffer UND vom Explosive-Rounds-Flächenschaden, damit
@@ -51,6 +50,12 @@ export function createGameLoop(context) {
                 py = Math.max(24, Math.min(canvas.height - 24, py));
                 plasmaCells.push(new PlasmaCell(px, py));
             }
+            
+            // Random drop chance for Tractor Pulse Item (e.g. 1%)
+            if (Math.random() < 0.01) {
+                tractorItems.push(new TractorItem(enemy.x, enemy.y));
+            }
+            
             killsRef.value++;
             enemy.alreadyAwardedXP = true; // XP für diesen Gegner wurde vergeben
         }
@@ -289,6 +294,8 @@ export function createGameLoop(context) {
         );
         if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
         handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx);
+        handleTractorCollection(ship, tractorItems, effectsSystem, ctx);
+
         for (let idx = enemyLasers.length - 1; idx >= 0; idx--) {
             const l = enemyLasers[idx];
             l.x += Math.cos(l.angle) * l.speed;

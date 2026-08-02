@@ -26,8 +26,12 @@ export let techUpgrades = {
 
 // Manche Tech-Upgrades setzen ein anderes voraus (Baum-Struktur im Tech-Tree-UI)
 export const TECH_PREREQUISITES = {
+    rapidFire: 'autoShoot',
     homingMissile: 'autoShoot',
-    twinMissiles: 'homingMissile'
+    piercing: 'autoShoot',
+    salvage: 'rapidFire',
+    twinMissiles: 'homingMissile',
+    explosiveRounds: 'piercing'
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {

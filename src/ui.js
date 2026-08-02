@@ -522,8 +522,7 @@ export function displayShopModal(onUpgrade) {
         { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.' },
         { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.` },
         { key: 'speed', label: "Ship Speed", desc: "Increases your ship's maximum speed." },
-        { key: 'armor', label: 'Armor Plating', desc: 'Adds a hull point and fully repairs your ship.' },
-        { key: 'collectorPulse', label: 'Tractor Pulse', desc: 'One-time burst: instantly pulls every XP and Plasma orb on the field to your ship.' }
+        { key: 'armor', label: 'Armor Plating', desc: 'Adds a hull point and fully repairs your ship.' }
     ];
     // Randomisiere Auswahl UND Reihenfolge, damit nicht jedes Level-Up dieselben
     // drei Optionen in derselben Reihenfolge zeigt (Fisher-Yates shuffle).
@@ -606,18 +605,9 @@ export function displaySettingsButton(onClick) {
     if (document.getElementById('settings-btn')) return;
     const btn = document.createElement('button');
     btn.id = 'settings-btn';
-    btn.innerHTML = `<svg width="${scaleNum(15)}" height="${scaleNum(15)}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="3.2" stroke="${INK.phosphor}" stroke-width="1.8"/>
-        <g stroke="${INK.phosphor}" stroke-width="2" stroke-linecap="round">
-            <line x1="12" y1="1.5" x2="12" y2="5"/>
-            <line x1="12" y1="19" x2="12" y2="22.5"/>
-            <line x1="1.5" y1="12" x2="5" y2="12"/>
-            <line x1="19" y1="12" x2="22.5" y2="12"/>
-            <line x1="4.4" y1="4.4" x2="6.8" y2="6.8"/>
-            <line x1="17.2" y1="17.2" x2="19.6" y2="19.6"/>
-            <line x1="4.4" y1="19.6" x2="6.8" y2="17.2"/>
-            <line x1="17.2" y1="6.8" x2="19.6" y2="4.4"/>
-        </g>
+    btn.innerHTML = `<svg width="${scaleNum(16)}" height="${scaleNum(16)}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="${INK.phosphor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="12" r="3" stroke="${INK.phosphor}" stroke-width="2"/>
     </svg>`;
     btn.setAttribute('aria-label', 'Settings');
     btn.style.position = 'fixed';
@@ -878,13 +868,22 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     details.appendChild(desc);
 
     if (purchasable) {
+        const canAfford = typeof window !== 'undefined' && window.getPlasmaCount ? window.getPlasmaCount() >= upg.cost : true;
         const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 11 });
         confirmBtn.style.width = '100%';
         confirmBtn.style.padding = `${scale(8)} ${scale(12)}`;
-        confirmBtn.onclick = (e) => {
-            e.stopPropagation();
-            onUpgrade(upg.key, upg.cost);
-        };
+        
+        if (!canAfford) {
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            confirmBtn.style.cursor = 'not-allowed';
+            confirmBtn.innerHTML = `Not enough Plasma &mdash; ${costLabel}`;
+        } else {
+            confirmBtn.onclick = (e) => {
+                e.stopPropagation();
+                onUpgrade(upg.key, upg.cost);
+            };
+        }
         details.appendChild(confirmBtn);
     }
 
@@ -912,21 +911,15 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     panel.style.overflowY = 'auto';
     panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
 
-    // Branching layout: tier-1 nodes side by side (wrapping at 3 per row),
-    // then Homing Missiles gated on Auto-Fire, then Twin Missiles gated on
-    // Homing Missiles — both chained nodes stay centered under Auto-Fire's
-    // column, connected by vertical lines.
-    const tier1 = [
-
-        { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4 },
-        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies instead of stopping on the first hit.', cost: 6 },
-        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal small splash damage to enemies near the impact.', cost: 6 },
-        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8 },
-        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8 }
+    const nodes = [
+        { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
+        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 1, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 5, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
+        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 2, row: 5, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 3, row: 5, requires: 'piercing', requiresLabel: 'Piercing Rounds' }
     ];
-    const chainColumn = 1; // 0-indexed column under 'autoShoot' (tier1[1])
-    const tier2 = { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies in a circling orbit and deal area damage.', cost: 10, requires: 'autoShoot', requiresLabel: 'Auto-Fire' };
-    const tier3 = { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley instead of one.', cost: 14, requires: 'homingMissile', requiresLabel: 'Homing Missiles' };
 
     const grid = document.createElement('div');
     grid.className = 'tt-grid';
@@ -938,38 +931,78 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     grid.style.width = '100%';
     grid.style.marginBottom = scale(4);
 
-    let row = 1;
-    for (let r = 0; r * 3 < tier1.length; r++) {
-        tier1.slice(r * 3, r * 3 + 3).forEach((upg, i) => {
-            const node = techTreeNode(upg, !!upgrades[upg.key], false, onUpgrade);
-            node.style.gridColumn = String(i + 1);
-            node.style.gridRow = String(row);
-            grid.appendChild(node);
-        });
-        row++;
+    // Draw Connectors
+    const drawConnector = (col, row, type, active) => {
+        const c = document.createElement('div');
+        c.className = 'tt-connector';
+        c.style.gridColumn = String(col);
+        c.style.gridRow = String(row);
+        c.style.borderColor = active ? INK.scope : INK.hairlineDim;
+        if (type === 'v') {
+            c.style.borderLeft = '2px solid';
+            c.style.width = '0';
+            c.style.height = '100%';
+            c.style.justifySelf = 'center';
+        } else if (type === 'h') {
+            c.style.borderTop = '2px solid';
+            c.style.height = '0';
+            c.style.width = '100%';
+            c.style.alignSelf = 'center';
+        } else if (type === 'branch') {
+            c.style.borderTop = '2px solid';
+            c.style.borderLeft = '2px solid';
+            c.style.borderRight = '2px solid';
+            c.style.height = '100%';
+            c.style.width = 'calc(100% + ' + scale(8) + ')'; // span gap
+            c.style.marginLeft = 'calc(-50% - ' + scale(4) + ')';
+            c.style.alignSelf = 'start';
+            // Not perfect with CSS grid but a vertical line in center works too
+        }
+        grid.appendChild(c);
     }
+    
+    // AutoShoot -> level 2
+    const c1 = document.createElement('div');
+    c1.className = 'tt-connector';
+    c1.style.gridColumn = '1 / 4';
+    c1.style.gridRow = '2';
+    c1.style.borderTop = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
+    c1.style.borderLeft = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
+    c1.style.borderRight = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
+    c1.style.width = `calc(66.66% + ${scale(8)})`;
+    c1.style.height = scale(16);
+    c1.style.justifySelf = 'center';
+    grid.appendChild(c1);
+    
+    const cv1 = document.createElement('div');
+    cv1.className = 'tt-connector';
+    cv1.style.gridColumn = '2';
+    cv1.style.gridRow = '2';
+    cv1.style.borderLeft = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
+    cv1.style.height = scale(16);
+    cv1.style.justifySelf = 'center';
+    grid.appendChild(cv1);
 
-    const addChainedNode = (tierDef) => {
-        const prereqMet = !!upgrades[tierDef.requires];
-        const connector = document.createElement('div');
-        connector.className = 'tt-connector';
-        connector.style.gridColumn = String(chainColumn + 1);
-        connector.style.gridRow = String(row);
-        connector.style.justifySelf = 'center';
-        connector.style.width = '2px';
-        connector.style.height = scale(16);
-        connector.style.background = prereqMet ? INK.scope : INK.hairlineDim;
-        grid.appendChild(connector);
-        row++;
+    // level 2 -> level 3
+    [1, 2, 3].forEach(col => {
+        const key = col === 1 ? 'rapidFire' : (col === 2 ? 'homingMissile' : 'piercing');
+        const cv = document.createElement('div');
+        cv.className = 'tt-connector';
+        cv.style.gridColumn = String(col);
+        cv.style.gridRow = '4';
+        cv.style.borderLeft = `2px solid ${upgrades[key] ? INK.scope : INK.hairlineDim}`;
+        cv.style.height = scale(16);
+        cv.style.justifySelf = 'center';
+        grid.appendChild(cv);
+    });
 
-        const node = techTreeNode(tierDef, !!upgrades[tierDef.key], !prereqMet, onUpgrade);
-        node.style.gridColumn = String(chainColumn + 1);
-        node.style.gridRow = String(row);
+    nodes.forEach(n => {
+        const prereqMet = !n.requires || !!upgrades[n.requires];
+        const node = techTreeNode(n, !!upgrades[n.key], !prereqMet, onUpgrade);
+        node.style.gridColumn = String(n.col);
+        node.style.gridRow = String(n.row);
         grid.appendChild(node);
-        row++;
-    };
-    addChainedNode(tier2);
-    addChainedNode(tier3);
+    });
 
     panel.appendChild(grid);
 

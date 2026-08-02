@@ -144,11 +144,18 @@ class Ship {
             // Vorwärtsschub kommt aus dem Heck (hinten), Rückwärtsschub (Bugdüsen)
             // kommt aus dem Bug (vorne) — beides muss mit thrustState kippen,
             // nicht nur die Farbe.
-            const localX = isFwd ? -this.width * 0.45 : this.width * 0.45;
             const dirSign = isFwd ? -1 : 1;
 
             for(let i=0; i<2; i++) {
-                const localY = (Math.random() - 0.5) * this.height * 0.3;
+                let localX, localY;
+                if (isFwd) {
+                    localX = -this.width * 0.45;
+                    localY = (Math.random() - 0.5) * this.height * 0.3;
+                } else {
+                    localX = -this.width * 0.1;
+                    const side = i === 0 ? 1 : -1;
+                    localY = side * this.height * 0.5 + (Math.random() - 0.5) * this.height * 0.2;
+                }
 
                 const worldX = this.x + Math.cos(this.angle) * localX - Math.sin(this.angle) * localY;
                 const worldY = this.y + Math.sin(this.angle) * localX + Math.cos(this.angle) * localY;

@@ -48,6 +48,26 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
     }
 }
 
+export function handleTractorCollection(ship, tractorItems, effectsSystem, ctx) {
+    const toRemove = [];
+    tractorItems.forEach((item, idx) => {
+        item.draw(ctx);
+        const dx = ship.x - item.x;
+        const dy = ship.y - item.y;
+        if (Math.sqrt(dx * dx + dy * dy) < ship.getXpRadius() + item.radius && !item.collected) {
+            effectsSystem.spawnXpParticles(item.x, item.y, '#9c27b0');
+            item.collected = true;
+            import('./upgrades.js').then(module => {
+                module.triggerCollectorPulse();
+            });
+            toRemove.push(idx);
+        }
+    });
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+        tractorItems.splice(toRemove[i], 1);
+    }
+}
+
 export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx) {
     const pulseActive = isCollectorPulseActive();
     plasmaCells.forEach((plasma, pIdx) => {

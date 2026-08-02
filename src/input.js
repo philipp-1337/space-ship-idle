@@ -264,8 +264,8 @@ export class InputManager {
         </svg>`;
         shootBtn.setAttribute('aria-label', 'Fire');
         shootBtn.style.position = 'fixed';
-        shootBtn.style.right = '64px';
-        shootBtn.style.bottom = '96px';
+        shootBtn.style.right = '36px';
+        shootBtn.style.bottom = '36px';
         shootBtn.style.width = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
         shootBtn.style.height = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
         shootBtn.style.display = 'flex';
