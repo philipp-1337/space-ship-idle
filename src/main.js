@@ -19,6 +19,8 @@ document.body.appendChild(canvas);
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+const inputManager = new InputManager();
+
 window.logicalWidth = window.innerWidth;
 window.logicalHeight = window.innerHeight;
 if (inputManager.isMobile) {
@@ -41,8 +43,6 @@ let xpCollected = 0;
 let enemySpawnIntervalId;
 
 window.BASE_LASER_DAMAGE = GAME_CONFIG.BASE_LASER_DAMAGE;
-
-const inputManager = new InputManager();
 
 // Ship-Physik-Parameter
 // ship.angle wird in updateShipMovement oder autoAimLogic gesetzt
