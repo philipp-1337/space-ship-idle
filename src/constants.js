@@ -48,6 +48,28 @@ export const OVERDRIVE = {
     DAMAGE_MULT: 1.25
 };
 
+export const RAPID_FIRE = {
+    COOLDOWN_MULT: 0.75 // permanent, stacks multiplicatively with Overdrive
+};
+
+export const SHIELD_REGEN = {
+    INTERVAL_MS: 8000 // +1 hull point per interval while below max HP
+};
+
+export const EXPLOSIVE_ROUNDS = {
+    SPLASH_RADIUS: 45,
+    SPLASH_DAMAGE_MULT: 0.5
+};
+
+export const SALVAGE_DRIVE = {
+    DROP_CHANCE_MULT: 2 // doubles GAME_CONFIG.PLASMA_DROP_CHANCE
+};
+
+export const COLLECTOR_PULSE = {
+    DURATION_MS: 1500,
+    STRENGTH: 0.12 // per-frame pull toward the ship, same mechanism as the magnet
+};
+
 export const EFFECTS = {
     SCREEN_SHAKE_INTENSITY: 8,
     SCREEN_SHAKE_DURATION: 18,
@@ -116,5 +138,10 @@ export const MOBILE = {
     CANVAS_SCALE_FACTOR: 2,
     TOUCH_Z_INDEX: 5000,
     UI_SCALE_FACTOR: 1.8, // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
-    GAME_ZOOM: 1.5
+    // War 1.5, kalibriert bevor es einen viewport-Meta-Tag gab: Handy-Browser
+    // nahmen damals ohne den Tag eine ~980px-Viewport an und skalierten die
+    // Seite selbst auf Bildschirmgröße runter — GAME_ZOOM kompensierte genau
+    // das. Mit korrektem viewport-Tag (siehe index.html) entfällt dieses
+    // implizite Runterskalieren, daher jetzt 1:1 wie am Desktop.
+    GAME_ZOOM: 1.0
 };

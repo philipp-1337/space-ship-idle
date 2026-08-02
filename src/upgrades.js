@@ -1,6 +1,6 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET, ARMOR, OVERDRIVE } from './constants.js';
+import { MAGNET, ARMOR, OVERDRIVE, RAPID_FIRE, COLLECTOR_PULSE } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 
 export let upgrades = {
@@ -17,12 +17,17 @@ export let techUpgrades = {
     autoShoot: false,
     eliteHint: false,
     homingMissile: false, // Lenkraketen-Upgrade
-    piercing: false // Laser durchdringen Gegner
+    piercing: false, // Laser durchdringen Gegner
+    explosiveRounds: false, // Laser verursachen Flächenschaden beim Einschlag
+    rapidFire: false, // dauerhaft kürzere Feuer-Cooldowns
+    salvage: false, // erhöhte Plasma-Drop-Chance
+    twinMissiles: false // zwei Lenkraketen pro Salve
 };
 
 // Manche Tech-Upgrades setzen ein anderes voraus (Baum-Struktur im Tech-Tree-UI)
 export const TECH_PREREQUISITES = {
-    homingMissile: 'autoShoot'
+    homingMissile: 'autoShoot',
+    twinMissiles: 'homingMissile'
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {
@@ -44,9 +49,12 @@ export function applyUpgrade(key, ship, PHYSICS) {
         ship.maxHp += ARMOR.HP_PER_UPGRADE;
         ship.hp = ship.maxHp; // Upgrade repariert den Rumpf vollständig
     }
+    if (key === 'collectorPulse') {
+        triggerCollectorPulse();
+    }
 }
 
-// --- Overdrive: temporärer Kampf-Buff, ausgelöst durch Level-Aufstieg (XP) ---
+// --- Overdrive: temporärer Kampf-Buff, ausgelöst durch die Wahl von "Laser Damage" im Shop ---
 export let overdriveUntil = 0;
 
 export function activateOverdrive() {
@@ -57,12 +65,27 @@ export function isOverdriveActive() {
     return performance.now() < overdriveUntil;
 }
 
-export function getFireRateMultiplier() {
-    return isOverdriveActive() ? OVERDRIVE.FIRE_RATE_MULT : 1;
+export function getFireRateMultiplier(currentTechUpgrades = techUpgrades) {
+    let mult = isOverdriveActive() ? OVERDRIVE.FIRE_RATE_MULT : 1;
+    if (currentTechUpgrades && currentTechUpgrades.rapidFire) mult *= RAPID_FIRE.COOLDOWN_MULT;
+    return mult;
 }
 
 export function getDamageMultiplier() {
     return isOverdriveActive() ? OVERDRIVE.DAMAGE_MULT : 1;
+}
+
+// --- Collector Pulse: einmaliger Effekt (Shop-Option), zieht alle XP-/Plasma-
+// Orbs auf dem Feld zum Schiff, indem der bestehende Magnet-Zug kurz und
+// überall (nicht nur in Reichweite) sehr stark angewendet wird. ---
+export let collectorPulseUntil = 0;
+
+export function triggerCollectorPulse() {
+    collectorPulseUntil = performance.now() + COLLECTOR_PULSE.DURATION_MS;
+}
+
+export function isCollectorPulseActive() {
+    return performance.now() < collectorPulseUntil;
 }
 
 export function loadTechUpgrades() {

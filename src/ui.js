@@ -34,6 +34,13 @@ const INK = {
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 
+// HUD row offsets (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings)
+// sits below the XP tape (14px tall) with a small gap, instead of at the very
+// top edge — the tape and the row used to overlap. Row 2 (Hull dial, Tech
+// Tree button) keeps the same relative gap it always had below row 1.
+const HUD_TOP_ROW1 = 22;
+const HUD_TOP_ROW2 = 100 + (HUD_TOP_ROW1 - 10);
+
 function chamferClip(px) {
     const c = `${px}px`;
     return `polygon(${c} 0, calc(100% - ${c}) 0, 100% ${c}, 100% calc(100% - ${c}), calc(100% - ${c}) 100%, ${c} 100%, 0 calc(100% - ${c}), 0 ${c})`;
@@ -115,7 +122,7 @@ function buildInstrumentDial({ id, captionText, color, glowColor }) {
     const wrap = document.createElement('div');
     wrap.id = id;
     wrap.style.position = 'fixed';
-    wrap.style.top = scale(10);
+    wrap.style.top = scale(HUD_TOP_ROW1);
     wrap.style.zIndex = '1000';
     wrap.style.display = 'flex';
     wrap.style.flexDirection = 'column';
@@ -310,7 +317,7 @@ export function updateHullUI(hp, maxHp) {
     if (!_hullDial) {
         _hullDial = buildInstrumentDial({ id: 'hull-display', captionText: 'Hull', color: INK.caution, glowColor: 'rgba(255,176,0,0.6)' });
         _hullDial.wrap.style.left = scale(10);
-        _hullDial.wrap.style.top = scale(100); // clears the Level dial's full footprint (face + caption)
+        _hullDial.wrap.style.top = scale(HUD_TOP_ROW2); // clears the Level dial's full footprint (face + caption)
         document.body.appendChild(_hullDial.wrap);
     }
     const ratio = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
@@ -512,10 +519,11 @@ export function displayShopModal(onUpgrade) {
     panel.appendChild(panelTitleBar('Upgrade Available', INK.phosphor));
 
     const upgradePool = [
-        { key: 'magnet', label: 'Magnet Field', desc: 'Increases the range and pull strength of your XP magnet.' },
-        { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage.` },
+        { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.' },
+        { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.` },
         { key: 'speed', label: "Ship Speed", desc: "Increases your ship's maximum speed." },
-        { key: 'armor', label: 'Armor Plating', desc: 'Adds a hull point and fully repairs your ship.' }
+        { key: 'armor', label: 'Armor Plating', desc: 'Adds a hull point and fully repairs your ship.' },
+        { key: 'collectorPulse', label: 'Tractor Pulse', desc: 'One-time burst: instantly pulls every XP and Plasma orb on the field to your ship.' }
     ];
     // Randomisiere Auswahl UND Reihenfolge, damit nicht jedes Level-Up dieselben
     // drei Optionen in derselben Reihenfolge zeigt (Fisher-Yates shuffle).
@@ -567,7 +575,7 @@ export function displayPauseButton(onPause) {
     </svg>`;
     btn.setAttribute('aria-label', 'Pause');
     btn.style.position = 'fixed';
-    btn.style.top = scale(10);
+    btn.style.top = scale(HUD_TOP_ROW1);
     btn.style.left = scale(84); // clears the Level dial (10 left + 64 diameter + 10 gap)
     btn.style.zIndex = '1100';
     btn.style.display = 'flex';
@@ -599,12 +607,21 @@ export function displaySettingsButton(onClick) {
     const btn = document.createElement('button');
     btn.id = 'settings-btn';
     btn.innerHTML = `<svg width="${scaleNum(15)}" height="${scaleNum(15)}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="3" stroke="${INK.phosphor}" stroke-width="1.6"/>
-        <path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 17.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 13 1.65 1.65 0 0 0 3.17 12H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 6.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 2.6a1.65 1.65 0 0 0 1-1.51V1a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 6.6a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.4z" stroke="${INK.phosphor}" stroke-width="1.3"/>
+        <circle cx="12" cy="12" r="3.2" stroke="${INK.phosphor}" stroke-width="1.8"/>
+        <g stroke="${INK.phosphor}" stroke-width="2" stroke-linecap="round">
+            <line x1="12" y1="1.5" x2="12" y2="5"/>
+            <line x1="12" y1="19" x2="12" y2="22.5"/>
+            <line x1="1.5" y1="12" x2="5" y2="12"/>
+            <line x1="19" y1="12" x2="22.5" y2="12"/>
+            <line x1="4.4" y1="4.4" x2="6.8" y2="6.8"/>
+            <line x1="17.2" y1="17.2" x2="19.6" y2="19.6"/>
+            <line x1="4.4" y1="19.6" x2="6.8" y2="17.2"/>
+            <line x1="17.2" y1="6.8" x2="19.6" y2="4.4"/>
+        </g>
     </svg>`;
     btn.setAttribute('aria-label', 'Settings');
     btn.style.position = 'fixed';
-    btn.style.top = scale(10);
+    btn.style.top = scale(HUD_TOP_ROW1);
     btn.style.left = scale(126); // clears the Pause button (84 left + 32 wide + 10 gap)
     btn.style.zIndex = '1100';
     btn.style.display = 'flex';
@@ -762,7 +779,7 @@ export function showTechTreeButton(onClick) {
         btn = consoleButton({ text: 'Tech&nbsp;Tree', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
         btn.id = 'tech-tree-btn';
         btn.style.position = 'fixed';
-        btn.style.top = scale(100); // clears the Plasma dial's full footprint (face + caption)
+        btn.style.top = scale(HUD_TOP_ROW2); // clears the Plasma dial's full footprint (face + caption)
         btn.style.right = scale(10);
         btn.style.zIndex = '1200';
         btn.style.padding = `${scale(8)} ${scale(16)}`;
@@ -891,51 +908,69 @@ export function showTechTreeModal(upgrades, onUpgrade) {
 
     const { modal, panel } = consolePanelModal({ id: 'tech-tree-modal', zIndex: 5000, accent: INK.scope });
     panel.style.width = 'min(92vw, 480px)';
+    panel.style.maxHeight = '86vh';
+    panel.style.overflowY = 'auto';
     panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
 
-    // Branching layout: three tier-1 nodes side by side, one tier-2 node
-    // (Homing Missiles) gated on Auto-Fire, connected by a vertical line
-    // centered under Auto-Fire's column.
+    // Branching layout: tier-1 nodes side by side (wrapping at 3 per row),
+    // then Homing Missiles gated on Auto-Fire, then Twin Missiles gated on
+    // Homing Missiles — both chained nodes stay centered under Auto-Fire's
+    // column, connected by vertical lines.
     const tier1 = [
         { key: 'eliteHint', label: 'Elite Scanner', desc: 'Warns you when an elite enemy appears.', cost: 1 },
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4 },
-        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies instead of stopping on the first hit.', cost: 6 }
+        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies instead of stopping on the first hit.', cost: 6 },
+        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal small splash damage to enemies near the impact.', cost: 6 },
+        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8 },
+        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8 }
     ];
-    const tier2Column = 1; // 0-indexed column under 'autoShoot' (tier1[1])
+    const chainColumn = 1; // 0-indexed column under 'autoShoot' (tier1[1])
     const tier2 = { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies in a circling orbit and deal area damage.', cost: 10, requires: 'autoShoot', requiresLabel: 'Auto-Fire' };
+    const tier3 = { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley instead of one.', cost: 14, requires: 'homingMissile', requiresLabel: 'Homing Missiles' };
 
     const grid = document.createElement('div');
     grid.className = 'tt-grid';
     grid.style.display = 'grid';
     grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
     grid.style.columnGap = scale(8);
+    grid.style.rowGap = scale(10);
     grid.style.alignItems = 'start';
     grid.style.width = '100%';
     grid.style.marginBottom = scale(4);
 
-    tier1.forEach((upg, i) => {
-        const node = techTreeNode(upg, !!upgrades[upg.key], false, onUpgrade);
-        node.style.gridColumn = String(i + 1);
-        node.style.gridRow = '1';
+    let row = 1;
+    for (let r = 0; r * 3 < tier1.length; r++) {
+        tier1.slice(r * 3, r * 3 + 3).forEach((upg, i) => {
+            const node = techTreeNode(upg, !!upgrades[upg.key], false, onUpgrade);
+            node.style.gridColumn = String(i + 1);
+            node.style.gridRow = String(row);
+            grid.appendChild(node);
+        });
+        row++;
+    }
+
+    const addChainedNode = (tierDef) => {
+        const prereqMet = !!upgrades[tierDef.requires];
+        const connector = document.createElement('div');
+        connector.className = 'tt-connector';
+        connector.style.gridColumn = String(chainColumn + 1);
+        connector.style.gridRow = String(row);
+        connector.style.justifySelf = 'center';
+        connector.style.width = '2px';
+        connector.style.height = scale(16);
+        connector.style.background = prereqMet ? INK.scope : INK.hairlineDim;
+        grid.appendChild(connector);
+        row++;
+
+        const node = techTreeNode(tierDef, !!upgrades[tierDef.key], !prereqMet, onUpgrade);
+        node.style.gridColumn = String(chainColumn + 1);
+        node.style.gridRow = String(row);
         grid.appendChild(node);
-    });
+        row++;
+    };
+    addChainedNode(tier2);
+    addChainedNode(tier3);
 
-    const autoShootUnlocked = !!upgrades.autoShoot;
-    const connector = document.createElement('div');
-    connector.className = 'tt-connector';
-    connector.style.gridColumn = String(tier2Column + 1);
-    connector.style.gridRow = '2';
-    connector.style.justifySelf = 'center';
-    connector.style.width = '2px';
-    connector.style.height = scale(16);
-    connector.style.background = autoShootUnlocked ? INK.scope : INK.hairlineDim;
-
-    const tier2Node = techTreeNode(tier2, !!upgrades[tier2.key], !autoShootUnlocked, onUpgrade);
-    tier2Node.style.gridColumn = String(tier2Column + 1);
-    tier2Node.style.gridRow = '3';
-
-    grid.appendChild(connector);
-    grid.appendChild(tier2Node);
     panel.appendChild(grid);
 
     const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });

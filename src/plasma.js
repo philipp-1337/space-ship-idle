@@ -34,7 +34,9 @@ class PlasmaCell {
     draw(ctx) {
         if (!this.collected) {
             ctx.save();
-            ctx.shadowBlur = 16;
+            // Radius bewusst klein gehalten — shadowBlur ist pro Aufruf teuer
+            // (besonders in Chrome), und Plasmazellen können sich ansammeln.
+            ctx.shadowBlur = 7;
             ctx.shadowColor = 'cyan';
             ctx.translate(this.x, this.y);
             drawPixelSprite(ctx, plasmaSprite, this.radius * 2, this.radius * 2);

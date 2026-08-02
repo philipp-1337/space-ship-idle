@@ -70,11 +70,12 @@ export class EffectsSystem {
             p.speed *= EFFECTS.XP_PARTICLE_FRICTION;
             p.life--;
             
-            // Draw particle
+            // Draw particle — no shadowBlur here on purpose: these are small,
+            // numerous (up to a dozen per pickup) and short-lived, and
+            // shadowBlur is disproportionately expensive per call in Chrome,
+            // so this was a real hot-path cost with many kills on screen.
             this.ctx.save();
             this.ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-            this.ctx.shadowBlur = 10;
-            this.ctx.shadowColor = p.color;
             this.ctx.fillStyle = p.color;
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -171,9 +172,14 @@ export class EffectsSystem {
     }
 
     // === LASER GLOW EFFECTS ===
+    // Blur radius cut way down (16 -> 4): with autoShoot/rapidFire/Overdrive
+    // stacking, a busy screen can have dozens of lasers in flight, and
+    // shadowBlur is one of the most expensive canvas 2D ops per call
+    // (especially in Chrome) — the bolt sprite's own hot core carries most
+    // of the "glowing" look anyway, so a small blur is enough.
     drawLaserWithGlow(laser, upgradeLevel = 0) {
         this.ctx.save();
-        this.ctx.shadowBlur = 16;
+        this.ctx.shadowBlur = 4;
         this.ctx.shadowColor = (laser.tier && laser.tier.glow) || (upgradeLevel >= 3 ? COLORS.LASER_UPGRADED : COLORS.LASER_NORMAL);
         laser.draw(this.ctx);
         this.ctx.restore();

@@ -1,5 +1,5 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, OVERDRIVE } from './constants.js';
+import { PROGRESSION, OVERDRIVE, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 
@@ -18,6 +18,35 @@ export function createGameLoop(context) {
     let lastMissileTime = 0;
     const { spawnEnemyWave } = context; // spawnEnemyWave aus dem Kontext holen
 
+    // Gemeinsame Belohnungslogik für einen getöteten Gegner — genutzt vom
+    // direkten Lasertreffer UND vom Explosive-Rounds-Flächenschaden, damit
+    // beide Pfade konsistent XP/Plasma/Kill vergeben.
+    function awardKillIfNeeded(enemy) {
+        if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
+            xpPoints.push(new XP(enemy.x, enemy.y));
+            // Elite-Gegner droppen garantiert Plasma; Salvage Drive verdoppelt die normale Chance
+            const dropChance = GAME_CONFIG.PLASMA_DROP_CHANCE * (techUpgrades.salvage ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
+            if (enemy.isElite || Math.random() < dropChance) {
+                let px = enemy.x;
+                let py = enemy.y;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const dxPlasma = centerX - enemy.x;
+                const dyPlasma = centerY - enemy.y;
+                const distPlasma = Math.sqrt(dxPlasma * dxPlasma + dyPlasma * dyPlasma);
+                if (distPlasma > 0) {
+                    px += dxPlasma / distPlasma * 40;
+                    py += dyPlasma / distPlasma * 40;
+                }
+                px = Math.max(24, Math.min(canvas.width - 24, px));
+                py = Math.max(24, Math.min(canvas.height - 24, py));
+                plasmaCells.push(new PlasmaCell(px, py));
+            }
+            killsRef.value++;
+            enemy.alreadyAwardedXP = true; // XP für diesen Gegner wurde vergeben
+        }
+    }
+
     function endGame() {
         if (isGameOverRef.value) return;
         isGameOverRef.value = true;
@@ -30,14 +59,18 @@ export function createGameLoop(context) {
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
-        // Overdrive: temporärer Kampf-Buff, ausgelöst durch das Erreichen des Levels (XP-getrieben)
-        activateOverdrive();
-        if (typeof showOverdriveHint === 'function') {
-            showOverdriveHint(OVERDRIVE.DURATION_MS);
-        }
         isShopOpenRef.value = true;
         displayShopModal((upgradeKey) => {
             applyUpgrade(upgradeKey, ship, PHYSICS);
+            // Overdrive: temporärer Feuerrate-/Schadens-Buff, jetzt an die Wahl von
+            // "Laser Damage" gekoppelt statt an jeden Level-Up — sonst feuert es zu
+            // oft und verliert seinen Ausnahme-Charakter.
+            if (upgradeKey === 'laser') {
+                activateOverdrive();
+                if (typeof showOverdriveHint === 'function') {
+                    showOverdriveHint(OVERDRIVE.DURATION_MS);
+                }
+            }
             isShopOpenRef.value = false;
 
             // Prüfen, ob eine Gegnerwelle ausgelöst werden soll, NACHDEM der Shop geschlossen wurde
@@ -58,7 +91,7 @@ export function createGameLoop(context) {
 
     function autoShootLogic() {
         if (techUpgrades.autoShoot && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value) {
-            if (!autoShootTimerRef.value || performance.now() - autoShootTimerRef.value > GAME_CONFIG.AUTO_SHOOT_COOLDOWN * getFireRateMultiplier()) {
+            if (!autoShootTimerRef.value || performance.now() - autoShootTimerRef.value > GAME_CONFIG.AUTO_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades)) {
                 const shots = ship.shoot();
                 if (Array.isArray(shots)) {
                     shots.forEach(l => lasers.push(l));
@@ -94,6 +127,15 @@ export function createGameLoop(context) {
                         closest,
                         { speed: 2.2, explosionRadius: 60, damage: 6 }
                     ));
+                    // Twin Missiles: eine zweite Rakete pro Salve, leicht versetzt gestartet
+                    if (techUpgrades.twinMissiles) {
+                        homingMissiles.push(new HomingMissile(
+                            ship.x - Math.sin(ship.angle)*14 + Math.cos(ship.angle)*20,
+                            ship.y + Math.cos(ship.angle)*14 + Math.sin(ship.angle)*20,
+                            closest,
+                            { speed: 2.2, explosionRadius: 60, damage: 6 }
+                        ));
+                    }
                     lastMissileTime = now;
                 }
             }
@@ -122,7 +164,7 @@ export function createGameLoop(context) {
         ship.update();
         ship.draw(ctx);
         effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet); // Korrigiert: magnetRadius direkt verwenden
-        if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier())) {
+        if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades))) {
             const shots = ship.shoot();
             if (Array.isArray(shots)) {
                 shots.forEach(l => lasers.push(l));
@@ -176,28 +218,25 @@ export function createGameLoop(context) {
                         lasers.splice(lIdx, 1);
                     }
 
-                    // Nur XP und Kill geben, wenn HP <= 0 und XP noch nicht vergeben wurde
-                    if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
-                        xpPoints.push(new XP(enemy.x, enemy.y));
-                        // Elite-Gegner droppen garantiert Plasma (macht das Aufspüren via Elite Scanner lohnenswert)
-                        if (enemy.isElite || Math.random() < GAME_CONFIG.PLASMA_DROP_CHANCE) {
-                            let px = enemy.x;
-                            let py = enemy.y;
-                            const centerX = canvas.width / 2;
-                            const centerY = canvas.height / 2;
-                            const dxPlasma = centerX - enemy.x;
-                            const dyPlasma = centerY - enemy.y;
-                            const distPlasma = Math.sqrt(dxPlasma * dxPlasma + dyPlasma * dyPlasma);
-                            if (distPlasma > 0) {
-                                px += dxPlasma / distPlasma * 40;
-                                py += dyPlasma / distPlasma * 40;
+                    awardKillIfNeeded(enemy);
+
+                    // Explosive Rounds: Flächenschaden an nahen Gegnern beim Einschlag
+                    if (techUpgrades.explosiveRounds) {
+                        const splashDamage = laser.damage * EXPLOSIVE_ROUNDS.SPLASH_DAMAGE_MULT;
+                        enemies.forEach(other => {
+                            if (other === enemy || !other.alive || other.exploding) return;
+                            const sdx = other.x - enemy.x, sdy = other.y - enemy.y;
+                            if (Math.sqrt(sdx*sdx + sdy*sdy) < EXPLOSIVE_ROUNDS.SPLASH_RADIUS) {
+                                other.hp = Math.max(0, other.hp - splashDamage);
+                                if (other.hp <= 0) {
+                                    other.destroy();
+                                } else if (!other.isHit) {
+                                    other.isHit = true;
+                                    other.hitTimer = other.hitDuration;
+                                }
+                                awardKillIfNeeded(other);
                             }
-                            px = Math.max(24, Math.min(canvas.width - 24, px));
-                            py = Math.max(24, Math.min(canvas.height - 24, py));
-                            plasmaCells.push(new PlasmaCell(px, py));
-                        }
-                        killsRef.value++;
-                        enemy.alreadyAwardedXP = true; // XP für diesen Gegner wurde vergeben
+                        });
                     }
                 }
             });
@@ -280,7 +319,8 @@ export function createGameLoop(context) {
                             GAME_CONFIG,
                             plasmaCells,
                             PlasmaCell,
-                            canvas // für Plasmakoordinaten
+                            canvas, // für Plasmakoordinaten
+                            techUpgrades // für Salvage Drive
                         });
                     }
                 }

@@ -1,7 +1,7 @@
 import Laser from './laser.js';
 import { upgrades, techUpgrades } from './upgrades.js';
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
-import { ARMOR } from './constants.js';
+import { ARMOR, SHIELD_REGEN } from './constants.js';
 
 const SHIP_X_MIN = -22, SHIP_X_MAX = 22, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
 const SHIP_DISPLAY_W = SHIP_X_MAX - SHIP_X_MIN;
@@ -122,27 +122,44 @@ class Ship {
             this.particles = this.particles.filter(p => p.life > 0);
         }
 
+        if (!this.isExploding && techUpgrades.shieldRegen) {
+            if (this.hp < this.maxHp) {
+                const now = performance.now();
+                if (!this.nextRegenAt) this.nextRegenAt = now + SHIELD_REGEN.INTERVAL_MS;
+                if (now >= this.nextRegenAt) {
+                    this.hp = Math.min(this.maxHp, this.hp + 1);
+                    this.nextRegenAt = now + SHIELD_REGEN.INTERVAL_MS;
+                }
+            } else {
+                this.nextRegenAt = null; // full HP: restart the interval fresh next time it's needed
+            }
+        }
+
         // Triebwerkspartikel (Weltkoordinaten) generieren
         if (this.thrustState !== 'none' && !this.isExploding) {
             const isFwd = this.thrustState === 'forward';
             const color = isFwd ? (Math.random() > 0.5 ? '#ff5722' : '#ffc107') : '#03a9f4';
             const speedMult = isFwd ? 1.5 : 0.8;
-            
-            const localX = -this.width * 0.45; 
-            
+
+            // Vorwärtsschub kommt aus dem Heck (hinten), Rückwärtsschub (Bugdüsen)
+            // kommt aus dem Bug (vorne) — beides muss mit thrustState kippen,
+            // nicht nur die Farbe.
+            const localX = isFwd ? -this.width * 0.45 : this.width * 0.45;
+            const dirSign = isFwd ? -1 : 1;
+
             for(let i=0; i<2; i++) {
                 const localY = (Math.random() - 0.5) * this.height * 0.3;
-                
+
                 const worldX = this.x + Math.cos(this.angle) * localX - Math.sin(this.angle) * localY;
                 const worldY = this.y + Math.sin(this.angle) * localX + Math.cos(this.angle) * localY;
-                
+
                 const thrustAngle = this.angle + (Math.random() - 0.5) * 0.4;
-                
+
                 this.thrustParticles.push({
                     x: worldX,
                     y: worldY,
-                    vx: -Math.cos(thrustAngle) * (2 + Math.random() * 3) * speedMult,
-                    vy: -Math.sin(thrustAngle) * (2 + Math.random() * 3) * speedMult,
+                    vx: dirSign * Math.cos(thrustAngle) * (2 + Math.random() * 3) * speedMult,
+                    vy: dirSign * Math.sin(thrustAngle) * (2 + Math.random() * 3) * speedMult,
                     life: 10 + Math.random() * 10,
                     maxLife: 20,
                     color: color,

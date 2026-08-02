@@ -34,9 +34,11 @@ class XP {
     draw(ctx) {
         if (!this.collected) {
             ctx.save();
-            // Sanftes Pulsieren des Glows, damit die Sphäre etwas lebendiger wirkt
+            // Sanftes Pulsieren des Glows, damit die Sphäre etwas lebendiger wirkt.
+            // Radius bewusst klein (war 18): XP-Orbs können sich zu Dutzenden
+            // ansammeln, und shadowBlur ist pro Aufruf teuer, besonders in Chrome.
             const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300);
-            ctx.shadowBlur = 18 * pulse;
+            ctx.shadowBlur = 7 * pulse;
             ctx.shadowColor = '#ffd23f';
             ctx.translate(this.x, this.y);
             drawPixelSprite(ctx, xpSprite, this.radius * 2 * pulse, this.radius * 2 * pulse);

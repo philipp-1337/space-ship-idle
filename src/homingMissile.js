@@ -1,4 +1,5 @@
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+import { SALVAGE_DRIVE } from './constants.js';
 
 const EXPLOSION_ANIMATION_DURATION = 30; 
 const EXPLOSION_PARTICLE_COUNT = 35;
@@ -326,7 +327,8 @@ export default class HomingMissile {
                     if (e.hp <= 0) { 
                         if (wasAliveBeforeHit && !e.alreadyAwardedXP && rewardContext) {
                             rewardContext.xpPoints.push(new rewardContext.XP(e.x, e.y));
-                            if (e.isElite || Math.random() < rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE) {
+                            const dropChance = rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE * ((rewardContext.techUpgrades && rewardContext.techUpgrades.salvage) ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
+                            if (e.isElite || Math.random() < dropChance) {
                                 let px = e.x;
                                 let py = e.y;
                                 const centerX = rewardContext.canvas.width / 2;

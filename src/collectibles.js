@@ -1,26 +1,31 @@
 // collectibles.js
 // Verwaltung von XP- und Plasma-Handling (Sammeln, Magnet, UI)
-import { upgrades, savePlasmaCount, magnetRadius, magnetStrength } from './upgrades.js';
-import { COLORS } from './constants.js';
+import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive } from './upgrades.js';
+import { COLORS, COLLECTOR_PULSE } from './constants.js';
 import { updateExperienceBar } from './ui.js';
 
 export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienceObj, levelUpCallback) {
     // ACHTUNG: Niemals xpPoints während des forEach direkt verändern!
     // Stattdessen: Indizes merken und nach der Schleife entfernen
     const toRemove = [];
+    const pulseActive = isCollectorPulseActive();
     xpPoints.forEach((xp, xIdx) => {
-        // Magnetwirkung
-        if (upgrades.magnet > 0 && !xp.collected) {
+        // Magnetwirkung — der Collector-Pulse nutzt denselben Zug, nur ohne
+        // Reichweitenbegrenzung und mit fester Stärke, egal ob Magnet gekauft wurde.
+        if ((upgrades.magnet > 0 || pulseActive) && !xp.collected) {
             const dx = ship.x - xp.x;
             const dy = ship.y - xp.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < magnetRadius) { // Korrigiert: magnetRadius direkt verwenden
-                xp.x += dx * magnetStrength; // Korrigiert: magnetStrength direkt verwenden
-                xp.y += dy * magnetStrength; // Verwende upgrades.magnetStrength
+            if (pulseActive || dist < magnetRadius) {
+                const strength = pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength;
+                xp.x += dx * strength;
+                xp.y += dy * strength;
             }
         }
-        // Mit Glow-Effekt zeichnen
-        effectsSystem.drawWithGlow(() => xp.draw(ctx), COLORS.XP_COLOR, 18);
+        // xp.draw() bringt seinen eigenen (pulsierenden) Glow schon mit —
+        // kein zusätzliches drawWithGlow nötig (war ein doppelter shadowBlur
+        // pro Orb und Frame).
+        xp.draw(ctx);
         // XP-Einsammelradius
         const dx = ship.x - xp.x;
         const dy = ship.y - xp.y;
@@ -44,21 +49,21 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
 }
 
 export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx) {
+    const pulseActive = isCollectorPulseActive();
     plasmaCells.forEach((plasma, pIdx) => {
-        effectsSystem.drawWithGlow(() => plasma.draw(ctx), 'aqua', 20);
-        ctx.save();
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = 'aqua';
+        // plasma.draw() bringt seinen eigenen shadowBlur-Glow mit; das hier
+        // war vorher ein kompletter Doppel-Zeichnen-Bug (zwei volle Draws +
+        // vier shadowBlur-Aufrufe pro Plasmazelle und Frame).
         plasma.draw(ctx);
-        ctx.restore();
-        // Magnetwirkung (optional, wie bei XP)
-        if (upgrades.magnet > 0 && !plasma.collected) {
+        // Magnetwirkung (optional, wie bei XP) — Collector-Pulse siehe handleXpCollection
+        if ((upgrades.magnet > 0 || pulseActive) && !plasma.collected) {
             const dx = ship.x - plasma.x;
             const dy = ship.y - plasma.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < magnetRadius) { // Korrigiert: magnetRadius direkt verwenden
-                plasma.x += dx * magnetStrength; // Korrigiert: magnetStrength direkt verwenden
-                plasma.y += dy * magnetStrength; // Verwende upgrades.magnetStrength
+            if (pulseActive || dist < magnetRadius) {
+                const strength = pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength;
+                plasma.x += dx * strength;
+                plasma.y += dy * strength;
             }
         }
         // Einsammelradius
