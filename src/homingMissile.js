@@ -5,8 +5,8 @@ const EXPLOSION_PARTICLE_COUNT = 35;
 const EXPLOSION_SHOCKWAVE_MAX_RADIUS_FACTOR = 1.3; 
 
 // Erweiterte Palette mit Highlight-Grau ('#cdd2da') für mehr Plastizität
-const M_X_MIN = -16, M_X_MAX = 13, M_Y_MIN = -10, M_Y_MAX = 10;
-const MISSILE_SPRITE_W = 10, MISSILE_SPRITE_H = 7;
+const M_X_MIN = -18, M_X_MAX = 18, M_Y_MIN = -12, M_Y_MAX = 12;
+const MISSILE_SPRITE_W = 14, MISSILE_SPRITE_H = 10;
 const MISSILE_DISPLAY_W = M_X_MAX - M_X_MIN;
 const MISSILE_DISPLAY_H = M_Y_MAX - M_Y_MIN;
 
@@ -29,57 +29,71 @@ const missileSprite = makePixelSprite(
         };
 
         const radius = 7;
-        const M_LENGTH = radius * 2.8;
-        const M_WIDTH = radius * 1.2;
-        const finSize = M_WIDTH * 0.8;
+        const M_LENGTH = radius * 3.2;
+        const M_WIDTH = radius * 1.5;
+        const BACK = -M_LENGTH * 0.35;
+        const MID = M_LENGTH * 0.3;
+        const TIP = M_LENGTH * 0.75;
+        const W_BASE = M_WIDTH * 0.65;
+        const W_MID = M_WIDTH * 0.25;
 
-        // Heckflossen
+        // Heckflossen (Fins)
+        const FIN_BACK = BACK - M_LENGTH * 0.15;
+        const FIN_WIDE = W_BASE * 1.8;
+        const FIN_FRONT = BACK + M_LENGTH * 0.25;
+
+        // Obere Flosse
         path([
-            [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
-            [-M_LENGTH * 0.4 - finSize, -M_WIDTH * 0.5 - finSize * 0.7],
-            [-M_LENGTH * 0.4 - finSize * 0.2, -M_WIDTH * 0.5],
-        ], '#8c1c1c');
-        path([
-            [-M_LENGTH * 0.4, M_WIDTH * 0.5],
-            [-M_LENGTH * 0.4 - finSize, M_WIDTH * 0.5 + finSize * 0.7],
-            [-M_LENGTH * 0.4 - finSize * 0.2, M_WIDTH * 0.5],
+            [BACK, -W_BASE * 0.7],
+            [FIN_BACK, -FIN_WIDE],
+            [FIN_FRONT, -W_BASE * 0.8],
         ], '#8c1c1c');
 
-        // Rumpf Grundfarbe
+        // Untere Flosse
         path([
-            [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
-            [M_LENGTH * 0.5, -M_WIDTH * 0.5],
-            [M_LENGTH * 0.5, M_WIDTH * 0.5],
-            [-M_LENGTH * 0.4, M_WIDTH * 0.5],
+            [BACK, W_BASE * 0.7],
+            [FIN_BACK, FIN_WIDE],
+            [FIN_FRONT, W_BASE * 0.8],
+        ], '#8c1c1c');
+
+        // Rumpf Grundfarbe (konisch)
+        path([
+            [BACK, -W_BASE],
+            [MID, -W_MID],
+            [MID, W_MID],
+            [BACK, W_BASE],
         ], '#7c8896');
         
-        // Rumpf Highlight (Oben) - NEU für 3D Look
+        // Rumpf Highlight (Oben) für 3D Look
         path([
-            [-M_LENGTH * 0.4, -M_WIDTH * 0.5],
-            [M_LENGTH * 0.5, -M_WIDTH * 0.5],
-            [M_LENGTH * 0.5, 0],
-            [-M_LENGTH * 0.4, 0],
+            [BACK, -W_BASE],
+            [MID, -W_MID],
+            [MID, 0],
+            [BACK, 0],
         ], '#cdd2da');
 
         // Rumpf-Schatten (unten)
         path([
-            [-M_LENGTH * 0.4, M_WIDTH * 0.2],
-            [M_LENGTH * 0.5, M_WIDTH * 0.2],
-            [M_LENGTH * 0.5, M_WIDTH * 0.5],
-            [-M_LENGTH * 0.4, M_WIDTH * 0.5],
+            [BACK, W_BASE * 0.4],
+            [MID, W_MID * 0.4],
+            [MID, W_MID],
+            [BACK, W_BASE],
         ], '#4d5560');
 
-        // Nasenspitze
+        // Nasenspitze (kegelförmig)
         path([
-            [M_LENGTH * 0.6, 0],
-            [M_LENGTH * 0.15, -M_WIDTH * 0.5],
-            [M_LENGTH * 0.15, M_WIDTH * 0.5],
+            [MID, -W_MID],
+            [TIP, 0],
+            [MID, W_MID],
         ], '#ff8a3d');
+
+        // Nasenspitze Highlight
         path([
-            [M_LENGTH * 0.6, 0],
-            [M_LENGTH * 0.3, -M_WIDTH * 0.35],
-            [M_LENGTH * 0.35, 0],
+            [MID, -W_MID],
+            [TIP, 0],
+            [MID, 0],
         ], '#ffc38a');
+
     }
 );
 
