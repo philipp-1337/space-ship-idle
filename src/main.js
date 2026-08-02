@@ -61,17 +61,27 @@ function updateShipMovement() {
         let dx = joystickMove.x, dy = joystickMove.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) {
-            // Reduzierter Geschwindigkeitsfaktor für mobile Steuerung
-            const speed = Math.min(dist * PHYSICS.MOBILE_JOYSTICK_SENSITIVITY, ship.maxSpeed);
+            // Accelerate based on joystick distance
+            const normalizedDist = Math.min(dist / 52, 1); // 52 is roughly max dist
+            const accel = normalizedDist * ship.acceleration;
             const nx = dx / dist, ny = dy / dist;
-            ship.vx += nx * speed;
-            ship.vy += ny * speed;
+            ship.vx += nx * accel;
+            ship.vy += ny * accel;
             // Optional: Schiff in Bewegungsrichtung drehen
             ship.angle = Math.atan2(ny, nx);
         }
+        
+        // Max Speed
+        const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
+        if (speed > ship.maxSpeed) {
+            ship.vx *= ship.maxSpeed / speed;
+            ship.vy *= ship.maxSpeed / speed;
+        }
+        
         // Friction/Drift
         ship.vx *= ship.friction;
         ship.vy *= ship.friction;
+        
         // Welt-Offset wie gehabt
         let nextX = ship.x + ship.vx;
         let nextY = ship.y + ship.vy;

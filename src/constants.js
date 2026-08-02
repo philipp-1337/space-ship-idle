@@ -23,7 +23,8 @@ export const PHYSICS = {
     ACCELERATION_UPGRADE_INCREASE: 0.02, // Zuwachs der Beschleunigung pro Upgrade-Level
     BACKWARD_THRUST_FACTOR: 0.7,
     SPEED_UPGRADE_INCREASE: 1.2,
-    MARGIN_FACTOR: 0.2 // 20% of canvas for world boundaries
+    MARGIN_FACTOR: 0.2, // 20% of canvas for world boundaries
+    MOBILE_JOYSTICK_SENSITIVITY: 0.08
 };
 
 export const MAGNET = {
