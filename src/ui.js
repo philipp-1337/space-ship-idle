@@ -62,8 +62,8 @@ _globalHudStyle.textContent = `
         inset: 0;
         z-index: 9000;
         pointer-events: none;
-        mix-blend-mode: overlay;
-        opacity: 0.5;
+        will-change: transform;
+        opacity: 0.15;
         background:
             repeating-linear-gradient(
                 to bottom,

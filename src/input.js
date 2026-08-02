@@ -148,8 +148,9 @@ export class InputManager {
 
         const joystickStick = document.createElement('div');
         joystickStick.style.position = 'absolute';
-        joystickStick.style.left = (joystickSize/2 - stickSize/2) + 'px';
-        joystickStick.style.top = (joystickSize/2 - stickSize/2) + 'px';
+        joystickStick.style.left = '0px';
+        joystickStick.style.top = '0px';
+        joystickStick.style.transform = `translate(${joystickSize/2 - stickSize/2}px, ${joystickSize/2 - stickSize/2}px)`;
         joystickStick.style.width = stickSize + 'px';
         joystickStick.style.height = stickSize + 'px';
         joystickStick.style.background = '#39ff6a';
@@ -157,7 +158,8 @@ export class InputManager {
         joystickStick.style.border = '1px solid rgba(232,255,240,0.9)';
         joystickStick.style.boxShadow = '0 0 10px 3px rgba(57,255,106,0.7)';
         joystickStick.style.boxSizing = 'border-box';
-        joystickStick.style.transition = 'left 0.08s, top 0.08s';
+        joystickStick.style.transition = 'transform 0.08s';
+        joystickStick.style.willChange = 'transform';
 
         joystickBase.appendChild(joystickStick);
         document.body.appendChild(joystickBase);
@@ -190,13 +192,11 @@ export class InputManager {
                 nx = dx * maxDist / dist;
                 ny = dy * maxDist / dist;
             }
-            this.joystickStick.style.left = (baseSize/2 - stickSize/2 + nx) + 'px';
-            this.joystickStick.style.top = (baseSize/2 - stickSize/2 + ny) + 'px';
+            this.joystickStick.style.transform = `translate(${baseSize/2 - stickSize/2 + nx}px, ${baseSize/2 - stickSize/2 + ny}px)`;
             this.setJoystickVector(nx, ny);
         };
         const resetStick = () => {
-            this.joystickStick.style.left = (baseSize/2 - stickSize/2) + 'px';
-            this.joystickStick.style.top = (baseSize/2 - stickSize/2) + 'px';
+            this.joystickStick.style.transform = `translate(${baseSize/2 - stickSize/2}px, ${baseSize/2 - stickSize/2}px)`;
             this.joystickMove = { x: 0, y: 0 };
             this.keys.up = this.keys.down = this.keys.left = this.keys.right = false;
         };

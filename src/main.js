@@ -23,9 +23,37 @@ const inputManager = new InputManager();
 
 window.logicalWidth = window.innerWidth;
 window.logicalHeight = window.innerHeight;
+
+function applyDesktopResolutionCap() {
+    if (inputManager.isMobile) return;
+    const MAX_AREA = 1920 * 1080;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (w * h > MAX_AREA) {
+        const scale = Math.sqrt(MAX_AREA / (w * h));
+        canvas.width = Math.floor(w * scale);
+        canvas.height = Math.floor(h * scale);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        canvas.style.display = 'block';
+        window.logicalWidth = canvas.width;
+        window.logicalHeight = canvas.height;
+    } else {
+        canvas.width = w;
+        canvas.height = h;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        canvas.style.display = 'block';
+        window.logicalWidth = w;
+        window.logicalHeight = h;
+    }
+}
+
 if (inputManager.isMobile) {
     window.logicalWidth = window.innerWidth / MOBILE.GAME_ZOOM;
     window.logicalHeight = window.innerHeight / MOBILE.GAME_ZOOM;
+} else {
+    applyDesktopResolutionCap();
 }
 
 const ship = new Ship(window.logicalWidth / 2, window.logicalHeight / 2);
@@ -256,15 +284,14 @@ function resumeGame() {
 window.resumeGame = resumeGame;
 
 window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
     window.logicalWidth = window.innerWidth;
     window.logicalHeight = window.innerHeight;
     if (inputManager.isMobile) {
         inputManager.resizeCanvasForMobile();
         window.logicalWidth = window.innerWidth / MOBILE.GAME_ZOOM;
         window.logicalHeight = window.innerHeight / MOBILE.GAME_ZOOM;
+    } else {
+        applyDesktopResolutionCap();
     }
     effectsSystem.resize(window.logicalWidth, window.logicalHeight);
     
