@@ -917,7 +917,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     // Homing Missiles — both chained nodes stay centered under Auto-Fire's
     // column, connected by vertical lines.
     const tier1 = [
-        { key: 'eliteHint', label: 'Elite Scanner', desc: 'Warns you when an elite enemy appears.', cost: 1 },
+
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4 },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies instead of stopping on the first hit.', cost: 6 },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal small splash damage to enemies near the impact.', cost: 6 },
@@ -1048,47 +1048,8 @@ export function showWaveHint() {
     annunciator({ id: 'wave-hint', top: '96px', text: 'Caution — Enemy Wave Incoming', color: INK.caution, duration: 3500 });
 }
 
-export function showEliteHint(duration) {
-    annunciator({ id: 'elite-hint', top: '134px', text: 'Elite Contact Detected', color: INK.gold, duration });
-}
 
 export function showOverdriveHint(duration) {
     annunciator({ id: 'overdrive-hint', top: '172px', text: 'Weapon Overdrive Engaged', color: INK.gold, duration });
 }
 
-// ---------------------------------------------------------------------------
-// Elite radar — a top-center bearing arrow that points at the live elite
-// enemy while the Elite Scanner tech is active. Gives the one-time "Elite
-// Contact Detected" toast a follow-up payoff: you can actually act on it,
-// either hunting it down (elites now guarantee a Plasma drop) or steering
-// clear of it.
-// ---------------------------------------------------------------------------
-let _eliteRadar = null;
-
-export function updateEliteRadar(active, bearingRad = 0) {
-    if (!_eliteRadar) {
-        const el = document.createElement('div');
-        el.id = 'elite-radar';
-        el.style.position = 'fixed';
-        el.style.top = scale(10);
-        el.style.left = '50%';
-        el.style.zIndex = '1050';
-        el.style.width = scale(26);
-        el.style.height = scale(26);
-        el.style.display = 'none';
-        el.style.pointerEvents = 'none';
-        el.innerHTML = `<svg viewBox="0 0 24 24" width="100%" height="100%" style="filter: drop-shadow(0 0 4px ${INK.gold})">
-            <polygon points="12,2 19,20 12,15 5,20" fill="${INK.gold}" />
-        </svg>`;
-        document.body.appendChild(el);
-        _eliteRadar = el;
-    }
-    if (active) {
-        _eliteRadar.style.display = 'block';
-        // The arrow glyph points "up" (bearing 0 in screen terms is -90deg
-        // in the game's math-angle convention), so offset by +90deg.
-        _eliteRadar.style.transform = `translateX(-50%) rotate(${bearingRad + Math.PI / 2}rad)`;
-    } else {
-        _eliteRadar.style.display = 'none';
-    }
-}

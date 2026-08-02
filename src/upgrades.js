@@ -15,7 +15,7 @@ export let magnetStrength = 0;
 
 export let techUpgrades = {
     autoShoot: false,
-    eliteHint: false,
+
     homingMissile: false, // Lenkraketen-Upgrade
     piercing: false, // Laser durchdringen Gegner
     explosiveRounds: false, // Laser verursachen Flächenschaden beim Einschlag

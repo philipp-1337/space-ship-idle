@@ -2,13 +2,20 @@
 import { PROGRESSION, OVERDRIVE, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
+import SpatialGrid from './spatialGrid.js';
+
+// Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
+// damit eine Umkreis-Abfrage typischerweise nur eine Handvoll Zellen berührt.
+const ENEMY_GRID_CELL_SIZE = 60;
+// Deckt den größten Laser-Trefferradius ab (this.size * 0.7, Elite-Größe 44 -> ~31).
+const LASER_HIT_QUERY_RADIUS = 35;
 
 export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
-        displayLevel, updateExperienceBar, updateHullUI, updateEliteRadar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
+        displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef, easyModeRef
@@ -16,6 +23,8 @@ export function createGameLoop(context) {
 
     let homingMissiles = [];
     let lastMissileTime = 0;
+    // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
+    const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
     const { spawnEnemyWave } = context; // spawnEnemyWave aus dem Kontext holen
 
     // Gemeinsame Belohnungslogik für einen getöteten Gegner — genutzt vom
@@ -173,22 +182,27 @@ export function createGameLoop(context) {
             }
             gameLoop.lastShot = performance.now();
         }
-        lasers.forEach((laser, lIdx) => {
-            if (Array.isArray(laser)) {
-                laser.forEach(l => {
-                    l.update(canvas.width, canvas.height);
-                    effectsSystem.drawLaserWithGlow(l, l.upgradeLevel);
-                });
-                lasers.splice(lIdx, 1);
-                return;
-            }
+        // Rückwärts-Schleife statt forEach+splice: forEach hält einen internen
+        // Zähler, der beim Splicen NICHT zurückspringt, wodurch das auf den
+        // entfernten Index nachrückende Element in diesem Frame übersprungen
+        // würde (Update/Draw fehlt für ein Frame). Rückwärts iterieren ist der
+        // Standard-sichere Weg, während der Iteration zu entfernen.
+        for (let lIdx = lasers.length - 1; lIdx >= 0; lIdx--) {
+            const laser = lasers[lIdx];
             laser.update(canvas.width, canvas.height);
             effectsSystem.drawLaserWithGlow(laser, laser.upgradeLevel);
             if (!laser.isActive) {
                 lasers.splice(lIdx, 1);
             }
-        });
-        enemies.forEach((enemy, eIdx) => {
+        }
+
+        // Gegner updaten/zeichnen und gleichzeitig das räumliche Grid für die
+        // Laser-Kollisionsabfrage befüllen. Explodierende Gegner sind nicht
+        // treffbar (checkCollision/checkLaserHit geben für sie false zurück),
+        // werden also gar nicht erst eingefügt.
+        enemyGrid.clear();
+        for (let eIdx = enemies.length - 1; eIdx >= 0; eIdx--) {
+            const enemy = enemies[eIdx];
             enemy.update(ship.x, ship.y);
             enemy.draw(ctx);
             if (!ship.isExploding && enemy.checkCollision(ship)) {
@@ -201,12 +215,29 @@ export function createGameLoop(context) {
                     effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_HIT_INTENSITY * 0.5, EFFECTS.SCREEN_SHAKE_HIT_DURATION * 0.5);
                 }
             }
-            lasers.forEach((laser, lIdx) => {
+            if (!enemy.alive) {
+                enemies.splice(eIdx, 1);
+                continue;
+            }
+            if (!enemy.exploding) {
+                enemyGrid.insert(enemy);
+            }
+        }
+
+        // Laser-Gegner-Kollision: statt jeden Laser gegen JEDEN Gegner zu prüfen
+        // (O(Gegner × Laser) pro Frame — bei Wellen von 10+ Gegnern und mehreren
+        // gleichzeitig fliegenden Lasern der Haupttreiber der Framerate-Einbrüche),
+        // liefert das Grid nur die Gegner aus Zellen nahe dem Laser zurück.
+        for (let lIdx = lasers.length - 1; lIdx >= 0; lIdx--) {
+            const laser = lasers[lIdx];
+            const candidates = enemyGrid.queryRadius(laser.x, laser.y, LASER_HIT_QUERY_RADIUS);
+            let laserConsumed = false;
+            for (const enemy of candidates) {
                 // Ein Laser überlappt oft mehrere Frames lang denselben Gegner, bevor er
                 // dessen Trefferradius physisch verlässt — ohne diese Sperre würde ein
                 // durchdringender Laser beide Pierce-Ladungen an EINEN Gegner verlieren,
                 // statt zwei verschiedene zu treffen.
-                if (laser.hitEnemies.has(enemy)) return;
+                if (laser.hitEnemies.has(enemy)) continue;
                 if (enemy.checkLaserHit(laser)) {
                     laser.hitEnemies.add(enemy);
                     // enemy.destroy() wird jetzt korrekt innerhalb von enemy.checkLaserHit() aufgerufen,
@@ -216,15 +247,20 @@ export function createGameLoop(context) {
                         laser.pierceRemaining--;
                     } else {
                         lasers.splice(lIdx, 1);
+                        laserConsumed = true;
                     }
 
                     awardKillIfNeeded(enemy);
 
-                    // Explosive Rounds: Flächenschaden an nahen Gegnern beim Einschlag
+                    // Explosive Rounds: Flächenschaden an nahen Gegnern beim Einschlag.
+                    // Auch hier über das Grid statt über ALLE Gegner — bei mehreren
+                    // Kills im selben Frame (z.B. dicht stehende Welle) sonst schnell
+                    // O(Gegner²) pro Frame.
                     if (techUpgrades.explosiveRounds) {
                         const splashDamage = laser.damage * EXPLOSIVE_ROUNDS.SPLASH_DAMAGE_MULT;
-                        enemies.forEach(other => {
-                            if (other === enemy || !other.alive || other.exploding) return;
+                        const nearby = enemyGrid.queryRadius(enemy.x, enemy.y, EXPLOSIVE_ROUNDS.SPLASH_RADIUS);
+                        for (const other of nearby) {
+                            if (other === enemy || !other.alive || other.exploding) continue;
                             const sdx = other.x - enemy.x, sdy = other.y - enemy.y;
                             if (Math.sqrt(sdx*sdx + sdy*sdy) < EXPLOSIVE_ROUNDS.SPLASH_RADIUS) {
                                 other.hp = Math.max(0, other.hp - splashDamage);
@@ -236,14 +272,12 @@ export function createGameLoop(context) {
                                 }
                                 awardKillIfNeeded(other);
                             }
-                        });
+                        }
                     }
+                    if (laserConsumed) break;
                 }
-            });
-            if (!enemy.alive) {
-                enemies.splice(eIdx, 1);
             }
-        });
+        }
         // XP und Plasma nach den Gegnern zeichnen, damit sie darüber liegen
         handleXpCollection(
             ship, xpPoints, effectsSystem, ctx,
@@ -255,7 +289,8 @@ export function createGameLoop(context) {
         );
         if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
         handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx);
-        enemyLasers.forEach((l, idx) => {
+        for (let idx = enemyLasers.length - 1; idx >= 0; idx--) {
+            const l = enemyLasers[idx];
             l.x += Math.cos(l.angle) * l.speed;
             l.y += Math.sin(l.angle) * l.speed;
             l.life--;
@@ -285,7 +320,7 @@ export function createGameLoop(context) {
                     enemyLasers.splice(idx, 1);
                 }
             }
-        });
+        }
         // Update & Draw Homing Missiles
         for (let i = homingMissiles.length-1; i >= 0; i--) {
             const m = homingMissiles[i];
@@ -337,14 +372,6 @@ export function createGameLoop(context) {
         updateExperienceBar(experienceRef.value, maxXPRef.value);
         displayLevel(levelRef.value);
         if (typeof updateHullUI === 'function') updateHullUI(ship.hp, ship.maxHp);
-        if (typeof updateEliteRadar === 'function') {
-            const elite = techUpgrades.eliteHint ? enemies.find(e => e.isElite && e.alive) : null;
-            if (elite) {
-                updateEliteRadar(true, Math.atan2(elite.y - ship.y, elite.x - ship.x));
-            } else {
-                updateEliteRadar(false);
-            }
-        }
         autoShootLogic();
         autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);

@@ -98,10 +98,14 @@ export const STARS = {
 };
 
 export const TOUCH_CONTROLS = {
-    JOYSTICK_SIZE: 180,
-    JOYSTICK_STICK_SIZE: 76,
+    // Sized down to 1/3 of the original (was 180/76/140): these are now just a
+    // visual "home" reference, not the actual hit target — the whole left/right
+    // half of the screen is a live joystick/fire zone (see input.js), so the
+    // graphics don't need to be big anymore.
+    JOYSTICK_SIZE: 60,
+    JOYSTICK_STICK_SIZE: 25,
     JOYSTICK_DEADZONE: 8,
-    SHOOT_BUTTON_SIZE: 140,
+    SHOOT_BUTTON_SIZE: 47,
     CONTAINER_HEIGHT: '40vh',
     // Unscaled px kept clear at the top of the full-height touch zones, so the
     // Level/Hull/Pause/Settings (left) and Plasma/Tech-Tree (right) HUD chrome
@@ -135,9 +139,13 @@ export const PROGRESSION = {
 };
 
 export const MOBILE = {
-    CANVAS_SCALE_FACTOR: 2,
-    TOUCH_Z_INDEX: 5000,
-    UI_SCALE_FACTOR: 1.8, // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
+    CANVAS_SCALE_FACTOR: 1.2,
+    // War 5000 — höher als jedes Modal (Shop 3000, Pre-Flight 3500, Pause 4000,
+    // Settings 4500, Tech Tree 5000), wodurch Joystick/Feuer-Zone über den
+    // Modals lagen und deren Buttons für Touch unerreichbar machten (sichtbar
+    // z.B. beim Pre-Flight-Screen). Jetzt unter dem niedrigsten Modal-Wert.
+    TOUCH_Z_INDEX: 1500,
+    UI_SCALE_FACTOR: 1.1, // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
     // War 1.5, kalibriert bevor es einen viewport-Meta-Tag gab: Handy-Browser
     // nahmen damals ohne den Tag eine ~980px-Viewport an und skalierten die
     // Seite selbst auf Bildschirmgröße runter — GAME_ZOOM kompensierte genau

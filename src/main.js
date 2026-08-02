@@ -3,7 +3,7 @@ import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, 
 import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
-import { updateExperienceBar, displayLevel, updateHullUI, updateEliteRadar, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, displayStartScreen, displaySettingsButton, showSettingsMenu } from './ui.js';
+import { updateExperienceBar, displayLevel, updateHullUI, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, displayStartScreen, displaySettingsButton, showSettingsMenu } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -330,7 +330,7 @@ const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
     PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection, spawnEnemyWave, showWaveHint, showOverdriveHint,
-    displayLevel, updateExperienceBar, updateHullUI, updateEliteRadar, displayGameOverScreen, displayShopModal,
+    displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
     startEnemySpawning, autoShootTimerRef, easyModeRef,

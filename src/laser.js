@@ -82,13 +82,21 @@ class Laser {
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
 
-            // Kurzer, verblassender Bewegungsschweif hinter dem Bolzen
+            // Kurzer, verblassender Bewegungsschweif hinter dem Bolzen.
+            // Gradient wird EINMAL pro Tier gecacht statt pro Laser und Frame neu
+            // erzeugt — createLinearGradient() ist eine der teureren Canvas-Ops,
+            // und mit Auto-Fire/Rapid-Fire/Overdrive können viele Laser gleichzeitig
+            // unterwegs sein. Referenzlänge ist fix (24px); bei den paar Pixeln
+            // Unterschied durch die Upgrade-abhängige Bolzenlänge fällt das nicht auf.
             const tailLen = this.width * 1.6;
-            const grad = ctx.createLinearGradient(-tailLen, 0, 0, 0);
-            grad.addColorStop(0, 'rgba(255,255,255,0)');
-            grad.addColorStop(1, this.tier.glow);
+            if (!this.tier.trailGradient) {
+                const grad = ctx.createLinearGradient(-24, 0, 0, 0);
+                grad.addColorStop(0, 'rgba(255,255,255,0)');
+                grad.addColorStop(1, this.tier.glow);
+                this.tier.trailGradient = grad;
+            }
             ctx.globalAlpha = 0.35;
-            ctx.fillStyle = grad;
+            ctx.fillStyle = this.tier.trailGradient;
             ctx.fillRect(-tailLen, -this.height / 2, tailLen, this.height);
             ctx.globalAlpha = 1;
 

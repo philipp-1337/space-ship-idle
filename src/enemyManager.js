@@ -2,7 +2,7 @@
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy from './enemy.js'; // Added COLORS
 import { GAME_CONFIG, COLORS } from './constants.js';
-import { showEliteHint } from './ui.js';
+import { scale, INK, annunciator } from './ui.js';
 
 export let enemies = [];
 export let enemyLasers = [];
@@ -48,10 +48,7 @@ export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
         elite.isElite = true;
         enemies.push(elite);
 
-        // Display hint if the tech upgrade is active
-        if (techUpgrades && techUpgrades.eliteHint) {
-            showEliteHint(GAME_CONFIG.ELITE_HINT_DURATION);
-        }
+
     }
 }
 
