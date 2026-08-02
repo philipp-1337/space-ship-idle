@@ -69,6 +69,9 @@ function updateShipMovement() {
             ship.vy += ny * accel;
             // Optional: Schiff in Bewegungsrichtung drehen
             ship.angle = Math.atan2(ny, nx);
+            ship.thrustState = 'forward';
+        } else {
+            ship.thrustState = 'none';
         }
         
         // Max Speed
