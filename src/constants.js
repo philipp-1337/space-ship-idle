@@ -34,6 +34,18 @@ export const MAGNET = {
     STRENGTH_INCREASE: 0.01
 };
 
+export const ARMOR = {
+    BASE_HP: 1,
+    HP_PER_UPGRADE: 1,
+    INVULNERABLE_MS: 1200
+};
+
+export const OVERDRIVE = {
+    DURATION_MS: 8000,
+    FIRE_RATE_MULT: 0.5, // multiplies shoot cooldowns
+    DAMAGE_MULT: 1.25
+};
+
 export const EFFECTS = {
     SCREEN_SHAKE_INTENSITY: 8,
     SCREEN_SHAKE_DURATION: 18,
@@ -84,7 +96,7 @@ export const COLORS = {
     LASER_UPGRADED: 'cyan',
     MAGNET_COLOR: 'deepskyblue',
     PLASMA_COLOR: 'aqua',
-    XP_COLOR: 'deepskyblue',
+    XP_COLOR: '#ffd23f', // Gold, passend zum XP-Sphere-Sprite (siehe xp.js)
 };
 
 export const PROGRESSION = {

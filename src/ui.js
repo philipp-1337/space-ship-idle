@@ -1,7 +1,8 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/ui.js
 // Night-Flight Console — cockpit instrument HUD (see index.html body comment
 // for the direction contract).
-import { MOBILE } from './constants.js';
+import { MOBILE, ARMOR } from './constants.js';
+import { xpSprite } from './xp.js';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
@@ -127,7 +128,7 @@ function buildInstrumentDial({ id, captionText, color, glowColor }) {
     face.style.height = scale(size);
     face.style.borderRadius = '50%';
     face.style.background = `radial-gradient(circle at 50% 42%, ${INK.panelRaised} 0%, ${INK.panel} 78%)`;
-    face.style.border = `1px solid ${color === INK.phosphor ? INK.hairline : 'rgba(127,232,255,0.28)'}`;
+    face.style.border = `1px solid ${color === INK.phosphor ? INK.hairline : glowColor}`;
     face.style.boxShadow = `0 0 ${scaleNum(10)}px ${scaleNum(1)}px rgba(0,0,0,0.6) inset, 0 0 ${scaleNum(6)}px 0 ${glowColor}`;
     face.style.boxSizing = 'border-box';
 
@@ -189,7 +190,7 @@ function buildInstrumentDial({ id, captionText, color, glowColor }) {
     face.appendChild(readout);
 
     wrap.appendChild(face);
-    wrap.appendChild(label(captionText, color === INK.phosphor ? INK.phosphorDim : INK.scopeDim));
+    wrap.appendChild(label(captionText, color === INK.phosphor ? INK.phosphorDim : (color === INK.scope ? INK.scopeDim : glowColor)));
 
     return { wrap, needle, readout };
 }
@@ -229,19 +230,36 @@ export function updateExperienceBar(currentXP, maxXP) {
         fill.style.top = '0';
         fill.style.left = '0';
         fill.style.height = '100%';
-        fill.style.background = INK.phosphor;
-        fill.style.boxShadow = `0 0 ${scaleNum(10)}px ${scaleNum(1)}px ${INK.phosphorDim}`;
+        fill.style.background = INK.gold;
+        fill.style.boxShadow = `0 0 ${scaleNum(10)}px ${scaleNum(1)}px rgba(255,210,63,0.65)`;
         fill.style.transition = 'width 0.4s cubic-bezier(.22,1.12,.36,1)';
         tape.appendChild(fill);
 
-        const cap = label('XP', INK.phosphorDim);
-        cap.style.position = 'absolute';
-        cap.style.left = scale(10);
-        cap.style.top = '50%';
-        cap.style.transform = 'translateY(-50%)';
-        cap.style.zIndex = '3';
-        cap.style.mixBlendMode = 'difference';
-        tape.appendChild(cap);
+        // Kleines Icon der tatsächlichen XP-Sphäre, damit Balken und Pickup optisch
+        // als dasselbe Konzept erkennbar sind (statt reinem Textlabel).
+        const iconGroup = document.createElement('div');
+        iconGroup.style.position = 'absolute';
+        iconGroup.style.left = scale(10);
+        iconGroup.style.top = '50%';
+        iconGroup.style.transform = 'translateY(-50%)';
+        iconGroup.style.zIndex = '3';
+        iconGroup.style.display = 'flex';
+        iconGroup.style.alignItems = 'center';
+        iconGroup.style.gap = scale(5);
+        iconGroup.style.mixBlendMode = 'difference';
+
+        const icon = document.createElement('canvas');
+        icon.width = 10;
+        icon.height = 10;
+        icon.style.width = scale(10);
+        icon.style.height = scale(10);
+        const iconCtx = icon.getContext('2d');
+        iconCtx.imageSmoothingEnabled = false;
+        iconCtx.drawImage(xpSprite, 0, 0, 10, 10);
+        iconGroup.appendChild(icon);
+
+        iconGroup.appendChild(label('XP', INK.gold));
+        tape.appendChild(iconGroup);
 
         document.body.appendChild(tape);
     }
@@ -281,10 +299,30 @@ export function updatePlasmaUI(count) {
     _plasmaDial.needle.style.transform = `rotate(${count * 15}deg)`;
 }
 
+// ---------------------------------------------------------------------------
+// Hull dial — mirrors the Level dial's slot on the opposite side, showing
+// remaining armor as a bounded -90deg..+90deg sweep (unlike Level/Plasma,
+// hull is a ratio, not an ever-growing count).
+// ---------------------------------------------------------------------------
+let _hullDial = null;
+
+export function updateHullUI(hp, maxHp) {
+    if (!_hullDial) {
+        _hullDial = buildInstrumentDial({ id: 'hull-display', captionText: 'Hull', color: INK.caution, glowColor: 'rgba(255,176,0,0.6)' });
+        _hullDial.wrap.style.left = scale(10);
+        _hullDial.wrap.style.top = scale(100); // clears the Level dial's full footprint (face + caption)
+        document.body.appendChild(_hullDial.wrap);
+    }
+    const ratio = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
+    _hullDial.readout.innerText = `${hp}/${maxHp}`;
+    _hullDial.needle.style.transform = `rotate(${-90 + ratio * 180}deg)`;
+}
+
 export function initializeUI() {
     updateExperienceBar(0, 1);
     displayLevel(1);
     updatePlasmaUI(0);
+    updateHullUI(ARMOR.BASE_HP, ARMOR.BASE_HP);
 }
 
 // ---------------------------------------------------------------------------
@@ -421,11 +459,20 @@ export function displayShopModal(onUpgrade) {
     panel.style.width = 'min(92vw, 460px)';
     panel.appendChild(panelTitleBar('Upgrade Available', INK.phosphor));
 
-    const upgradesData = [
+    const upgradePool = [
         { key: 'magnet', label: 'Magnet Field', desc: 'Increases the range and pull strength of your XP magnet.' },
         { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage.` },
-        { key: 'speed', label: "Ship Speed", desc: "Increases your ship's maximum speed." }
+        { key: 'speed', label: "Ship Speed", desc: "Increases your ship's maximum speed." },
+        { key: 'armor', label: 'Armor Plating', desc: 'Adds a hull point and fully repairs your ship.' }
     ];
+    // Randomisiere Auswahl UND Reihenfolge, damit nicht jedes Level-Up dieselben
+    // drei Optionen in derselben Reihenfolge zeigt (Fisher-Yates shuffle).
+    const shuffled = [...upgradePool];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const upgradesData = shuffled.slice(0, 3);
 
     upgradesData.forEach(upg => {
         const row = document.createElement('button');
@@ -569,6 +616,57 @@ export function showTechTreeButton(onClick) {
     btn.style.display = 'block';
 }
 
+// Builds one tree node "card" — smaller/denser than the old full-width rows,
+// since several now sit side by side. `locked` means a prerequisite is
+// unmet (distinct from simply not being able to afford it yet).
+function techTreeNode(upg, unlocked, locked, onUpgrade) {
+    const costLabel = `${upg.cost} Plasma Cell${upg.cost === 1 ? '' : 's'}`;
+    const node = document.createElement('button');
+    node.style.width = '100%';
+    node.style.boxSizing = 'border-box';
+    node.style.textAlign = 'left';
+    node.style.padding = `${scale(10)} ${scale(12)}`;
+    node.style.fontFamily = FONT;
+    node.style.clipPath = chamferClip(scaleNum(8));
+    node.style.cursor = (unlocked || locked) ? (locked ? 'not-allowed' : 'default') : 'pointer';
+    node.disabled = unlocked || locked;
+    node.style.transition = 'background 0.08s, border-color 0.08s, opacity 0.08s';
+
+    const applyIdle = () => {
+        node.style.background = INK.panel;
+        node.style.border = `1px solid ${INK.hairline}`;
+        node.style.color = INK.scope;
+        node.style.opacity = '1';
+        node.style.filter = 'none';
+    };
+    if (unlocked) {
+        node.style.background = INK.phosphor;
+        node.style.border = `1px solid ${INK.phosphor}`;
+        node.style.color = INK.void;
+        node.style.boxShadow = `0 0 ${scaleNum(12)}px ${scaleNum(1)}px ${INK.phosphorDim}`;
+    } else if (locked) {
+        node.style.background = INK.panel;
+        node.style.border = `1px solid ${INK.hairlineDim}`;
+        node.style.color = INK.textDim;
+        node.style.opacity = '0.5';
+        node.style.filter = 'grayscale(1)';
+    } else {
+        applyIdle();
+        node.onmouseenter = () => { node.style.background = INK.panelRaised; node.style.borderColor = INK.scope; };
+        node.onmouseleave = applyIdle;
+    }
+
+    const statusLine = unlocked
+        ? 'Unlocked'
+        : (locked ? `Requires ${upg.requiresLabel}` : `Cost: ${costLabel}`);
+    node.innerHTML = `<div style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</div><div style="font-size:${scale(11)};opacity:0.75;margin-top:${scale(4)}">${upg.desc}</div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
+
+    node.onclick = () => {
+        if (!unlocked && !locked) onUpgrade(upg.key, upg.cost);
+    };
+    return node;
+}
+
 export function showTechTreeModal(upgrades, onUpgrade) {
     if (document.getElementById('tech-tree-modal')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
@@ -577,50 +675,47 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     panel.style.width = 'min(92vw, 480px)';
     panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
 
-    const upgradesList = [
+    // Branching layout: three tier-1 nodes side by side, one tier-2 node
+    // (Homing Missiles) gated on Auto-Fire, connected by a vertical line
+    // centered under Auto-Fire's column.
+    const tier1 = [
         { key: 'eliteHint', label: 'Elite Scanner', desc: 'Warns you when an elite enemy appears.', cost: 1 },
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4 },
-        { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies in a circling orbit and deal area damage.', cost: 10 }
+        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies instead of stopping on the first hit.', cost: 6 }
     ];
+    const tier2Column = 1; // 0-indexed column under 'autoShoot' (tier1[1])
+    const tier2 = { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies in a circling orbit and deal area damage.', cost: 10, requires: 'autoShoot', requiresLabel: 'Auto-Fire' };
 
-    upgradesList.forEach(upg => {
-        const unlocked = upgrades[upg.key];
-        const costLabel = `${upg.cost} Plasma Cell${upg.cost === 1 ? '' : 's'}`;
-        const row = document.createElement('button');
-        row.style.width = '100%';
-        row.style.boxSizing = 'border-box';
-        row.style.textAlign = 'left';
-        row.style.margin = `0 0 ${scale(10)} 0`;
-        row.style.padding = `${scale(14)} ${scale(18)}`;
-        row.style.fontFamily = FONT;
-        row.style.clipPath = chamferClip(scaleNum(8));
-        row.style.cursor = unlocked ? 'default' : 'pointer';
-        row.disabled = unlocked;
-        row.style.transition = 'background 0.08s, border-color 0.08s';
+    const grid = document.createElement('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    grid.style.columnGap = scale(8);
+    grid.style.width = '100%';
+    grid.style.marginBottom = scale(4);
 
-        const applyIdle = () => {
-            row.style.background = INK.panel;
-            row.style.border = `1px solid ${INK.hairline}`;
-            row.style.color = INK.scope;
-        };
-        if (unlocked) {
-            row.style.background = INK.phosphor;
-            row.style.border = `1px solid ${INK.phosphor}`;
-            row.style.color = INK.void;
-            row.style.boxShadow = `0 0 ${scaleNum(12)}px ${scaleNum(1)}px ${INK.phosphorDim}`;
-        } else {
-            applyIdle();
-            row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = INK.scope; };
-            row.onmouseleave = applyIdle;
-        }
-
-        row.innerHTML = `<div style="font-weight:600;font-size:${scale(14)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</div><div style="font-size:${scale(12)};opacity:0.75;margin-top:${scale(4)}">${upg.desc}</div><div style="font-size:${scale(11)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${unlocked ? 'Unlocked' : `Cost: ${costLabel}`}</div>`;
-
-        row.onclick = () => {
-            if (!unlocked) onUpgrade(upg.key, upg.cost);
-        };
-        panel.appendChild(row);
+    tier1.forEach((upg, i) => {
+        const node = techTreeNode(upg, !!upgrades[upg.key], false, onUpgrade);
+        node.style.gridColumn = String(i + 1);
+        node.style.gridRow = '1';
+        grid.appendChild(node);
     });
+
+    const autoShootUnlocked = !!upgrades.autoShoot;
+    const connector = document.createElement('div');
+    connector.style.gridColumn = String(tier2Column + 1);
+    connector.style.gridRow = '2';
+    connector.style.justifySelf = 'center';
+    connector.style.width = '2px';
+    connector.style.height = scale(16);
+    connector.style.background = autoShootUnlocked ? INK.scope : INK.hairlineDim;
+
+    const tier2Node = techTreeNode(tier2, !!upgrades[tier2.key], !autoShootUnlocked, onUpgrade);
+    tier2Node.style.gridColumn = String(tier2Column + 1);
+    tier2Node.style.gridRow = '3';
+
+    grid.appendChild(connector);
+    grid.appendChild(tier2Node);
+    panel.appendChild(grid);
 
     const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     closeBtn.style.marginTop = scale(14);
@@ -699,4 +794,8 @@ export function showWaveHint() {
 
 export function showEliteHint(duration) {
     annunciator({ id: 'elite-hint', top: '134px', text: 'Elite Contact Detected', color: INK.gold, duration });
+}
+
+export function showOverdriveHint(duration) {
+    annunciator({ id: 'overdrive-hint', top: '172px', text: 'Weapon Overdrive Engaged', color: INK.gold, duration });
 }

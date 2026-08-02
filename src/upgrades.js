@@ -1,12 +1,13 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET } from './constants.js';
+import { MAGNET, ARMOR, OVERDRIVE } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 
 export let upgrades = {
     magnet: 0,
     laser: 0,
     speed: 0,
+    armor: 0,
     plasmaCount: 0 // plasmaCount als Eigenschaft von upgrades hinzufügen
 };
 export let magnetRadius = 0;
@@ -15,7 +16,13 @@ export let magnetStrength = 0;
 export let techUpgrades = {
     autoShoot: false,
     eliteHint: false,
-    homingMissile: false // Lenkraketen-Upgrade
+    homingMissile: false, // Lenkraketen-Upgrade
+    piercing: false // Laser durchdringen Gegner
+};
+
+// Manche Tech-Upgrades setzen ein anderes voraus (Baum-Struktur im Tech-Tree-UI)
+export const TECH_PREREQUISITES = {
+    homingMissile: 'autoShoot'
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {
@@ -32,6 +39,30 @@ export function applyUpgrade(key, ship, PHYSICS) {
         ship.maxSpeed += PHYSICS.SPEED_UPGRADE_INCREASE;
         ship.acceleration += PHYSICS.ACCELERATION_UPGRADE_INCREASE; // Erhöhe auch die Beschleunigung
     }
+    if (key === 'armor') {
+        upgrades.armor++;
+        ship.maxHp += ARMOR.HP_PER_UPGRADE;
+        ship.hp = ship.maxHp; // Upgrade repariert den Rumpf vollständig
+    }
+}
+
+// --- Overdrive: temporärer Kampf-Buff, ausgelöst durch Level-Aufstieg (XP) ---
+export let overdriveUntil = 0;
+
+export function activateOverdrive() {
+    overdriveUntil = performance.now() + OVERDRIVE.DURATION_MS;
+}
+
+export function isOverdriveActive() {
+    return performance.now() < overdriveUntil;
+}
+
+export function getFireRateMultiplier() {
+    return isOverdriveActive() ? OVERDRIVE.FIRE_RATE_MULT : 1;
+}
+
+export function getDamageMultiplier() {
+    return isOverdriveActive() ? OVERDRIVE.DAMAGE_MULT : 1;
 }
 
 export function loadTechUpgrades() {
@@ -62,6 +93,8 @@ export function savePlasmaCount() {
     localStorage.setItem('plasmaCount', upgrades.plasmaCount);
 }
 export function handleTechUpgrade(key, cost) {
+    const prereq = TECH_PREREQUISITES[key];
+    if (prereq && !techUpgrades[prereq]) return; // Voraussetzung im Tech-Baum nicht erfüllt
     if (upgrades.plasmaCount >= cost && !techUpgrades[key]) {
         upgrades.plasmaCount -= cost;
         techUpgrades[key] = true;

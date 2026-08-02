@@ -174,7 +174,7 @@ export class EffectsSystem {
     drawLaserWithGlow(laser, upgradeLevel = 0) {
         this.ctx.save();
         this.ctx.shadowBlur = 16;
-        this.ctx.shadowColor = upgradeLevel >= 3 ? COLORS.LASER_UPGRADED : COLORS.LASER_NORMAL;
+        this.ctx.shadowColor = (laser.tier && laser.tier.glow) || (upgradeLevel >= 3 ? COLORS.LASER_UPGRADED : COLORS.LASER_NORMAL);
         laser.draw(this.ctx);
         this.ctx.restore();
     }

@@ -1,6 +1,6 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION } from './constants.js';
-import { magnetRadius } from './upgrades.js';
+import { PROGRESSION, OVERDRIVE } from './constants.js';
+import { magnetRadius, activateOverdrive, getFireRateMultiplier } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 
 export function createGameLoop(context) {
@@ -8,7 +8,7 @@ export function createGameLoop(context) {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
-        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint,
+        displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef
@@ -30,6 +30,11 @@ export function createGameLoop(context) {
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
+        // Overdrive: temporärer Kampf-Buff, ausgelöst durch das Erreichen des Levels (XP-getrieben)
+        activateOverdrive();
+        if (typeof showOverdriveHint === 'function') {
+            showOverdriveHint(OVERDRIVE.DURATION_MS);
+        }
         isShopOpenRef.value = true;
         displayShopModal((upgradeKey) => {
             applyUpgrade(upgradeKey, ship, PHYSICS);
@@ -53,7 +58,7 @@ export function createGameLoop(context) {
 
     function autoShootLogic() {
         if (techUpgrades.autoShoot && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value) {
-            if (!autoShootTimerRef.value || performance.now() - autoShootTimerRef.value > GAME_CONFIG.AUTO_SHOOT_COOLDOWN) {
+            if (!autoShootTimerRef.value || performance.now() - autoShootTimerRef.value > GAME_CONFIG.AUTO_SHOOT_COOLDOWN * getFireRateMultiplier()) {
                 const shots = ship.shoot();
                 if (Array.isArray(shots)) {
                     shots.forEach(l => lasers.push(l));
@@ -117,7 +122,7 @@ export function createGameLoop(context) {
         ship.update();
         ship.draw(ctx);
         effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet); // Korrigiert: magnetRadius direkt verwenden
-        if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN)) {
+        if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier())) {
             const shots = ship.shoot();
             if (Array.isArray(shots)) {
                 shots.forEach(l => lasers.push(l));
@@ -145,16 +150,25 @@ export function createGameLoop(context) {
             enemy.update(ship.x, ship.y);
             enemy.draw(ctx);
             if (!ship.isExploding && enemy.checkCollision(ship)) {
-                ship.explode();
-                effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_HIT_INTENSITY, EFFECTS.SCREEN_SHAKE_HIT_DURATION);
-                setTimeout(() => endGame(), 1000);
+                const result = ship.damage(enemy.isElite ? 2 : 1);
+                if (result === 'dead') {
+                    ship.explode();
+                    effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_HIT_INTENSITY, EFFECTS.SCREEN_SHAKE_HIT_DURATION);
+                    setTimeout(() => endGame(), 1000);
+                } else if (result === 'hit') {
+                    effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_HIT_INTENSITY * 0.5, EFFECTS.SCREEN_SHAKE_HIT_DURATION * 0.5);
+                }
             }
             lasers.forEach((laser, lIdx) => {
                 if (enemy.checkLaserHit(laser)) {
                     // enemy.destroy() wird jetzt korrekt innerhalb von enemy.checkLaserHit() aufgerufen,
                     // wenn die Lebenspunkte des Gegners tatsächlich <= 0 sind.
-                    // Laser wird verbraucht
-                    lasers.splice(lIdx, 1); 
+                    // Laser wird nur verbraucht, wenn keine Durchdringung (Piercing) mehr übrig ist
+                    if (laser.pierceRemaining > 0) {
+                        laser.pierceRemaining--;
+                    } else {
+                        lasers.splice(lIdx, 1);
+                    }
 
                     // Nur XP und Kill geben, wenn HP <= 0 und XP noch nicht vergeben wurde
                     if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
@@ -214,9 +228,14 @@ export function createGameLoop(context) {
                 const dx = l.x - ship.x;
                 const dy = l.y - ship.y;
                 if (Math.sqrt(dx * dx + dy * dy) < ship.getCollisionRadius() + 5) {
-                    ship.explode();
-                    effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY, EFFECTS.SCREEN_SHAKE_LASER_DURATION);
-                    setTimeout(() => endGame(), 1000);
+                    const result = ship.damage(1);
+                    if (result === 'dead') {
+                        ship.explode();
+                        effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY, EFFECTS.SCREEN_SHAKE_LASER_DURATION);
+                        setTimeout(() => endGame(), 1000);
+                    } else if (result === 'hit') {
+                        effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY * 0.5, EFFECTS.SCREEN_SHAKE_LASER_DURATION * 0.5);
+                    }
                     enemyLasers.splice(idx, 1);
                 }
             }
@@ -270,6 +289,7 @@ export function createGameLoop(context) {
         }
         updateExperienceBar(experienceRef.value, maxXPRef.value);
         displayLevel(levelRef.value);
+        if (typeof updateHullUI === 'function') updateHullUI(ship.hp, ship.maxHp);
         autoShootLogic();
         autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);

@@ -2,7 +2,7 @@
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 
 const XP_SPRITE_RES = 8;
-const xpSprite = makePixelSprite(
+export const xpSprite = makePixelSprite(
     XP_SPRITE_RES, XP_SPRITE_RES,
     ['#c9960c', '#ffd700', '#fff59d'],
     '#5c4400',
@@ -34,8 +34,12 @@ class XP {
     draw(ctx) {
         if (!this.collected) {
             ctx.save();
+            // Sanftes Pulsieren des Glows, damit die Sphäre etwas lebendiger wirkt
+            const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300);
+            ctx.shadowBlur = 18 * pulse;
+            ctx.shadowColor = '#ffd23f';
             ctx.translate(this.x, this.y);
-            drawPixelSprite(ctx, xpSprite, this.radius * 2, this.radius * 2);
+            drawPixelSprite(ctx, xpSprite, this.radius * 2 * pulse, this.radius * 2 * pulse);
             ctx.restore();
         }
     }

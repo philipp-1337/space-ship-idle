@@ -1,6 +1,7 @@
 import Laser from './laser.js';
-import { upgrades } from './upgrades.js';
-import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+import { upgrades, techUpgrades } from './upgrades.js';
+import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
+import { ARMOR } from './constants.js';
 
 const SHIP_X_MIN = -22, SHIP_X_MAX = 22, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
 const SHIP_DISPLAY_W = SHIP_X_MAX - SHIP_X_MIN;
@@ -69,6 +70,8 @@ const shipSprite = makePixelSprite(
     }
 );
 
+const shipHitSprite = makeFlashSprite(shipSprite, '#ffffff');
+
 class Ship {
     constructor(x, y) {
         this.x = x;
@@ -77,14 +80,35 @@ class Ship {
         this.height = 28;
         this.angle = 0;
         this.speed = 5;
-        
+
         this.isExploding = false;
         this.explosionFrame = 0;
         this.maxExplosionFrames = 24;
         this.particles = [];
-        
-        this.thrustState = 'none'; 
+
+        this.thrustState = 'none';
         this.thrustParticles = [];
+
+        this.maxHp = ARMOR.BASE_HP;
+        this.hp = this.maxHp;
+        this.invulnerableUntil = 0;
+        this.hitFlashUntil = 0;
+    }
+
+    // Wendet Schaden an, respektiert Unverwundbarkeitsfenster nach dem letzten Treffer.
+    // Rückgabe: 'blocked' (Unverwundbarkeit aktiv, nichts passiert), 'hit' (Treffer registriert,
+    // Rumpf hält noch) oder 'dead' (Rumpf auf 0 HP, Aufrufer soll explode() auslösen).
+    damage(amount) {
+        const now = performance.now();
+        if (now < this.invulnerableUntil || this.isExploding) return 'blocked';
+        this.hp = Math.max(0, this.hp - amount);
+        this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
+        this.hitFlashUntil = now + 150;
+        return this.hp <= 0 ? 'dead' : 'hit';
+    }
+
+    isInvulnerable() {
+        return performance.now() < this.invulnerableUntil;
     }
 
     update() {
@@ -191,11 +215,19 @@ class Ship {
             return;
         }
 
+        const now = performance.now();
+        const invulnerable = now < this.invulnerableUntil;
+        // Während der Unverwundbarkeit blinkt das Schiff (jede 100ms sichtbar/unsichtbar).
+        if (invulnerable && Math.floor(now / 100) % 2 === 0) {
+            return;
+        }
+
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        drawPixelSprite(ctx, shipSprite, SHIP_DISPLAY_W, SHIP_DISPLAY_H);
+        const sprite = now < this.hitFlashUntil ? shipHitSprite : shipSprite;
+        drawPixelSprite(ctx, sprite, SHIP_DISPLAY_W, SHIP_DISPLAY_H);
 
         ctx.restore();
     }
@@ -208,6 +240,7 @@ class Ship {
     shoot() {
         const tipX = this.x + Math.cos(this.angle) * this.width/2;
         const tipY = this.y + Math.sin(this.angle) * this.width/2;
+        const pierce = techUpgrades.piercing ? 2 : 0;
         if (upgrades.laser >= 2) {
             const offset = 7;
             return [
@@ -215,17 +248,19 @@ class Ship {
                     this.x + Math.cos(this.angle) * this.width/2 - Math.sin(this.angle) * offset,
                     this.y + Math.sin(this.angle) * this.width/2 + Math.cos(this.angle) * offset,
                     this.angle,
-                    upgrades.laser
+                    upgrades.laser,
+                    { pierce }
                 ),
                 new Laser(
                     this.x + Math.cos(this.angle) * this.width/2 + Math.sin(this.angle) * offset,
                     this.y + Math.sin(this.angle) * this.width/2 - Math.cos(this.angle) * offset,
                     this.angle,
-                    upgrades.laser
+                    upgrades.laser,
+                    { pierce }
                 )
             ];
         }
-        return [new Laser(tipX, tipY, this.angle, upgrades.laser)];
+        return [new Laser(tipX, tipY, this.angle, upgrades.laser, { pierce })];
     }
 
     getCollisionRadius() {
