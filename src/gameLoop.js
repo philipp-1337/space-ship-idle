@@ -6,9 +6,9 @@ import HomingMissile from './homingMissile.js';
 export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
-        effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, // magnetRadius hier entfernt
+        effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
-        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, // displayAutoAimButton entfernt
+        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef
@@ -103,6 +103,11 @@ export function createGameLoop(context) {
         }
         const shakeActive = effectsSystem.applyScreenShake();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (inputManager.isMobile) {
+            ctx.save();
+            ctx.scale(MOBILE.GAME_ZOOM, MOBILE.GAME_ZOOM);
+        }
         effectsSystem.updateStars(ship.x, ship.y);
         effectsSystem.drawStars();
         effectsSystem.updateAndDrawXpParticles();
@@ -255,6 +260,11 @@ export function createGameLoop(context) {
                 }
             }
         }
+        
+        if (inputManager.isMobile) {
+            ctx.restore();
+        }
+        
         if (shakeActive) {
             effectsSystem.restoreScreenShake();
         }

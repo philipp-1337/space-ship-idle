@@ -23,13 +23,13 @@ function getRandomSpawnPosition(canvas) {
     let x, y;
     const edge = Math.floor(Math.random() * 4);
     if (edge === 0) { // Left edge
-        x = 0; y = Math.random() * window.innerHeight;
+        x = 0; y = Math.random() * window.logicalHeight;
     } else if (edge === 1) { // Right edge
-        x = window.innerWidth; y = Math.random() * window.innerHeight;
+        x = window.logicalWidth; y = Math.random() * window.logicalHeight;
     } else if (edge === 2) { // Top edge
-        x = Math.random() * window.innerWidth; y = 0;
+        x = Math.random() * window.logicalWidth; y = 0;
     } else { // Bottom edge (edge === 3)
-        x = Math.random() * window.innerWidth; y = window.innerHeight;
+        x = Math.random() * window.logicalWidth; y = window.logicalHeight;
     }
     return { x, y };
 }

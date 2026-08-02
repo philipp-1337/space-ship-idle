@@ -97,5 +97,6 @@ export const PROGRESSION = {
 export const MOBILE = {
     CANVAS_SCALE_FACTOR: 2,
     TOUCH_Z_INDEX: 5000,
-    UI_SCALE_FACTOR: 1.8 // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
+    UI_SCALE_FACTOR: 1.8, // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
+    GAME_ZOOM: 1.2
 };

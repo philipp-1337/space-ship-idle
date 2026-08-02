@@ -19,7 +19,14 @@ document.body.appendChild(canvas);
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const ship = new Ship(window.innerWidth / 2, window.innerHeight / 2);
+window.logicalWidth = window.innerWidth;
+window.logicalHeight = window.innerHeight;
+if (inputManager.isMobile) {
+    window.logicalWidth = window.innerWidth / MOBILE.GAME_ZOOM;
+    window.logicalHeight = window.innerHeight / MOBILE.GAME_ZOOM;
+}
+
+const ship = new Ship(window.logicalWidth / 2, window.logicalHeight / 2);
 const lasers = [];
 const xpPoints = [];
 const plasmaCells = [];
@@ -96,9 +103,9 @@ function updateShipMovement() {
         let nextY = ship.y + ship.vy;
         let offsetX = 0, offsetY = 0;
         if (nextX < marginX) { offsetX = marginX - nextX; nextX = marginX; }
-        if (nextX > window.innerWidth - marginX) { offsetX = (window.innerWidth - marginX) - nextX; nextX = window.innerWidth - marginX; }
+        if (nextX > window.logicalWidth - marginX) { offsetX = (window.logicalWidth - marginX) - nextX; nextX = window.logicalWidth - marginX; }
         if (nextY < marginY) { offsetY = marginY - nextY; nextY = marginY; }
-        if (nextY > window.innerHeight - marginY) { offsetY = (window.innerHeight - marginY) - nextY; nextY = window.innerHeight - marginY; }
+        if (nextY > window.logicalHeight - marginY) { offsetY = (window.logicalHeight - marginY) - nextY; nextY = window.logicalHeight - marginY; }
         if (offsetX !== 0 || offsetY !== 0) {
             worldOffsetX += -offsetX;
             worldOffsetY += -offsetY;
@@ -160,9 +167,9 @@ function updateShipMovement() {
         nextX = marginX;
     }
     // Rechts
-    if (nextX > window.innerWidth - marginX) {
-        offsetX = (window.innerWidth - marginX) - nextX;
-        nextX = window.innerWidth - marginX;
+    if (nextX > window.logicalWidth - marginX) {
+        offsetX = (window.logicalWidth - marginX) - nextX;
+        nextX = window.logicalWidth - marginX;
     }
     // Oben
     if (nextY < marginY) {
@@ -170,9 +177,9 @@ function updateShipMovement() {
         nextY = marginY;
     }
     // Unten
-    if (nextY > window.innerHeight - marginY) {
-        offsetY = (window.innerHeight - marginY) - nextY;
-        nextY = window.innerHeight - marginY;
+    if (nextY > window.logicalHeight - marginY) {
+        offsetY = (window.logicalHeight - marginY) - nextY;
+        nextY = window.logicalHeight - marginY;
     }
     // Wenn Offset != 0, verschiebe Welt
     if (offsetX !== 0 || offsetY !== 0) {
@@ -244,14 +251,19 @@ window.resumeGame = resumeGame;
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    
+    window.logicalWidth = window.innerWidth;
+    window.logicalHeight = window.innerHeight;
     if (inputManager.isMobile) {
         inputManager.resizeCanvasForMobile();
+        window.logicalWidth = window.innerWidth / MOBILE.GAME_ZOOM;
+        window.logicalHeight = window.innerHeight / MOBILE.GAME_ZOOM;
     }
-    effectsSystem.resize(window.innerWidth, window.innerHeight);
+    effectsSystem.resize(window.logicalWidth, window.logicalHeight);
     
     // Margin für Weltverschiebung neu berechnen, da sich das logische Fenster geändert hat
-    marginX = window.innerWidth * PHYSICS.MARGIN_FACTOR;
-    marginY = window.innerHeight * PHYSICS.MARGIN_FACTOR;
+    marginX = window.logicalWidth * PHYSICS.MARGIN_FACTOR;
+    marginY = window.logicalHeight * PHYSICS.MARGIN_FACTOR;
 });
 
 function restartGame() {
@@ -300,7 +312,7 @@ window.syncRefsToVars = syncRefsToVars;
 const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
-    PHYSICS, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection, spawnEnemyWave, showWaveHint,
+    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection, spawnEnemyWave, showWaveHint,
     displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -311,8 +323,8 @@ const gameLoop = createGameLoop({
 inputManager.resizeCanvasForMobile();
 
 // Margin für Weltverschiebung NACH Canvas-Skalierung berechnen
-marginX = window.innerWidth * PHYSICS.MARGIN_FACTOR;
-marginY = window.innerHeight * PHYSICS.MARGIN_FACTOR;
+marginX = window.logicalWidth * PHYSICS.MARGIN_FACTOR;
+marginY = window.logicalHeight * PHYSICS.MARGIN_FACTOR;
 gameLoop();
 // --- GAME LOOP ENDE ---
 loadTechUpgrades();

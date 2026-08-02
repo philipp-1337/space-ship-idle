@@ -106,8 +106,8 @@ export class EffectsSystem {
         this.starLayers.forEach(layer => {
             for (let i = 0; i < layer.count; i++) {
                 layer.stars.push({
-                    x: Math.random() * window.innerWidth,
-                    y: Math.random() * window.innerHeight
+                    x: Math.random() * window.logicalWidth,
+                    y: Math.random() * window.logicalHeight
                 });
             }
         });
@@ -123,10 +123,10 @@ export class EffectsSystem {
                 star.y -= dy * layer.speed;
                 
                 // Wrap around screen
-                if (star.x < 0) star.x += window.innerWidth;
-                if (star.x > window.innerWidth) star.x -= window.innerWidth;
-                if (star.y < 0) star.y += window.innerHeight;
-                if (star.y > window.innerHeight) star.y -= window.innerHeight;
+                if (star.x < 0) star.x += window.logicalWidth;
+                if (star.x > window.logicalWidth) star.x -= window.logicalWidth;
+                if (star.y < 0) star.y += window.logicalHeight;
+                if (star.y > window.logicalHeight) star.y -= window.logicalHeight;
             });
         });
         
