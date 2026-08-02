@@ -12,7 +12,7 @@ export const GAME_CONFIG = {
     ELITE_HINT_DURATION: 3500,
     ELITE_ENEMY_SIZE: 44,
     ENEMY_WAVE_INTERVAL: 5, // Every 5 levels for an enemy wave
-    ENEMY_WAVE_SIZE: 10     // Number of enemies in a wave
+    ENEMY_WAVE_SIZE: 24     // Number of enemies in a wave
 };
 
 export const PHYSICS = {

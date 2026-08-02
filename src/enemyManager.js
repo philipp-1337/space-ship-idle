@@ -53,17 +53,28 @@ export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
 
 export function spawnEnemyWave(canvas, level, easyMode = false) {
     console.log(`Spawning enemy wave for level ${level}!`);
-    for (let i = 0; i < GAME_CONFIG.ENEMY_WAVE_SIZE; i++) {
-        const pos = getRandomSpawnPosition(canvas);
-        // Spawnt reguläre Gegner, skaliert auf das aktuelle Level
-        enemies.push(new Enemy(pos.x, pos.y, level, easyMode));
+    const numEnemies = GAME_CONFIG.ENEMY_WAVE_SIZE;
+    const centerX = window.logicalWidth / 2;
+    const centerY = window.logicalHeight / 2;
+    // Spawn outside the visible screen
+    const radius = Math.max(window.logicalWidth, window.logicalHeight) / 2 + 100;
+    
+    for (let i = 0; i < numEnemies; i++) {
+        const angle = (Math.PI * 2 / numEnemies) * i;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        enemies.push(new Enemy(x, y, level, easyMode));
     }
-    // Hier könnte man optional eine kleine Verzögerung zwischen den Spawns einbauen,
-    // aber für den Anfang spawnen wir alle gleichzeitig.
 }
-export function startEnemySpawning(canvas, levelRef, techUpgradesRef, easyMode = false) {
+export function startEnemySpawning(canvas, levelRef, techUpgradesRef, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef) {
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
     enemySpawnIntervalId = setInterval(() => {
+        // Skip spawning if game is paused, shop is open, or game over
+        if (isPausedRef && isPausedRef.value) return;
+        if (isShopOpenRef && isShopOpenRef.value) return;
+        if (isGameOverRef && isGameOverRef.value) return;
+
+        const easyMode = easyModeRef ? easyModeRef.value : false;
         spawnEnemy(canvas, levelRef.value, techUpgradesRef.value, easyMode);
     }, GAME_CONFIG.ENEMY_SPAWN_INTERVAL);
 }

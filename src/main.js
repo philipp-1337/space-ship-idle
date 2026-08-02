@@ -376,7 +376,7 @@ window.updatePlasmaUI(upgrades.plasmaCount);
 
 // --- NEU: Callback für TechTree-Änderungen ---
 window.onTechTreeChanged = function() {
-    startEnemySpawning(canvas, { value: level }, { value: techUpgrades }, easyModeRef.value);
+    startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 };
 
 // Pre-Flight Check: Schwierigkeit wählen, bevor Loop und Gegner-Spawning beginnen
@@ -386,7 +386,7 @@ displayStartScreen((mode) => {
     if (easyModeRef.value) grantEasyModeArmorBonus();
 
     gameLoop();
-    startEnemySpawning(canvas, { value: level }, { value: techUpgrades }, easyModeRef.value);
+    startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 
     // Settings: Schwierigkeit und (mobil) Sichtbarkeit der Touch-Steuerung jederzeit änderbar
     displaySettingsButton(() => {
