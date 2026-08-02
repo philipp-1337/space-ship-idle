@@ -34,17 +34,17 @@ function getRandomSpawnPosition(canvas) {
     return { x, y };
 }
 
-export function spawnEnemy(canvas, level, techUpgrades) {
+export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
     // Spawn a regular enemy
     const regularPos = getRandomSpawnPosition(canvas);
-    enemies.push(new Enemy(regularPos.x, regularPos.y, level));
+    enemies.push(new Enemy(regularPos.x, regularPos.y, level, easyMode));
 
     // Check if an elite enemy should also spawn
     if (level > 0 && level % GAME_CONFIG.ELITE_ENEMY_INTERVAL === 0) {
         const elitePos = getRandomSpawnPosition(canvas);
-        const elite = new Enemy(elitePos.x, elitePos.y, level + GAME_CONFIG.ELITE_ENEMY_HP_BONUS);
+        const elite = new Enemy(elitePos.x, elitePos.y, level + GAME_CONFIG.ELITE_ENEMY_HP_BONUS, easyMode);
         elite.color = COLORS.ELITE_ENEMY_COLOR; // Use constant
-    elite.size = GAME_CONFIG.ELITE_ENEMY_SIZE; 
+    elite.size = GAME_CONFIG.ELITE_ENEMY_SIZE;
         elite.isElite = true;
         enemies.push(elite);
 
@@ -55,20 +55,20 @@ export function spawnEnemy(canvas, level, techUpgrades) {
     }
 }
 
-export function spawnEnemyWave(canvas, level) {
+export function spawnEnemyWave(canvas, level, easyMode = false) {
     console.log(`Spawning enemy wave for level ${level}!`);
     for (let i = 0; i < GAME_CONFIG.ENEMY_WAVE_SIZE; i++) {
         const pos = getRandomSpawnPosition(canvas);
         // Spawnt reguläre Gegner, skaliert auf das aktuelle Level
-        enemies.push(new Enemy(pos.x, pos.y, level));
+        enemies.push(new Enemy(pos.x, pos.y, level, easyMode));
     }
     // Hier könnte man optional eine kleine Verzögerung zwischen den Spawns einbauen,
     // aber für den Anfang spawnen wir alle gleichzeitig.
 }
-export function startEnemySpawning(canvas, levelRef, techUpgradesRef) {
+export function startEnemySpawning(canvas, levelRef, techUpgradesRef, easyMode = false) {
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
     enemySpawnIntervalId = setInterval(() => {
-        spawnEnemy(canvas, levelRef.value, techUpgradesRef.value);
+        spawnEnemy(canvas, levelRef.value, techUpgradesRef.value, easyMode);
     }, GAME_CONFIG.ENEMY_SPAWN_INTERVAL);
 }
 

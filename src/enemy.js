@@ -135,7 +135,7 @@ const ENEMY_TYPES = [
 ];
 
 class Enemy {
-    constructor(x, y, level = 1) {
+    constructor(x, y, level = 1, easyMode = false) {
         // Typ nach Level bestimmen
         const availableTypes = ENEMY_TYPES.filter(t => level >= t.minLevel);
         const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
@@ -145,7 +145,9 @@ class Enemy {
         this.size = 30;
         // HP skaliert mit Spielerlevel: 10% kompoundierte Steigerung pro Spielerlevel über 1
         // level ist hier das aktuelle Spielerlevel
-        this.hp = Math.max(1, Math.round(type.baseHp * Math.pow(1.10, level - 1)));
+        // Easy-Modus: halbe HP, aber maxHp sinkt gleich mit — der Balken zeigt bei
+        // Spawn also weiterhin "voll" an, nur der Gegner stirbt doppelt so schnell.
+        this.hp = Math.max(1, Math.round(type.baseHp * Math.pow(1.10, level - 1) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;

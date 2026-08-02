@@ -326,7 +326,7 @@ export default class HomingMissile {
                     if (e.hp <= 0) { 
                         if (wasAliveBeforeHit && !e.alreadyAwardedXP && rewardContext) {
                             rewardContext.xpPoints.push(new rewardContext.XP(e.x, e.y));
-                            if (Math.random() < rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE) {
+                            if (e.isElite || Math.random() < rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE) {
                                 let px = e.x;
                                 let py = e.y;
                                 const centerX = rewardContext.canvas.width / 2;

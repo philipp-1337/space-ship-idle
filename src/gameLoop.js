@@ -8,10 +8,10 @@ export function createGameLoop(context) {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection,
-        displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
+        displayLevel, updateExperienceBar, updateHullUI, updateEliteRadar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
-        startEnemySpawning, autoShootTimerRef
+        startEnemySpawning, autoShootTimerRef, easyModeRef
     } = context;
 
     let homingMissiles = [];
@@ -42,7 +42,7 @@ export function createGameLoop(context) {
 
             // Prüfen, ob eine Gegnerwelle ausgelöst werden soll, NACHDEM der Shop geschlossen wurde
             if (levelRef.value > 1 && levelRef.value % GAME_CONFIG.ENEMY_WAVE_INTERVAL === 0) {
-                spawnEnemyWave(canvas, levelRef.value);
+                spawnEnemyWave(canvas, levelRef.value, easyModeRef ? easyModeRef.value : false);
                 if (typeof showWaveHint === 'function') {
                     showWaveHint();
                 }
@@ -160,7 +160,13 @@ export function createGameLoop(context) {
                 }
             }
             lasers.forEach((laser, lIdx) => {
+                // Ein Laser überlappt oft mehrere Frames lang denselben Gegner, bevor er
+                // dessen Trefferradius physisch verlässt — ohne diese Sperre würde ein
+                // durchdringender Laser beide Pierce-Ladungen an EINEN Gegner verlieren,
+                // statt zwei verschiedene zu treffen.
+                if (laser.hitEnemies.has(enemy)) return;
                 if (enemy.checkLaserHit(laser)) {
+                    laser.hitEnemies.add(enemy);
                     // enemy.destroy() wird jetzt korrekt innerhalb von enemy.checkLaserHit() aufgerufen,
                     // wenn die Lebenspunkte des Gegners tatsächlich <= 0 sind.
                     // Laser wird nur verbraucht, wenn keine Durchdringung (Piercing) mehr übrig ist
@@ -173,7 +179,8 @@ export function createGameLoop(context) {
                     // Nur XP und Kill geben, wenn HP <= 0 und XP noch nicht vergeben wurde
                     if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
                         xpPoints.push(new XP(enemy.x, enemy.y));
-                        if (Math.random() < GAME_CONFIG.PLASMA_DROP_CHANCE) {
+                        // Elite-Gegner droppen garantiert Plasma (macht das Aufspüren via Elite Scanner lohnenswert)
+                        if (enemy.isElite || Math.random() < GAME_CONFIG.PLASMA_DROP_CHANCE) {
                             let px = enemy.x;
                             let py = enemy.y;
                             const centerX = canvas.width / 2;
@@ -290,6 +297,14 @@ export function createGameLoop(context) {
         updateExperienceBar(experienceRef.value, maxXPRef.value);
         displayLevel(levelRef.value);
         if (typeof updateHullUI === 'function') updateHullUI(ship.hp, ship.maxHp);
+        if (typeof updateEliteRadar === 'function') {
+            const elite = techUpgrades.eliteHint ? enemies.find(e => e.isElite && e.alive) : null;
+            if (elite) {
+                updateEliteRadar(true, Math.atan2(elite.y - ship.y, elite.x - ship.x));
+            } else {
+                updateEliteRadar(false);
+            }
+        }
         autoShootLogic();
         autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);

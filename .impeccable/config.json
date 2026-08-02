@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.22, 1.12, .36, 1)",
+        "createdAt": "2026-08-02T17:37:36.463Z",
+        "reason": "Documented damped-needle settle animation for the Level/Plasma dials (DESIGN.md), not used elsewhere anymore"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#ff5722",
+        "createdAt": "2026-08-02T17:38:42.205Z",
+        "reason": "Explosion VFX color; DESIGN.md scopes gameplay/sprite colors outside the chrome-only design system"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#ffc107",
+        "createdAt": "2026-08-02T17:38:45.439Z",
+        "reason": "Explosion VFX color; DESIGN.md scopes gameplay/sprite colors outside the chrome-only design system"
+      }
+    ]
+  }
+}

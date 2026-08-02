@@ -20,6 +20,8 @@ export const PHYSICS = {
     SHIP_MAX_SPEED: 4,
     SHIP_FRICTION: 0.90,
     SHIP_ROTATION_SPEED: 0.07,
+    SHIP_ROTATION_RAMP_STEP: 0.06, // per-frame ramp toward full turn speed while a turn key is held
+    SHIP_ROTATION_MIN_FACTOR: 0.35, // fraction of full turn speed on the very first held frame (tap = small turn)
     ACCELERATION_UPGRADE_INCREASE: 0.02, // Zuwachs der Beschleunigung pro Upgrade-Level
     BACKWARD_THRUST_FACTOR: 0.7,
     SPEED_UPGRADE_INCREASE: 1.2,
@@ -76,9 +78,13 @@ export const STARS = {
 export const TOUCH_CONTROLS = {
     JOYSTICK_SIZE: 180,
     JOYSTICK_STICK_SIZE: 76,
-    JOYSTICK_DEADZONE: 18,
+    JOYSTICK_DEADZONE: 8,
     SHOOT_BUTTON_SIZE: 140,
-    CONTAINER_HEIGHT: '40vh'
+    CONTAINER_HEIGHT: '40vh',
+    // Unscaled px kept clear at the top of the full-height touch zones, so the
+    // Level/Hull/Pause/Settings (left) and Plasma/Tech-Tree (right) HUD chrome
+    // stays tappable instead of being swallowed by the joystick/fire zones.
+    HUD_TOP_RESERVE: 200
 };
 
 export const ENEMY_LASER = {

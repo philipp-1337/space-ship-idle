@@ -232,7 +232,7 @@ export function updateExperienceBar(currentXP, maxXP) {
         fill.style.height = '100%';
         fill.style.background = INK.gold;
         fill.style.boxShadow = `0 0 ${scaleNum(10)}px ${scaleNum(1)}px rgba(255,210,63,0.65)`;
-        fill.style.transition = 'width 0.4s cubic-bezier(.22,1.12,.36,1)';
+        fill.style.transition = 'width 0.4s cubic-bezier(.16,1,.3,1)';
         tape.appendChild(fill);
 
         // Kleines Icon der tatsächlichen XP-Sphäre, damit Balken und Pickup optisch
@@ -425,6 +425,58 @@ function consolePanelModal({ id, zIndex, accent = INK.phosphor }) {
 }
 
 // ---------------------------------------------------------------------------
+// Pre-flight check — difficulty select, shown once before the game loop
+// begins. `onSelect` receives 'easy' or 'normal'.
+// ---------------------------------------------------------------------------
+export function displayStartScreen(onSelect) {
+    if (document.getElementById('start-screen')) return;
+
+    const { modal, panel } = consolePanelModal({ id: 'start-screen', zIndex: 3500, accent: INK.phosphor });
+    panel.style.width = 'min(92vw, 460px)';
+    panel.appendChild(panelTitleBar('Pre-Flight Check', INK.phosphor));
+
+    const intro = document.createElement('p');
+    intro.innerText = 'Select your difficulty.';
+    intro.style.fontFamily = FONT;
+    intro.style.color = INK.textDim;
+    intro.style.fontSize = scale(12);
+    intro.style.margin = `0 0 ${scale(16)} 0`;
+    intro.style.alignSelf = 'flex-start';
+    panel.appendChild(intro);
+
+    const modes = [
+        { key: 'easy', label: 'Easy', desc: 'Enemies at half strength, ship starts reinforced — a gentler entry.' },
+        { key: 'normal', label: 'Normal', desc: 'Standard difficulty — the full challenge.' }
+    ];
+
+    modes.forEach(mode => {
+        const row = document.createElement('button');
+        row.style.width = '100%';
+        row.style.boxSizing = 'border-box';
+        row.style.textAlign = 'left';
+        row.style.margin = `0 0 ${scale(10)} 0`;
+        row.style.padding = `${scale(14)} ${scale(18)}`;
+        row.style.cursor = 'pointer';
+        row.style.clipPath = chamferClip(scaleNum(8));
+        row.style.background = INK.panel;
+        row.style.border = `1px solid ${INK.hairline}`;
+        row.style.color = INK.text;
+        row.style.fontFamily = FONT;
+        row.style.transition = 'background 0.08s, border-color 0.08s';
+        row.innerHTML = `<div style="font-weight:600;font-size:${scale(14)};letter-spacing:0.03em;text-transform:uppercase;color:${INK.phosphor}">${mode.label}</div><div style="font-size:${scale(12)};color:${INK.textDim};margin-top:${scale(4)}">${mode.desc}</div>`;
+        row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = INK.phosphor; };
+        row.onmouseleave = () => { row.style.background = INK.panel; row.style.borderColor = INK.hairline; };
+        row.onclick = () => {
+            document.body.removeChild(modal);
+            onSelect(mode.key);
+        };
+        panel.appendChild(row);
+    });
+
+    document.body.appendChild(modal);
+}
+
+// ---------------------------------------------------------------------------
 // Game over
 // ---------------------------------------------------------------------------
 export function displayGameOverScreen(currentLevel) {
@@ -538,6 +590,110 @@ export function removePauseButton() {
     if (btn) btn.remove();
 }
 
+// ---------------------------------------------------------------------------
+// Settings button + menu — difficulty switch and (on mobile) a toggle for the
+// on-screen joystick/fire-button graphics. Sits right of the Pause button.
+// ---------------------------------------------------------------------------
+export function displaySettingsButton(onClick) {
+    if (document.getElementById('settings-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'settings-btn';
+    btn.innerHTML = `<svg width="${scaleNum(15)}" height="${scaleNum(15)}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" stroke="${INK.phosphor}" stroke-width="1.6"/>
+        <path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 17.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 13 1.65 1.65 0 0 0 3.17 12H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 6.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 2.6a1.65 1.65 0 0 0 1-1.51V1a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 6.6a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.4z" stroke="${INK.phosphor}" stroke-width="1.3"/>
+    </svg>`;
+    btn.setAttribute('aria-label', 'Settings');
+    btn.style.position = 'fixed';
+    btn.style.top = scale(10);
+    btn.style.left = scale(126); // clears the Pause button (84 left + 32 wide + 10 gap)
+    btn.style.zIndex = '1100';
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.justifyContent = 'center';
+    btn.style.width = scale(32);
+    btn.style.height = scale(32);
+    btn.style.cursor = 'pointer';
+    btn.style.transition = 'box-shadow 0.15s, background 0.15s';
+    panelBase(btn, { chamfer: 6 });
+    btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.phosphorDim}`;
+    btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.phosphor}`; };
+    btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.phosphorDim}`; };
+    btn.onclick = onClick;
+    document.body.appendChild(btn);
+}
+
+export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDifficultyChange, onToggleControls }) {
+    if (document.getElementById('settings-menu')) return;
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
+
+    const { modal, panel } = consolePanelModal({ id: 'settings-menu', zIndex: 4500, accent: INK.phosphor });
+    panel.style.width = 'min(92vw, 420px)';
+    panel.appendChild(panelTitleBar('Settings', INK.phosphor));
+
+    const rerender = (nextEasyMode, nextControlsVisible) => {
+        modal.remove();
+        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, isMobile, onDifficultyChange, onToggleControls });
+    };
+
+    panel.appendChild(label('Difficulty', INK.textDim));
+    const diffRow = document.createElement('div');
+    diffRow.style.display = 'flex';
+    diffRow.style.gap = scale(10);
+    diffRow.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
+    diffRow.style.width = '100%';
+    [{ key: 'easy', text: 'Easy' }, { key: 'normal', text: 'Normal' }].forEach(opt => {
+        const active = (opt.key === 'easy') === !!easyMode;
+        const btn = consoleButton({ text: opt.text, color: INK.phosphor, glowColor: INK.phosphorDim, filled: active, fontSize: 13 });
+        btn.style.flex = '1';
+        btn.style.padding = `${scale(10)} ${scale(12)}`;
+        btn.onclick = () => {
+            onDifficultyChange(opt.key);
+            rerender(opt.key === 'easy', controlsVisible);
+        };
+        diffRow.appendChild(btn);
+    });
+    panel.appendChild(diffRow);
+
+    const diffNote = document.createElement('div');
+    diffNote.innerText = 'Applies to enemies from now on. Switching to Easy also reinforces your hull once.';
+    diffNote.style.fontFamily = FONT;
+    diffNote.style.fontSize = scale(11);
+    diffNote.style.color = INK.textDim;
+    diffNote.style.margin = `0 0 ${scale(20)} 0`;
+    panel.appendChild(diffNote);
+
+    if (isMobile) {
+        panel.appendChild(label('Touch Controls', INK.textDim));
+        const toggleBtn = consoleButton({ text: controlsVisible ? 'Visible' : 'Hidden', color: INK.scope, glowColor: INK.scopeDim, filled: controlsVisible, fontSize: 13 });
+        toggleBtn.style.width = '100%';
+        toggleBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
+        toggleBtn.onclick = () => {
+            const next = !controlsVisible;
+            onToggleControls(next);
+            rerender(easyMode, next);
+        };
+        panel.appendChild(toggleBtn);
+
+        const ctrlNote = document.createElement('div');
+        ctrlNote.innerText = 'The joystick and fire zones cover the full left/right half of the screen either way — this only shows or hides the graphics.';
+        ctrlNote.style.fontFamily = FONT;
+        ctrlNote.style.fontSize = scale(11);
+        ctrlNote.style.color = INK.textDim;
+        ctrlNote.style.margin = `0 0 ${scale(20)} 0`;
+        panel.appendChild(ctrlNote);
+    }
+
+    const closeBtn = consoleButton({ text: 'Close', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
+    closeBtn.onclick = () => {
+        modal.remove();
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
+        if (typeof window.resumeGame === 'function') window.resumeGame();
+    };
+    panel.appendChild(closeBtn);
+
+    document.body.appendChild(modal);
+}
+
 export function displayPauseMenu(stats, onResume, onRestart) {
     if (document.getElementById('pause-menu')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
@@ -616,20 +772,39 @@ export function showTechTreeButton(onClick) {
     btn.style.display = 'block';
 }
 
+// One-time responsive stylesheet for the tech tree: collapses the 3-column
+// branch layout to a single stacked column on narrow screens, since a
+// side-by-side tree doesn't have room to breathe below ~460px.
+function ensureTechTreeStyle() {
+    if (document.getElementById('tech-tree-style')) return;
+    const style = document.createElement('style');
+    style.id = 'tech-tree-style';
+    style.textContent = `
+        @media (max-width: 460px) {
+            #tech-tree-modal .tt-grid { grid-template-columns: 1fr !important; row-gap: ${scale(10)} !important; }
+            #tech-tree-modal .tt-grid > * { grid-column: 1 !important; grid-row: auto !important; }
+            #tech-tree-modal .tt-connector { display: none !important; }
+            #tech-tree-modal .tt-child-label::before { content: "\\21B3  "; opacity: 0.6; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Builds one tree node "card" — smaller/denser than the old full-width rows,
 // since several now sit side by side. `locked` means a prerequisite is
-// unmet (distinct from simply not being able to afford it yet).
+// unmet (distinct from simply not being able to afford it yet). Details and
+// the purchase action are hidden behind a tap: the header always shows just
+// the label + status, a click reveals the description and (if purchasable)
+// a Confirm button, so buying always takes two deliberate taps.
 function techTreeNode(upg, unlocked, locked, onUpgrade) {
+    const purchasable = !unlocked && !locked;
     const costLabel = `${upg.cost} Plasma Cell${upg.cost === 1 ? '' : 's'}`;
-    const node = document.createElement('button');
+
+    const node = document.createElement('div');
     node.style.width = '100%';
     node.style.boxSizing = 'border-box';
-    node.style.textAlign = 'left';
-    node.style.padding = `${scale(10)} ${scale(12)}`;
-    node.style.fontFamily = FONT;
     node.style.clipPath = chamferClip(scaleNum(8));
-    node.style.cursor = (unlocked || locked) ? (locked ? 'not-allowed' : 'default') : 'pointer';
-    node.disabled = unlocked || locked;
+    node.style.overflow = 'hidden';
     node.style.transition = 'background 0.08s, border-color 0.08s, opacity 0.08s';
 
     const applyIdle = () => {
@@ -656,20 +831,63 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
         node.onmouseleave = applyIdle;
     }
 
+    const header = document.createElement('button');
+    header.style.width = '100%';
+    header.style.boxSizing = 'border-box';
+    header.style.textAlign = 'left';
+    header.style.padding = `${scale(10)} ${scale(12)}`;
+    header.style.fontFamily = FONT;
+    header.style.background = 'transparent';
+    header.style.border = 'none';
+    header.style.color = 'inherit';
+    header.style.cursor = 'pointer';
+
     const statusLine = unlocked
         ? 'Unlocked'
         : (locked ? `Requires ${upg.requiresLabel}` : `Cost: ${costLabel}`);
-    node.innerHTML = `<div style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</div><div style="font-size:${scale(11)};opacity:0.75;margin-top:${scale(4)}">${upg.desc}</div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
+    const labelClass = upg.requires ? 'tt-child-label' : '';
+    header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</span><span class="tt-chevron" style="font-size:${scale(11)};opacity:0.55;flex-shrink:0">&#9662;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
 
-    node.onclick = () => {
-        if (!unlocked && !locked) onUpgrade(upg.key, upg.cost);
+    const details = document.createElement('div');
+    details.style.display = 'none';
+    details.style.padding = `0 ${scale(12)} ${scale(12)} ${scale(12)}`;
+
+    const desc = document.createElement('div');
+    desc.innerText = upg.desc;
+    desc.style.fontFamily = FONT;
+    desc.style.fontSize = scale(11);
+    desc.style.opacity = '0.8';
+    desc.style.marginBottom = purchasable ? scale(10) : '0';
+    details.appendChild(desc);
+
+    if (purchasable) {
+        const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 11 });
+        confirmBtn.style.width = '100%';
+        confirmBtn.style.padding = `${scale(8)} ${scale(12)}`;
+        confirmBtn.onclick = (e) => {
+            e.stopPropagation();
+            onUpgrade(upg.key, upg.cost);
+        };
+        details.appendChild(confirmBtn);
+    }
+
+    let expanded = false;
+    header.onclick = () => {
+        expanded = !expanded;
+        details.style.display = expanded ? 'block' : 'none';
+        const chevron = header.querySelector('.tt-chevron');
+        if (chevron) chevron.innerHTML = expanded ? '&#9652;' : '&#9662;';
     };
+
+    node.appendChild(header);
+    node.appendChild(details);
     return node;
 }
 
 export function showTechTreeModal(upgrades, onUpgrade) {
     if (document.getElementById('tech-tree-modal')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
+    ensureTechTreeStyle();
 
     const { modal, panel } = consolePanelModal({ id: 'tech-tree-modal', zIndex: 5000, accent: INK.scope });
     panel.style.width = 'min(92vw, 480px)';
@@ -687,9 +905,11 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     const tier2 = { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies in a circling orbit and deal area damage.', cost: 10, requires: 'autoShoot', requiresLabel: 'Auto-Fire' };
 
     const grid = document.createElement('div');
+    grid.className = 'tt-grid';
     grid.style.display = 'grid';
     grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
     grid.style.columnGap = scale(8);
+    grid.style.alignItems = 'start';
     grid.style.width = '100%';
     grid.style.marginBottom = scale(4);
 
@@ -702,6 +922,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
 
     const autoShootUnlocked = !!upgrades.autoShoot;
     const connector = document.createElement('div');
+    connector.className = 'tt-connector';
     connector.style.gridColumn = String(tier2Column + 1);
     connector.style.gridRow = '2';
     connector.style.justifySelf = 'center';
@@ -798,4 +1019,41 @@ export function showEliteHint(duration) {
 
 export function showOverdriveHint(duration) {
     annunciator({ id: 'overdrive-hint', top: '172px', text: 'Weapon Overdrive Engaged', color: INK.gold, duration });
+}
+
+// ---------------------------------------------------------------------------
+// Elite radar — a top-center bearing arrow that points at the live elite
+// enemy while the Elite Scanner tech is active. Gives the one-time "Elite
+// Contact Detected" toast a follow-up payoff: you can actually act on it,
+// either hunting it down (elites now guarantee a Plasma drop) or steering
+// clear of it.
+// ---------------------------------------------------------------------------
+let _eliteRadar = null;
+
+export function updateEliteRadar(active, bearingRad = 0) {
+    if (!_eliteRadar) {
+        const el = document.createElement('div');
+        el.id = 'elite-radar';
+        el.style.position = 'fixed';
+        el.style.top = scale(10);
+        el.style.left = '50%';
+        el.style.zIndex = '1050';
+        el.style.width = scale(26);
+        el.style.height = scale(26);
+        el.style.display = 'none';
+        el.style.pointerEvents = 'none';
+        el.innerHTML = `<svg viewBox="0 0 24 24" width="100%" height="100%" style="filter: drop-shadow(0 0 4px ${INK.gold})">
+            <polygon points="12,2 19,20 12,15 5,20" fill="${INK.gold}" />
+        </svg>`;
+        document.body.appendChild(el);
+        _eliteRadar = el;
+    }
+    if (active) {
+        _eliteRadar.style.display = 'block';
+        // The arrow glyph points "up" (bearing 0 in screen terms is -90deg
+        // in the game's math-angle convention), so offset by +90deg.
+        _eliteRadar.style.transform = `translateX(-50%) rotate(${bearingRad + Math.PI / 2}rad)`;
+    } else {
+        _eliteRadar.style.display = 'none';
+    }
 }

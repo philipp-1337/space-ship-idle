@@ -3,7 +3,7 @@ import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, 
 import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
-import { updateExperienceBar, displayLevel, updateHullUI, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint } from './ui.js';
+import { updateExperienceBar, displayLevel, updateHullUI, updateEliteRadar, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, displayStartScreen, displaySettingsButton, showSettingsMenu } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -131,9 +131,16 @@ function updateShipMovement() {
         ship.thrustState = 'none';
     }
 
-    // Drehen
-    if (keys.left) ship.angle -= PHYSICS.SHIP_ROTATION_SPEED;
-    if (keys.right) ship.angle += PHYSICS.SHIP_ROTATION_SPEED;
+    // Drehen — Geschwindigkeit rampt beim Halten hoch, damit ein kurzer Tap
+    // eine kleine, präzise Richtungsänderung ergibt statt eines abrupten Sprungs.
+    if (keys.left || keys.right) {
+        ship.turnRamp = Math.min(1, (ship.turnRamp || 0) + PHYSICS.SHIP_ROTATION_RAMP_STEP);
+    } else {
+        ship.turnRamp = 0;
+    }
+    const turnSpeed = PHYSICS.SHIP_ROTATION_SPEED * (PHYSICS.SHIP_ROTATION_MIN_FACTOR + (1 - PHYSICS.SHIP_ROTATION_MIN_FACTOR) * ship.turnRamp);
+    if (keys.left) ship.angle -= turnSpeed;
+    if (keys.right) ship.angle += turnSpeed;
 
     // Beschleunigung
     let ax = 0, ay = 0;
@@ -293,6 +300,16 @@ const levelRef = { value: level };
 const experienceRef = { value: experience };
 const maxXPRef = { value: maxXP };
 let autoShootTimerRef = { value: 0 };
+const easyModeRef = { value: false }; // set at the Pre-Flight Check, changeable later via Settings
+let easyArmorGranted = false; // guards the one-time Easy-mode hull bonus against repeated toggling
+
+function grantEasyModeArmorBonus() {
+    if (easyArmorGranted) return;
+    applyUpgrade('armor', ship, PHYSICS);
+    applyUpgrade('armor', ship, PHYSICS);
+    ship.hp = ship.maxHp;
+    easyArmorGranted = true;
+}
 
 // Synchronisiere die Werte mit den Refs im GameLoop
 function syncRefsToVars() {
@@ -313,10 +330,10 @@ const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
     PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, handleXpCollection, handlePlasmaCollection, spawnEnemyWave, showWaveHint, showOverdriveHint,
-    displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal,
+    displayLevel, updateExperienceBar, updateHullUI, updateEliteRadar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
-    startEnemySpawning, autoShootTimerRef,
+    startEnemySpawning, autoShootTimerRef, easyModeRef,
     updateShipMovement
 });
 // --- GAME LOOP START ---
@@ -325,19 +342,42 @@ inputManager.resizeCanvasForMobile();
 // Margin für Weltverschiebung NACH Canvas-Skalierung berechnen
 marginX = window.logicalWidth * PHYSICS.MARGIN_FACTOR;
 marginY = window.logicalHeight * PHYSICS.MARGIN_FACTOR;
-gameLoop();
-// --- GAME LOOP ENDE ---
 loadTechUpgrades();
 loadPlasmaCount();
 setupPlasmaUI();
 window.updatePlasmaUI(upgrades.plasmaCount);
 
-// Initialisiere Gegner-Spawning
-startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
 // --- NEU: Callback für TechTree-Änderungen ---
 window.onTechTreeChanged = function() {
-    startEnemySpawning(canvas, { value: level }, { value: techUpgrades });
+    startEnemySpawning(canvas, { value: level }, { value: techUpgrades }, easyModeRef.value);
 };
+
+// Pre-Flight Check: Schwierigkeit wählen, bevor Loop und Gegner-Spawning beginnen
+displayStartScreen((mode) => {
+    easyModeRef.value = mode === 'easy';
+    // Handicap statt sichtbarer Änderung: Gegner-HP wird beim Spawnen halbiert (enemy.js)
+    if (easyModeRef.value) grantEasyModeArmorBonus();
+
+    gameLoop();
+    startEnemySpawning(canvas, { value: level }, { value: techUpgrades }, easyModeRef.value);
+
+    // Settings: Schwierigkeit und (mobil) Sichtbarkeit der Touch-Steuerung jederzeit änderbar
+    displaySettingsButton(() => {
+        showSettingsMenu({
+            easyMode: easyModeRef.value,
+            controlsVisible: inputManager.controlsVisible !== false,
+            isMobile: inputManager.isMobile,
+            onDifficultyChange: (nextMode) => {
+                easyModeRef.value = nextMode === 'easy';
+                if (easyModeRef.value) grantEasyModeArmorBonus();
+            },
+            onToggleControls: (visible) => {
+                if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(visible);
+            }
+        });
+    });
+});
+// --- GAME LOOP ENDE ---
 
 // Nach jedem Shop-Upgrade und Level-Up synchronisieren
 window.addEventListener('focus', syncRefsToVars);

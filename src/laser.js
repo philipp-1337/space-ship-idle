@@ -54,6 +54,9 @@ class Laser {
         this.isActive = true;
         this.upgradeLevel = upgradeLevel;
         this.pierceRemaining = options.pierce || 0;
+        // Merkt sich bereits getroffene Gegner: ein Laser überlappt oft mehrere Frames
+        // lang denselben Gegner, bevor er dessen Trefferradius physisch verlässt.
+        this.hitEnemies = new Set();
         this.tier = tierFor(upgradeLevel);
 
         // Schaden berechnen basierend auf Basisschaden, Upgrade-Level und aktivem Overdrive-Buff

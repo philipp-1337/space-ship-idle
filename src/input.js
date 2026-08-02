@@ -62,44 +62,69 @@ export class InputManager {
         }
     }
 
+    // Touch layout: two full-height capture zones (left = steer, right = fire)
+    // spanning nearly the whole screen, below a reserved strip that keeps the
+    // HUD buttons (Pause/Settings/Tech Tree, etc.) tappable. The joystick base
+    // and fire button are purely visual (pointer-events: none) — all input
+    // logic lives on the zones, so touching anywhere in a zone works exactly
+    // the same as touching the small graphic used to be. `setControlsVisible`
+    // toggles only the graphics; the zones themselves always stay active.
     setupTouchControls() {
-        this.createTouchControlsUI();
+        this.controlsVisible = true;
+        this.createVirtualJoystickVisual();
+        this.createShootButtonVisual();
+        this.createTouchZones();
     }
 
-    createTouchControlsUI() {
-        const touchContainer = document.createElement('div');
-        touchContainer.id = 'touch-controls';
-        touchContainer.style.position = 'fixed';
-        touchContainer.style.left = '0';
-        touchContainer.style.bottom = '0';
-        touchContainer.style.width = '100vw';
-        touchContainer.style.height = TOUCH_CONTROLS.CONTAINER_HEIGHT;
-        touchContainer.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
-        touchContainer.style.pointerEvents = 'none';
+    createTouchZones() {
+        const scaleFactor = MOBILE.UI_SCALE_FACTOR || 1.5;
+        const topReserve = TOUCH_CONTROLS.HUD_TOP_RESERVE * scaleFactor;
 
-        this.createVirtualJoystick(touchContainer);
-        this.createShootButton(touchContainer);
+        const leftZone = document.createElement('div');
+        leftZone.id = 'joystick-zone';
+        leftZone.style.position = 'fixed';
+        leftZone.style.left = '0';
+        leftZone.style.top = `${topReserve}px`;
+        leftZone.style.bottom = '0';
+        leftZone.style.width = '50vw';
+        leftZone.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
+        leftZone.style.touchAction = 'none';
+        leftZone.style.background = 'transparent';
+        document.body.appendChild(leftZone);
 
-        document.body.appendChild(touchContainer);
+        const rightZone = document.createElement('div');
+        rightZone.id = 'fire-zone';
+        rightZone.style.position = 'fixed';
+        rightZone.style.right = '0';
+        rightZone.style.top = `${topReserve}px`;
+        rightZone.style.bottom = '0';
+        rightZone.style.width = '50vw';
+        rightZone.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
+        rightZone.style.touchAction = 'none';
+        rightZone.style.background = 'transparent';
+        document.body.appendChild(rightZone);
+
+        this.setupJoystickZoneEvents(leftZone);
+        this.setupFireZoneEvents(rightZone);
     }
 
-    createVirtualJoystick(container) {
+    createVirtualJoystickVisual() {
         const joystickSize = TOUCH_CONTROLS.JOYSTICK_SIZE;
         const stickSize = TOUCH_CONTROLS.JOYSTICK_STICK_SIZE;
-        
+
         const joystickBase = document.createElement('div');
-        joystickBase.style.position = 'absolute';
+        joystickBase.style.position = 'fixed';
         joystickBase.style.left = '36px';
         joystickBase.style.bottom = '36px';
         joystickBase.style.width = joystickSize + 'px';
         joystickBase.style.height = joystickSize + 'px';
         joystickBase.style.background = 'rgba(10,13,12,0.55)';
         joystickBase.style.borderRadius = '50%';
-        joystickBase.style.pointerEvents = 'auto';
-        joystickBase.style.touchAction = 'none';
+        joystickBase.style.pointerEvents = 'none';
         joystickBase.style.border = '1px solid rgba(57,255,106,0.35)';
         joystickBase.style.boxShadow = '0 0 12px 1px rgba(57,255,106,0.18) inset, 0 0 8px 0 rgba(57,255,106,0.15)';
         joystickBase.style.boxSizing = 'border-box';
+        joystickBase.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
 
         // Crosshair ticks, matching the console's instrument-dial language.
         for (let i = 0; i < 4; i++) {
@@ -133,108 +158,93 @@ export class InputManager {
         joystickStick.style.boxShadow = '0 0 10px 3px rgba(57,255,106,0.7)';
         joystickStick.style.boxSizing = 'border-box';
         joystickStick.style.transition = 'left 0.08s, top 0.08s';
-        
-        joystickBase.appendChild(joystickStick);
-        container.appendChild(joystickBase);
 
-        this.setupJoystickEvents(joystickBase, joystickStick, joystickSize, stickSize);
+        joystickBase.appendChild(joystickStick);
+        document.body.appendChild(joystickBase);
+
+        this.joystickBase = joystickBase;
+        this.joystickStick = joystickStick;
     }
 
-    setupJoystickEvents(base, stick, baseSize, stickSize) {
-        let joystickTouchId = null;
-        let baseRect = null;
+    setupJoystickZoneEvents(zone) {
+        const baseSize = TOUCH_CONTROLS.JOYSTICK_SIZE;
+        const stickSize = TOUCH_CONTROLS.JOYSTICK_STICK_SIZE;
+        const maxDist = baseSize/2 - stickSize/2;
+        let touchId = null;
+        let originX = 0, originY = 0;
 
-        const moveStick = (x, y) => {
-            const dx = x - baseSize/2;
-            const dy = y - baseSize/2;
-            const maxDist = baseSize/2 - stickSize/2;
+        const setBasePosition = (x, y) => {
+            this.joystickBase.style.left = (x - baseSize/2) + 'px';
+            this.joystickBase.style.top = (y - baseSize/2) + 'px';
+            this.joystickBase.style.bottom = 'auto';
+        };
+        const resetBasePosition = () => {
+            this.joystickBase.style.left = '36px';
+            this.joystickBase.style.top = 'auto';
+            this.joystickBase.style.bottom = '36px';
+        };
+        const moveStick = (dx, dy) => {
             let dist = Math.sqrt(dx*dx + dy*dy);
             let nx = dx, ny = dy;
-            
             if (dist > maxDist) {
                 nx = dx * maxDist / dist;
                 ny = dy * maxDist / dist;
-                dist = maxDist;
             }
-            
-            stick.style.left = (baseSize/2 - stickSize/2 + nx) + 'px';
-            stick.style.top = (baseSize/2 - stickSize/2 + ny) + 'px';
-            
+            this.joystickStick.style.left = (baseSize/2 - stickSize/2 + nx) + 'px';
+            this.joystickStick.style.top = (baseSize/2 - stickSize/2 + ny) + 'px';
             this.setJoystickVector(nx, ny);
         };
-
-        const resetJoystick = () => {
-            stick.style.left = (baseSize/2 - stickSize/2) + 'px';
-            stick.style.top = (baseSize/2 - stickSize/2) + 'px';
+        const resetStick = () => {
+            this.joystickStick.style.left = (baseSize/2 - stickSize/2) + 'px';
+            this.joystickStick.style.top = (baseSize/2 - stickSize/2) + 'px';
             this.joystickMove = { x: 0, y: 0 };
             this.keys.up = this.keys.down = this.keys.left = this.keys.right = false;
         };
 
-        base.addEventListener('touchstart', (e) => {
-            if (joystickTouchId !== null) return;
+        zone.addEventListener('touchstart', (e) => {
+            if (touchId !== null) return;
+            const touch = e.changedTouches && e.changedTouches[0];
+            if (!touch || typeof touch.clientX !== 'number') return;
 
-            // Defensive checks for touch data
-            if (!e.changedTouches || e.changedTouches.length === 0) {
-                console.error("Joystick touchstart: No changedTouches found in event.", e);
-                return; 
-            }
-            const touch = e.changedTouches[0];
-            if (!touch) { 
-                console.error("Joystick touchstart: First touch point (e.changedTouches[0]) is invalid.", e);
-                return;
-            }
-
-            joystickTouchId = touch.identifier;
-            baseRect = base.getBoundingClientRect();
-
-            // Further check for valid coordinates and baseRect
-            if (typeof touch.clientX !== 'number' || typeof touch.clientY !== 'number' || !baseRect) {
-                console.error("Joystick touchstart: Invalid touch coordinates or baseRect is missing.", { touchClientX: touch.clientX, touchClientY: touch.clientY, baseRectExists: !!baseRect });
-                joystickTouchId = null; // Reset to allow a new touch attempt
-                return;
-            }
-
-            const x = touch.clientX - baseRect.left;
-            const y = touch.clientY - baseRect.top;
-            moveStick(x, y);
+            touchId = touch.identifier;
+            originX = touch.clientX;
+            originY = touch.clientY;
+            // Floating joystick: the base graphic jumps to wherever the touch
+            // started, so the whole zone behaves like the old fixed base did.
+            if (this.controlsVisible) setBasePosition(originX, originY);
+            moveStick(0, 0);
             e.preventDefault();
         }, { passive: false });
 
-        base.addEventListener('touchmove', (e) => {
-            if (joystickTouchId === null) return;
+        zone.addEventListener('touchmove', (e) => {
+            if (touchId === null) return;
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
-                if (touch.identifier === joystickTouchId) {
-                    const x = touch.clientX - baseRect.left;
-                    const y = touch.clientY - baseRect.top;
-                    moveStick(x, y);
+                if (touch.identifier === touchId) {
+                    moveStick(touch.clientX - originX, touch.clientY - originY);
                     e.preventDefault();
                     break;
                 }
             }
         }, { passive: false });
 
-        base.addEventListener('touchend', (e) => {
+        const endTouch = (e) => {
             for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === joystickTouchId) {
-                    joystickTouchId = null;
-                    resetJoystick();
-                    e.preventDefault();
+                if (e.changedTouches[i].identifier === touchId) {
+                    touchId = null;
+                    resetStick();
+                    resetBasePosition();
                     break;
                 }
             }
-        }, { passive: false });
-
-        base.addEventListener('touchcancel', () => {
-            joystickTouchId = null;
-            resetJoystick();
-        });
+        };
+        zone.addEventListener('touchend', endTouch, { passive: false });
+        zone.addEventListener('touchcancel', endTouch);
     }
 
     setJoystickVector(dx, dy) {
         const deadzone = TOUCH_CONTROLS.JOYSTICK_DEADZONE;
-        
+
         if (Math.abs(dx) > deadzone || Math.abs(dy) > deadzone) {
             this.joystickMove = { x: dx, y: dy };
         } else {
@@ -242,7 +252,7 @@ export class InputManager {
         }
     }
 
-    createShootButton(container) {
+    createShootButtonVisual() {
         const shootBtn = document.createElement('button');
         shootBtn.innerHTML = `<svg width="42%" height="42%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
@@ -253,7 +263,7 @@ export class InputManager {
             <line x1="19.5" y1="12" x2="23.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
         </svg>`;
         shootBtn.setAttribute('aria-label', 'Fire');
-        shootBtn.style.position = 'absolute';
+        shootBtn.style.position = 'fixed';
         shootBtn.style.right = '64px';
         shootBtn.style.bottom = '96px';
         shootBtn.style.width = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
@@ -263,8 +273,8 @@ export class InputManager {
         shootBtn.style.justifyContent = 'center';
         shootBtn.style.borderRadius = '50%';
         shootBtn.style.boxSizing = 'border-box';
-        shootBtn.style.pointerEvents = 'auto';
-        shootBtn.style.touchAction = 'none';
+        shootBtn.style.pointerEvents = 'none';
+        shootBtn.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
 
         const idleStyle = () => {
             shootBtn.style.border = '1px solid rgba(255,59,48,0.6)';
@@ -281,21 +291,42 @@ export class InputManager {
         idleStyle();
         shootBtn.style.transition = 'transform 0.08s, box-shadow 0.08s, background 0.08s, color 0.08s';
 
-        shootBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.keys.shooting = true;
-            shootBtn.style.transform = 'scale(0.92)';
-            engagedStyle();
-        });
+        this.setShootButtonEngaged = (engaged) => {
+            shootBtn.style.transform = engaged ? 'scale(0.92)' : 'scale(1)';
+            if (engaged) engagedStyle(); else idleStyle();
+        };
 
-        shootBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.keys.shooting = false;
-            shootBtn.style.transform = 'scale(1)';
-            idleStyle();
-        });
+        document.body.appendChild(shootBtn);
+        this.shootBtn = shootBtn;
+    }
 
-        container.appendChild(shootBtn);
+    setupFireZoneEvents(zone) {
+        const activeTouches = new Set();
+        const updateShooting = () => {
+            this.keys.shooting = activeTouches.size > 0;
+            if (this.setShootButtonEngaged) this.setShootButtonEngaged(this.keys.shooting);
+        };
+
+        zone.addEventListener('touchstart', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) activeTouches.add(e.changedTouches[i].identifier);
+            updateShooting();
+            e.preventDefault();
+        }, { passive: false });
+
+        const release = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) activeTouches.delete(e.changedTouches[i].identifier);
+            updateShooting();
+        };
+        zone.addEventListener('touchend', release, { passive: false });
+        zone.addEventListener('touchcancel', release);
+    }
+
+    // Hides/shows only the joystick and fire-button graphics; the underlying
+    // touch zones keep working either way (Settings > Touch Controls).
+    setControlsVisible(visible) {
+        this.controlsVisible = visible;
+        if (this.joystickBase) this.joystickBase.style.display = visible ? 'block' : 'none';
+        if (this.shootBtn) this.shootBtn.style.display = visible ? 'flex' : 'none';
     }
 
     resizeCanvasForMobile() {
