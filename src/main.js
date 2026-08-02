@@ -19,7 +19,7 @@ document.body.appendChild(canvas);
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const ship = new Ship(canvas.width / 2, canvas.height / 2);
+const ship = new Ship(window.innerWidth / 2, window.innerHeight / 2);
 const lasers = [];
 const xpPoints = [];
 const plasmaCells = [];
@@ -87,9 +87,9 @@ function updateShipMovement() {
         let nextY = ship.y + ship.vy;
         let offsetX = 0, offsetY = 0;
         if (nextX < marginX) { offsetX = marginX - nextX; nextX = marginX; }
-        if (nextX > canvas.width - marginX) { offsetX = (canvas.width - marginX) - nextX; nextX = canvas.width - marginX; }
+        if (nextX > window.innerWidth - marginX) { offsetX = (window.innerWidth - marginX) - nextX; nextX = window.innerWidth - marginX; }
         if (nextY < marginY) { offsetY = marginY - nextY; nextY = marginY; }
-        if (nextY > canvas.height - marginY) { offsetY = (canvas.height - marginY) - nextY; nextY = canvas.height - marginY; }
+        if (nextY > window.innerHeight - marginY) { offsetY = (window.innerHeight - marginY) - nextY; nextY = window.innerHeight - marginY; }
         if (offsetX !== 0 || offsetY !== 0) {
             worldOffsetX += -offsetX;
             worldOffsetY += -offsetY;
@@ -151,9 +151,9 @@ function updateShipMovement() {
         nextX = marginX;
     }
     // Rechts
-    if (nextX > canvas.width - marginX) {
-        offsetX = (canvas.width - marginX) - nextX;
-        nextX = canvas.width - marginX;
+    if (nextX > window.innerWidth - marginX) {
+        offsetX = (window.innerWidth - marginX) - nextX;
+        nextX = window.innerWidth - marginX;
     }
     // Oben
     if (nextY < marginY) {
@@ -161,9 +161,9 @@ function updateShipMovement() {
         nextY = marginY;
     }
     // Unten
-    if (nextY > canvas.height - marginY) {
-        offsetY = (canvas.height - marginY) - nextY;
-        nextY = canvas.height - marginY;
+    if (nextY > window.innerHeight - marginY) {
+        offsetY = (window.innerHeight - marginY) - nextY;
+        nextY = window.innerHeight - marginY;
     }
     // Wenn Offset != 0, verschiebe Welt
     if (offsetX !== 0 || offsetY !== 0) {
@@ -235,7 +235,14 @@ window.resumeGame = resumeGame;
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    effectsSystem.resize(canvas.width, canvas.height);
+    if (inputManager.isMobile) {
+        inputManager.resizeCanvasForMobile();
+    }
+    effectsSystem.resize(window.innerWidth, window.innerHeight);
+    
+    // Margin für Weltverschiebung neu berechnen, da sich das logische Fenster geändert hat
+    marginX = window.innerWidth * PHYSICS.MARGIN_FACTOR;
+    marginY = window.innerHeight * PHYSICS.MARGIN_FACTOR;
 });
 
 function restartGame() {
@@ -295,8 +302,8 @@ const gameLoop = createGameLoop({
 inputManager.resizeCanvasForMobile();
 
 // Margin für Weltverschiebung NACH Canvas-Skalierung berechnen
-marginX = canvas.width * PHYSICS.MARGIN_FACTOR;
-marginY = canvas.height * PHYSICS.MARGIN_FACTOR;
+marginX = window.innerWidth * PHYSICS.MARGIN_FACTOR;
+marginY = window.innerHeight * PHYSICS.MARGIN_FACTOR;
 gameLoop();
 // --- GAME LOOP ENDE ---
 loadTechUpgrades();
