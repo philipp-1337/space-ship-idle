@@ -25,19 +25,19 @@ export const xpSprite = makePixelSprite(
 
 export const denseXpSprite = makePixelSprite(
     XP_SPRITE_RES, XP_SPRITE_RES,
-    ['#990099', '#ff00ff', '#ff99ff'],
-    '#330033',
+    ['#cc5200', '#ff6600', '#ff9933'],
+    '#4d1f00',
     (ctx) => {
         const c = XP_SPRITE_RES / 2;
-        ctx.fillStyle = '#990099';
+        ctx.fillStyle = '#cc5200';
         ctx.beginPath();
         ctx.arc(c, c, c - 0.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ff00ff';
+        ctx.fillStyle = '#ff6600';
         ctx.beginPath();
         ctx.arc(c - 0.4, c - 0.4, c - 1.3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ff99ff';
+        ctx.fillStyle = '#ff9933';
         ctx.beginPath();
         ctx.arc(c - 1.4, c - 1.4, 1, 0, Math.PI * 2);
         ctx.fill();
@@ -62,7 +62,7 @@ class XP {
             // ansammeln, und shadowBlur ist pro Aufruf teuer, besonders in Chrome.
             const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300);
             ctx.shadowBlur = 7 * pulse;
-            ctx.shadowColor = this.isBossOrb ? '#ffd23f' : (this.value > 1 ? '#ff00ff' : '#ffd23f');
+            ctx.shadowColor = this.isBossOrb ? '#ffd23f' : (this.value > 1 ? '#ff6600' : '#ffd23f');
             ctx.translate(this.x, this.y);
             const spriteToUse = this.isBossOrb ? xpSprite : (this.value > 1 ? denseXpSprite : xpSprite);
             drawPixelSprite(ctx, spriteToUse, this.radius * 2 * pulse, this.radius * 2 * pulse);

@@ -627,7 +627,6 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
         { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.`, rarity: 'common' },
         { key: 'speed', label: 'Ship Speed', desc: "Increases your ship's maximum speed.", rarity: 'common' },
         { key: 'armor', label: 'Shield Capacity', desc: 'Adds a shield point and fully recharges your shield.', rarity: 'common' },
-        { key: 'collectorPulse', label: 'Collector Pulse', desc: 'Instantly pulls every XP orb and Plasma Cell on the field to your ship. Each purchase extends how long the pull lasts.', rarity: 'common' },
         { key: 'chainLightning', label: 'Chain Lightning', desc: 'Lasers have a chance to arc to a second nearby enemy for reduced damage. Each purchase increases the arc chance.', rarity: 'common', maxLevel: 5 },
         { key: 'repairModule', label: 'Repair Module', desc: 'Regenerates 1 shield point over time while below max. Each purchase shortens the regen interval.', rarity: 'rare', maxLevel: 5 },
         { key: 'overdriveCore', label: 'Overdrive Core', desc: 'Overdrive now triggers on every upgrade pick, not just Laser Damage, and lasts longer with each purchase.', rarity: 'rare', maxLevel: OVERDRIVE_CORE.MAX_LEVEL },
