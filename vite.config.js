@@ -15,7 +15,7 @@ export default defineConfig({
             srcDir: 'src',
             filename: 'sw.js',
             registerType: 'prompt',
-            includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
+            includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-v2.png'],
             manifest: {
                 name: 'Space Ship Idle',
                 short_name: 'Space Ship',
