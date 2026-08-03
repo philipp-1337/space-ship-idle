@@ -56,12 +56,14 @@ export function createGameLoop(context) {
     // beide Pfade konsistent XP/Plasma/Kill vergeben.
     function awardKillIfNeeded(enemy) {
         if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
+            // Spawn boss XP or regular XP
             if (enemy.isElite) {
                 const xpNeeded = Math.max(1, maxXPRef.value - experienceRef.value);
                 xpPoints.push(new XP(enemy.x, enemy.y, xpNeeded));
             } else {
-                xpPoints.push(new XP(enemy.x, enemy.y));
+                xpPoints.push(new XP(enemy.x, enemy.y, enemy.xpValue));
             }
+            
             // Elite-Gegner droppen garantiert Plasma; Salvage Drive verdoppelt die normale Chance
             const dropChance = GAME_CONFIG.PLASMA_DROP_CHANCE * (techUpgrades.salvage ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
             if (enemy.isElite || Math.random() < dropChance) {

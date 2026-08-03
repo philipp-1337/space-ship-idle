@@ -148,6 +148,7 @@ const ENEMY_TYPES = [
         baseHp: 4, // Erhöht
         baseSpeed: 0.7,
         color: 'darkred',
+        baseXpValue: 1
     },
     {
         name: 'square',
@@ -156,6 +157,7 @@ const ENEMY_TYPES = [
         baseHp: 10, // Erhöht
         baseSpeed: 0.6,
         color: 'darkblue',
+        baseXpValue: 3
     },
     {
         name: 'pentagon',
@@ -164,6 +166,7 @@ const ENEMY_TYPES = [
         baseHp: 18, // Erhöht
         baseSpeed: 0.5,
         color: 'darkgreen',
+        baseXpValue: 5
     },
     {
         name: 'shooter',
@@ -172,7 +175,8 @@ const ENEMY_TYPES = [
         baseHp: 25, // Erhöht
         baseSpeed: 0.45,
         color: 'purple',
-        canShoot: true
+        canShoot: true,
+        baseXpValue: 8
     }
 ];
 
@@ -208,6 +212,11 @@ class Enemy {
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;
+        this.canShoot = type.canShoot || false;
+        this.lastShot = performance.now() + Math.random() * 2000;
+        this.isElite = false; // wird in spawnBoss() gesetzt
+        this.xpValue = type.baseXpValue || 1;
+        this.hitFlashTimer = 0;
         this.exploding = false;
         this.alreadyAwardedXP = false; // NEU: Flag um doppelte XP-Vergabe zu verhindern
         this.explosionFrame = 0;

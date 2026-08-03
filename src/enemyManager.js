@@ -36,9 +36,19 @@ function getRandomSpawnPosition(canvas) {
 }
 
 export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
-    // Spawn a regular enemy
+    // Determine how many enemies to spawn. 
+    // Base is 1. Add an extra "popcorn" (level 1) enemy every 4 levels for the bullet heaven feel.
+    const extraSpawns = Math.floor((level - 1) / 4);
+    
+    // Spawn the main enemy scaled to current level
     const regularPos = getRandomSpawnPosition(canvas);
     enemies.push(new Enemy(regularPos.x, regularPos.y, level, easyMode));
+    
+    // Spawn additional easy swarm enemies
+    for (let i = 0; i < extraSpawns; i++) {
+        const extraPos = getRandomSpawnPosition(canvas);
+        enemies.push(new Enemy(extraPos.x, extraPos.y, 1, easyMode));
+    }
 }
 
 // Ein einzelner Boss statt eines wiederholten Elite-Spawns: wird einmalig beim
