@@ -3,7 +3,7 @@ export const SOUNDS = {
     // UI
     UI_CLICK: '/assets/audio/sfx/ui_click_v2.wav',
     UI_HOVER: '/assets/audio/sfx/ui_hover.wav',
-    UI_UPGRADE: '/assets/audio/sfx/ui_upgrade.wav',
+    UI_UPGRADE: '/assets/audio/sfx/ui_upgrade_v2.wav',
     UI_ERROR: '/assets/audio/sfx/ui_error_v2.wav',
 
     // Action
