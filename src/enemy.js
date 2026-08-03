@@ -1,4 +1,5 @@
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 // Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
 // Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
@@ -396,6 +397,7 @@ class Enemy {
                 } else {
                     this.isHit = true;
                     this.hitTimer = this.hitDuration;
+                    AudioManager.play('ENEMY_HIT');
                 }
             }
             return true; // Treffer registriert
@@ -407,6 +409,7 @@ class Enemy {
         if (!this.exploding) {
             this.exploding = true;
             this.explosionFrame = 0;
+            AudioManager.play('ENEMY_EXPLODE');
         }
     }
 }

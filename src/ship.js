@@ -2,6 +2,7 @@ import Laser from './laser.js';
 import { upgrades, techUpgrades } from './upgrades.js';
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
 import { ARMOR, REPAIR_MODULE, DEFLECTOR_SHIELD } from './constants.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 const SHIP_X_MIN = -22, SHIP_X_MAX = 22, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
 const SHIP_DISPLAY_W = SHIP_X_MAX - SHIP_X_MIN;
@@ -131,6 +132,7 @@ class Ship {
         this.hp = Math.max(0, this.hp - amount);
         this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
         this.hitFlashUntil = now + 150;
+        AudioManager.play('SHIP_HIT');
         return this.hp <= 0 ? 'dead' : 'hit';
     }
 

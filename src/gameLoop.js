@@ -5,6 +5,7 @@ import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
 import { clearRunState, suppressAutosave } from './runState.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
 // damit eine Umkreis-Abfrage typischerweise nur eine Handvoll Zellen berührt.
@@ -97,6 +98,7 @@ export function createGameLoop(context) {
         levelRef.value++;
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
+        AudioManager.play('MILESTONE');
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
         isShopOpenRef.value = true;
         displayShopModal(ship, upgrades, (upgradeKey) => {
@@ -148,6 +150,7 @@ export function createGameLoop(context) {
                 } else {
                     lasers.push(shots);
                 }
+                AudioManager.play('SHIP_LASER');
                 autoShootTimerRef.value = performance.now();
             }
         }
@@ -240,6 +243,7 @@ export function createGameLoop(context) {
             } else {
                 lasers.push(shots);
             }
+            AudioManager.play('SHIP_LASER');
             gameLoop.lastShot = performance.now();
         }
         // Rückwärts-Schleife statt forEach+splice: forEach hält einen internen

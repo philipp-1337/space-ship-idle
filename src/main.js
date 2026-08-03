@@ -13,7 +13,9 @@ import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } f
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
 import { registerSW } from 'virtual:pwa-register';
+import { AudioManager } from './audio/AudioManager.js';
 
+AudioManager.init();
 initializeUI();
 
 const canvas = document.createElement('canvas');

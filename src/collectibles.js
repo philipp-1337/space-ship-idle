@@ -3,6 +3,7 @@
 import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse } from './upgrades.js';
 import { COLORS, COLLECTOR_PULSE } from './constants.js';
 import { updateExperienceBar } from './ui.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienceObj, levelUpCallback, dt = 1) {
     // ACHTUNG: Niemals xpPoints während des forEach direkt verändern!
@@ -32,6 +33,7 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
         if (Math.sqrt(dx * dx + dy * dy) < ship.getXpRadius() + xp.radius && !xp.collected) {
             effectsSystem.spawnXpParticles(xp.x, xp.y, COLORS.XP_COLOR);
             xp.collect();
+            AudioManager.play('RES_COLLECT');
             // Modifiziere die .value Eigenschaften der übergebenen Referenzobjekte
             experienceObj.experienceRef.value++;
             experienceObj.xpCollectedRef.value++;
@@ -58,6 +60,7 @@ export function handleTractorCollection(ship, tractorItems, effectsSystem, ctx) 
             effectsSystem.spawnXpParticles(item.x, item.y, '#9c27b0');
             item.collected = true;
             triggerCollectorPulse();
+            AudioManager.play('RES_COLLECT');
             toRemove.push(idx);
         }
     });
@@ -89,6 +92,7 @@ export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt
         const dy = ship.y - plasma.y;
         if (Math.sqrt(dx * dx + dy * dy) < ship.getXpRadius() + plasma.radius && !plasma.collected) {
             plasma.collect();
+            AudioManager.play('RES_COLLECT');
             // plasmaCount ist importiert (wird als let in upgrades.js exportiert)
             // Aber: Wert erhöhen und speichern
             // upgrades.js exportiert plasmaCount als let, daher: import * as upgrades, dann upgrades.plasmaCount++

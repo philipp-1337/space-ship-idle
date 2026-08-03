@@ -5,6 +5,7 @@ import { MOBILE, OVERDRIVE_CORE } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
 import { getUpgradeStatPreview, getRecommendedUpgradeKey } from './upgrades.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
@@ -321,7 +322,7 @@ export function initializeUI() {
 // renders the "engaged" state (solid color, dark legend) used for confirmed/
 // unlocked states instead of the default backlit outline.
 // ---------------------------------------------------------------------------
-function consoleButton({ text, color, glowColor, filled = false, fontSize = 16 }) {
+function consoleButton({ text, color, glowColor, filled = false, fontSize = 16, sound = 'UI_CLICK' }) {
     const btn = document.createElement('button');
     btn.innerHTML = text;
     btn.style.fontFamily = FONT;
@@ -351,6 +352,8 @@ function consoleButton({ text, color, glowColor, filled = false, fontSize = 16 }
     btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(18)}px ${scaleNum(3)}px ${glowColor}`; };
     btn.onmouseleave = () => { setState(filled); };
     mirrorHoverOnFocus(btn); // keyboard focus (Arrow-key nav) gets the same glow bump as hover
+    btn.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
+    btn.addEventListener('click', () => AudioManager.play(sound));
     return btn;
 }
 
@@ -505,7 +508,9 @@ export function displayStartScreen(onSelect) {
         row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = INK.phosphor; };
         row.onmouseleave = () => { row.style.background = INK.panel; row.style.borderColor = INK.hairline; };
         mirrorHoverOnFocus(row);
+        row.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
         row.onclick = () => {
+            AudioManager.play('UI_CLICK');
             document.body.removeChild(modal);
             onSelect(mode.key);
         };
@@ -674,7 +679,9 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
         row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = rarity.borderHover; row.style.boxShadow = `0 0 ${scaleNum(12)}px ${scaleNum(1)}px ${rarity.glow}`; };
         row.onmouseleave = () => { row.style.background = INK.panel; row.style.borderColor = rarity.border; row.style.boxShadow = 'none'; };
         mirrorHoverOnFocus(row);
+        row.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
         row.onclick = () => {
+            AudioManager.play('UI_UPGRADE');
             document.body.removeChild(modal);
             if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
             onUpgrade(upg.key);
@@ -713,7 +720,8 @@ export function displayPauseButton(onPause) {
     btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.phosphorDim}`;
     btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.phosphor}`; };
     btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.phosphorDim}`; };
-    btn.onclick = onPause;
+    btn.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
+    btn.onclick = () => { AudioManager.play('UI_CLICK'); onPause(); };
     document.body.appendChild(btn);
 }
 
@@ -750,7 +758,8 @@ export function displaySettingsButton(onClick) {
     btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.phosphorDim}`;
     btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.phosphor}`; };
     btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.phosphorDim}`; };
-    btn.onclick = onClick;
+    btn.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
+    btn.onclick = () => { AudioManager.play('UI_CLICK'); onClick(); };
     document.body.appendChild(btn);
 }
 
@@ -793,6 +802,17 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
     diffNote.style.color = INK.textDim;
     diffNote.style.margin = `0 0 ${scale(20)} 0`;
     panel.appendChild(diffNote);
+
+    panel.appendChild(label('Sound FX', INK.textDim));
+    const sfxEnabled = AudioManager.isSfxEnabled();
+    const sfxBtn = consoleButton({ text: sfxEnabled ? 'On' : 'Off', color: INK.phosphor, glowColor: INK.phosphorDim, filled: sfxEnabled, fontSize: 13 });
+    sfxBtn.style.width = '100%';
+    sfxBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
+    sfxBtn.onclick = () => {
+        AudioManager.setSfxEnabled(!sfxEnabled);
+        rerender(easyMode, controlsVisible);
+    };
+    panel.appendChild(sfxBtn);
 
     if (isMobile) {
         panel.appendChild(label('Touch Controls', INK.textDim));
@@ -925,7 +945,8 @@ export function showTechTreeButton(onClick) {
         btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.scopeDim}`;
         btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.scope}`; };
         btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.scopeDim}`; };
-        btn.onclick = onClick;
+        btn.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
+        btn.onclick = () => { AudioManager.play('UI_CLICK'); onClick(); };
         document.body.appendChild(btn);
     }
     btn.style.display = 'flex';
@@ -989,10 +1010,13 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
 
     if (purchasable) {
         const canAfford = typeof window !== 'undefined' && window.getPlasmaCount ? window.getPlasmaCount() >= upg.cost : true;
-        const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 13 });
+        const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 13, sound: canAfford ? 'UI_UPGRADE' : 'UI_ERROR' });
         confirmBtn.style.flex = '1';
         if (!canAfford) {
-            confirmBtn.disabled = true;
+            // Kein natives `disabled` — der Klick soll weiterhin feuern (siehe
+            // consoleButton's Klick-Listener oben), damit der UI_ERROR-Sound
+            // als Feedback hörbar ist, statt komplett ins Leere zu laufen.
+            confirmBtn.setAttribute('aria-disabled', 'true');
             confirmBtn.style.opacity = '0.5';
             confirmBtn.style.cursor = 'not-allowed';
             confirmBtn.innerHTML = 'Not enough Plasma';
@@ -1053,6 +1077,7 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
         applyIdle();
         node.onmouseenter = () => { node.style.background = INK.panelRaised; node.style.borderColor = INK.scope; };
         node.onmouseleave = applyIdle;
+        node.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
     }
 
     const header = document.createElement('button');
@@ -1072,7 +1097,10 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     const labelClass = upg.requires ? 'tt-child-label' : '';
     header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</span><span style="font-size:${scale(13)};opacity:0.55;flex-shrink:0">&#8250;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
 
-    header.onclick = () => showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade);
+    header.onclick = () => {
+        AudioManager.play('UI_CLICK');
+        showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade);
+    };
     // Hover styling lives on the parent `node`, not this button — mirror it
     // onto keyboard focus the same way mirrorHoverOnFocus() does elsewhere.
     header.addEventListener('focus', () => { if (node.onmouseenter) node.onmouseenter(); });

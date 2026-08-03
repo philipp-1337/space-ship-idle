@@ -2,6 +2,7 @@
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy, { BOSS_TYPE } from './enemy.js';
 import { GAME_CONFIG } from './constants.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 export let enemies = [];
 export let enemyLasers = [];
@@ -15,6 +16,7 @@ export function spawnEnemyLaser(x, y, angle) {
         speed: 5,
         life: 80
     });
+    AudioManager.play('ENEMY_LASER');
 }
 
 // Helper function to get random spawn position on the canvas edge
