@@ -6,7 +6,7 @@ import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
 import { clearRunState, suppressAutosave } from './runState.js';
 import { AudioManager } from './audio/AudioManager.js';
-import { spawnBossRewardWave } from './enemyManager.js';
+import { spawnBossRewardWave, spawnSplitEnemies } from './enemyManager.js';
 import Laser from './laser.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
@@ -30,6 +30,7 @@ export function createGameLoop(context) {
     let lastMissileTime = 0;
     let drones = []; // lazy erzeugt/erweitert, sobald techUpgrades.drone/twinDrones freigeschaltet werden
     let chainFlashes = []; // kurzlebige Blitz-Linien fürs Chain-Lightning-Upgrade
+    let explosiveVisuals = []; // kurzlebige Explosions-Kreise für Explosive Rounds
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -87,6 +88,10 @@ export function createGameLoop(context) {
                 AudioManager.play('SHIP_LASER');
             } else {
                 xpPoints.push(new XP(enemy.x, enemy.y, enemy.xpValue));
+                // Split mechanics for regular enemies
+                if (!enemy.isElite) {
+                    spawnSplitEnemies(enemy, easyModeRef ? easyModeRef.value : false);
+                }
             }
             
             // Elite-Gegner droppen garantiert Plasma; Salvage Drive verdoppelt die normale Chance
@@ -266,8 +271,8 @@ export function createGameLoop(context) {
                 fpsEl.innerText = `FPS: ${currentFps}`;
             }
 
-            // Drop a magnet if FPS is too low (< 20) and cooldown (60s) has passed
-            if (currentFps < 20 && now - lastMagnetDropTime >= 60000) {
+            // Drop a magnet if FPS is too low (< 30) and cooldown (60s) has passed
+            if (currentFps < 30 && now - lastMagnetDropTime >= 60000) {
                 tractorItems.push(new TractorItem(ship.x, ship.y - 40));
                 lastMagnetDropTime = now;
             }
@@ -389,10 +394,8 @@ export function createGameLoop(context) {
                     awardKillIfNeeded(enemy);
 
                     // Explosive Rounds: Flächenschaden an nahen Gegnern beim Einschlag.
-                    // Auch hier über das Grid statt über ALLE Gegner — bei mehreren
-                    // Kills im selben Frame (z.B. dicht stehende Welle) sonst schnell
-                    // O(Gegner²) pro Frame.
                     if (techUpgrades.explosiveRounds) {
+                        explosiveVisuals.push({ x: enemy.x, y: enemy.y, life: 10, maxLife: 10, radius: EXPLOSIVE_ROUNDS.SPLASH_RADIUS });
                         const splashDamage = laser.damage * EXPLOSIVE_ROUNDS.SPLASH_DAMAGE_MULT;
                         const nearby = enemyGrid.queryRadius(enemy.x, enemy.y, EXPLOSIVE_ROUNDS.SPLASH_RADIUS);
                         for (const other of nearby) {
@@ -464,6 +467,25 @@ export function createGameLoop(context) {
             ctx.stroke();
             ctx.restore();
         }
+
+        // Explosive Rounds Visuals zeichnen
+        for (let i = explosiveVisuals.length - 1; i >= 0; i--) {
+            const exp = explosiveVisuals[i];
+            exp.life -= dt;
+            if (exp.life <= 0) {
+                explosiveVisuals.splice(i, 1);
+                continue;
+            }
+            ctx.save();
+            const progress = 1 - (exp.life / exp.maxLife);
+            ctx.globalAlpha = Math.max(0, exp.life / exp.maxLife) * 0.5;
+            ctx.fillStyle = '#ff9800';
+            ctx.beginPath();
+            ctx.arc(exp.x, exp.y, exp.radius * progress, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
         // XP und Plasma nach den Gegnern zeichnen, damit sie darüber liegen
         handleXpCollection(
             ship, xpPoints, effectsSystem, ctx,

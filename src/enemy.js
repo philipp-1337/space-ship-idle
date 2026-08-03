@@ -1,5 +1,6 @@
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { spawnEnemyLaser } from './enemyManager.js';
 
 // Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
 // Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
@@ -140,7 +141,7 @@ const ENEMY_SPRITES = {
     boss: { normal: bossSprite, hit: makeFlashSprite(bossSprite, '#ffffff') },
 };
 
-const ENEMY_TYPES = [
+export const ENEMY_TYPES = [
     {
         name: 'triangle',
         minLevel: 1,
@@ -204,11 +205,9 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.size = 30;
-        // HP skaliert mit Spielerlevel: 10% kompoundierte Steigerung pro Spielerlevel über 1
-        // level ist hier das aktuelle Spielerlevel
-        // Easy-Modus: halbe HP, aber maxHp sinkt gleich mit — der Balken zeigt bei
-        // Spawn also weiterhin "voll" an, nur der Gegner stirbt doppelt so schnell.
-        this.hp = Math.max(1, Math.round(type.baseHp * Math.pow(1.10, level - 1) * (easyMode ? 0.5 : 1)));
+        // Flache Skalierung: Gegner behalten weitgehend ihre Basis-HP, damit sie keine Bullet-Sponges werden.
+        // Nur minimaler HP-Zuwachs (z.B. +0.5 HP pro Level).
+        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * 0.5) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;
@@ -226,7 +225,7 @@ class Enemy {
         this.canShoot = !!type.canShoot;
         this.shootCooldown = 0;
         // Speed-Skalierung bleibt wie zuvor oder kann angepasst werden
-        this.speed = type.baseSpeed * (1 + Math.floor((level-1)/10) * 0.01);
+        this.speed = type.baseSpeed * (1 + Math.floor((level-1)/5) * 0.02);
 
         // Für Hit-Flash
         this.isHit = false;
@@ -294,9 +293,7 @@ class Enemy {
             // Shooter-Logik
             if (this.canShoot && this.shootCooldown <= 0) {
                 this.shootCooldown = 150 + Math.random()*60;
-                if (typeof window !== 'undefined' && window.spawnEnemyLaser) {
-                    window.spawnEnemyLaser(this.x, this.y, angle);
-                }
+                spawnEnemyLaser(this.x, this.y, angle);
             }
             if (this.canShoot && this.shootCooldown > 0) {
                 this.shootCooldown -= dt;

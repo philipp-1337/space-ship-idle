@@ -1,6 +1,6 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
-import Enemy, { BOSS_TYPE } from './enemy.js';
+import Enemy, { BOSS_TYPE, ENEMY_TYPES } from './enemy.js';
 import { GAME_CONFIG } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -114,4 +114,31 @@ export function startEnemySpawning(canvas, levelRef, techUpgradesRef, isPausedRe
 export function stopEnemySpawning() {
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
     enemySpawnIntervalId = null;
+}
+
+export function spawnSplitEnemies(parentEnemy, easyMode = false) {
+    let spawnShape = null;
+    let spawnCount = 2;
+
+    if (parentEnemy.type.shape === 'pentagon') {
+        spawnShape = 'square';
+    } else if (parentEnemy.type.shape === 'square') {
+        spawnShape = 'triangle';
+    } else {
+        return; // Other shapes don't split
+    }
+
+    const childType = ENEMY_TYPES.find(t => t.shape === spawnShape);
+    if (!childType) return;
+
+    for (let i = 0; i < spawnCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const offset = 15;
+        const x = parentEnemy.x + Math.cos(angle) * offset;
+        const y = parentEnemy.y + Math.sin(angle) * offset;
+        
+        // Spawn with the child's minimum level to match its stats
+        const child = new Enemy(x, y, childType.minLevel, easyMode, childType);
+        enemies.push(child);
+    }
 }
