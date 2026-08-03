@@ -1131,7 +1131,7 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     return node;
 }
 
-export function showTechTreeModal(upgrades, onUpgrade) {
+export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     if (document.getElementById('tech-tree-modal')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
     ensureTechTreeStyle();
@@ -1212,7 +1212,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     }
     
     // AutoShoot -> level 2 (also "unlocked" on mobile — see nodes.forEach below)
-    const autoShootUnlocked = !!upgrades['autoShoot'] || _isMobile;
+    const autoShootUnlocked = !!currentTechUpgrades['autoShoot'] || _isMobile;
     const c1 = document.createElement('div');
     c1.className = 'tt-connector';
     c1.style.gridColumn = '1 / 4';
@@ -1240,7 +1240,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     cvDrone.className = 'tt-connector';
     cvDrone.style.gridColumn = '4';
     cvDrone.style.gridRow = '2';
-    cvDrone.style.borderLeft = `2px solid ${upgrades['drone'] ? INK.scope : INK.hairlineDim}`;
+    cvDrone.style.borderLeft = `2px solid ${currentTechUpgrades['drone'] ? INK.scope : INK.hairlineDim}`;
     cvDrone.style.height = scale(16);
     cvDrone.style.justifySelf = 'center';
     grid.appendChild(cvDrone);
@@ -1252,7 +1252,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
         cv.className = 'tt-connector';
         cv.style.gridColumn = String(col);
         cv.style.gridRow = '4';
-        cv.style.borderLeft = `2px solid ${upgrades[key] ? INK.scope : INK.hairlineDim}`;
+        cv.style.borderLeft = `2px solid ${currentTechUpgrades[key] ? INK.scope : INK.hairlineDim}`;
         cv.style.height = scale(16);
         cv.style.justifySelf = 'center';
         grid.appendChild(cv);
@@ -1264,8 +1264,8 @@ export function showTechTreeModal(upgrades, onUpgrade) {
         // node itself displays "Online" instead of a purchase, and its
         // prerequisite-gated children unlock for free without spending Plasma
         // on something mobile players already effectively have.
-        const unlocked = n.key === 'autoShoot' ? (!!upgrades[n.key] || _isMobile) : !!upgrades[n.key];
-        const prereqMet = !n.requires || (n.requires === 'autoShoot' ? (!!upgrades[n.requires] || _isMobile) : !!upgrades[n.requires]);
+        const unlocked = n.key === 'autoShoot' ? (!!currentTechUpgrades[n.key] || _isMobile) : !!currentTechUpgrades[n.key];
+        const prereqMet = !n.requires || (n.requires === 'autoShoot' ? (!!currentTechUpgrades[n.requires] || _isMobile) : !!currentTechUpgrades[n.requires]);
         const node = techTreeNode(n, unlocked, !prereqMet, onUpgrade);
         node.style.gridColumn = String(n.col);
         node.style.gridRow = String(n.row);
