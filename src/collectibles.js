@@ -11,23 +11,39 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
     const toRemove = [];
     const pulseActive = isCollectorPulseActive();
     
-    // Performance Guard: Wenn zu viele XP-Orbs existieren, werden die ältesten 
-    // automatisch angezogen (wirkt wie ein partieller Collector Pulse).
-    const OVERFLOW_LIMIT = 120;
-    const excessCount = Math.max(0, xpPoints.length - OVERFLOW_LIMIT);
+    // Performance Guard: Merge älteste XP-Orbs in nahegelegene Orbs,
+    // um die maximale Anzahl strikt zu deckeln, ohne XP zu verschenken.
+    const OVERFLOW_LIMIT = 150;
+    while (xpPoints.length > OVERFLOW_LIMIT) {
+        const oldest = xpPoints[0];
+        let minD2 = Infinity;
+        let closestIdx = 1;
+        for (let i = 1; i < xpPoints.length; i++) {
+            const other = xpPoints[i];
+            const dx = oldest.x - other.x;
+            const dy = oldest.y - other.y;
+            const d2 = dx*dx + dy*dy;
+            if (d2 < minD2) {
+                minD2 = d2;
+                closestIdx = i;
+            }
+        }
+        // Übertrage den Wert des ältesten Orbs auf seinen nächsten Nachbarn
+        xpPoints[closestIdx].value += oldest.value;
+        const val = xpPoints[closestIdx].value;
+        xpPoints[closestIdx].radius = xpPoints[closestIdx].isBossOrb ? 12 : (val > 15 ? 12 : (val > 1 ? 8 : 7));
+        xpPoints.shift(); // Ältesten Orb entfernen
+    }
 
     xpPoints.forEach((xp, xIdx) => {
         // Magnetwirkung — der Collector-Pulse nutzt denselben Zug, nur ohne
         // Reichweitenbegrenzung und mit fester Stärke, egal ob Magnet gekauft wurde.
-        const forcePull = xIdx < excessCount;
-        const effectivePulse = pulseActive || forcePull;
-        
-        if ((upgrades.magnet > 0 || effectivePulse) && !xp.collected) {
+        if ((upgrades.magnet > 0 || pulseActive) && !xp.collected) {
             const dx = ship.x - xp.x;
             const dy = ship.y - xp.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (effectivePulse || dist < magnetRadius) {
-                const strength = 1 - Math.pow(1 - (effectivePulse ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
+            if (pulseActive || dist < magnetRadius) {
+                const strength = 1 - Math.pow(1 - (pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
                 xp.x += dx * strength;
                 xp.y += dy * strength;
             }
