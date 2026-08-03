@@ -8,7 +8,7 @@ export const SOUNDS = {
 
     // Action
     SHIP_LASER: '/assets/audio/sfx/ship_laser_v2.wav',
-    ENEMY_LASER: '/assets/audio/sfx/enemy_laser.wav',
+    ENEMY_LASER: '/assets/audio/sfx/enemy_laser_v2.wav',
     ENEMY_HIT: '/assets/audio/sfx/enemy_hit.wav',
     ENEMY_EXPLODE: '/assets/audio/sfx/enemy_explode.wav',
     ENEMY_BOSS: '/assets/audio/sfx/enemy_boss.wav',
