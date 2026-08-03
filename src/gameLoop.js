@@ -313,6 +313,7 @@ export function createGameLoop(context) {
             } else {
                 lasers.push(shots);
             }
+            AudioManager.play('SHIP_LASER');
             gameLoop.lastShot = performance.now();
         }
         // Rückwärts-Schleife statt forEach+splice: forEach hält einen internen
