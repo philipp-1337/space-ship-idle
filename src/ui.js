@@ -738,6 +738,54 @@ export function removePauseButton() {
 }
 
 // ---------------------------------------------------------------------------
+// Confirm Modal
+// ---------------------------------------------------------------------------
+export function showConfirmModal({ title, text, confirmText, cancelText, onConfirm, onCancel }) {
+    if (document.getElementById('confirm-modal')) return;
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
+
+    const { modal, panel } = consolePanelModal({ id: 'confirm-modal', zIndex: 6000, accent: INK.danger });
+    panel.style.width = 'min(92vw, 360px)';
+    
+    panel.appendChild(panelTitleBar(title, INK.danger));
+    
+    const msg = document.createElement('div');
+    msg.innerText = text;
+    msg.style.fontFamily = FONT;
+    msg.style.fontSize = scale(13);
+    msg.style.color = INK.text;
+    msg.style.marginBottom = scale(24);
+    msg.style.lineHeight = '1.4';
+    panel.appendChild(msg);
+
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = scale(12);
+
+    const cancelBtn = consoleButton({ text: cancelText || 'Cancel', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
+    cancelBtn.onclick = () => {
+        modal.remove();
+        if (typeof window !== 'undefined' && window.isPausedRef && !document.getElementById('settings-menu') && !document.getElementById('pause-menu')) {
+            window.isPausedRef.value = false;
+        }
+        if (onCancel) onCancel();
+    };
+
+    const confirmBtn = consoleButton({ text: confirmText || 'Confirm', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 14 });
+    confirmBtn.onclick = () => {
+        modal.remove();
+        if (onConfirm) onConfirm();
+    };
+
+    row.appendChild(cancelBtn);
+    row.appendChild(confirmBtn);
+    panel.appendChild(row);
+
+    document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
+}
+
+// ---------------------------------------------------------------------------
 // Settings button + menu — difficulty switch and (on mobile) a toggle for the
 // on-screen joystick/fire-button graphics. Sits right of the Pause button.
 // ---------------------------------------------------------------------------
