@@ -4,14 +4,17 @@ import { TOUCH_CONTROLS, MOBILE } from './constants.js';
 
 export class InputManager {
     constructor() {
-        this.keys = { 
-            up: false, 
-            down: false, 
-            left: false, 
-            right: false, 
-            shooting: false 
+        this.keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            strafeLeft: false,
+            strafeRight: false,
+            shooting: false
         };
         this.joystickMove = null;
+        this.strafeValue = 0; // -1..1, mobile strafe slider (desktop reads keys.strafeLeft/strafeRight instead)
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         this.setupKeyboardListeners();
@@ -34,6 +37,11 @@ export class InputManager {
             if (["ArrowDown", "s", "S"].includes(event.key)) this.keys.down = true;
             if (["ArrowLeft", "a", "A"].includes(event.key)) this.keys.left = true;
             if (["ArrowRight", "d", "D"].includes(event.key)) this.keys.right = true;
+            // Q/E: lateral strafe, independent of turning (A/D) and thrust (W/S) —
+            // lets the ship translate sideways while keeping its facing (and fire
+            // direction) unchanged.
+            if (["q", "Q"].includes(event.key)) this.keys.strafeLeft = true;
+            if (["e", "E"].includes(event.key)) this.keys.strafeRight = true;
         });
 
         window.addEventListener('keyup', (event) => {
@@ -42,6 +50,8 @@ export class InputManager {
             if (["ArrowDown", "s", "S"].includes(event.key)) this.keys.down = false;
             if (["ArrowLeft", "a", "A"].includes(event.key)) this.keys.left = false;
             if (["ArrowRight", "d", "D"].includes(event.key)) this.keys.right = false;
+            if (["q", "Q"].includes(event.key)) this.keys.strafeLeft = false;
+            if (["e", "E"].includes(event.key)) this.keys.strafeRight = false;
         });
     }
 
@@ -62,17 +72,24 @@ export class InputManager {
         }
     }
 
-    // Touch layout: two full-height capture zones (left = steer, right = fire)
+    // Touch layout: two full-height capture zones (left = move, right = strafe)
     // spanning nearly the whole screen, below a reserved strip that keeps the
     // HUD buttons (Pause/Settings/Tech Tree, etc.) tappable. The joystick base
-    // and fire button are purely visual (pointer-events: none) — all input
-    // logic lives on the zones, so touching anywhere in a zone works exactly
-    // the same as touching the small graphic used to be. `setControlsVisible`
-    // toggles only the graphics; the zones themselves always stay active.
+    // and strafe-slider graphics are purely visual (pointer-events: none) — all
+    // input logic lives on the zones, so touching anywhere in a zone works
+    // exactly the same as touching the small graphic used to be.
+    // `setControlsVisible` toggles only the graphics; the zones themselves
+    // always stay active.
+    //
+    // Firing is fully automatic on mobile (see keys.shooting below) — there's
+    // no manual fire button. That freed the right zone to become a second
+    // stick dedicated to strafing (Q/E's touch equivalent) instead.
     setupTouchControls() {
         this.controlsVisible = true;
+        this.keys.shooting = true;
         this.createVirtualJoystickVisual();
-        this.createShootButtonVisual();
+        this.createAutoFireIndicator();
+        this.createStrafeSliderVisual();
         this.createTouchZones();
     }
 
@@ -93,7 +110,7 @@ export class InputManager {
         document.body.appendChild(leftZone);
 
         const rightZone = document.createElement('div');
-        rightZone.id = 'fire-zone';
+        rightZone.id = 'strafe-zone';
         rightZone.style.position = 'fixed';
         rightZone.style.right = '0';
         rightZone.style.top = `${topReserve}px`;
@@ -105,7 +122,7 @@ export class InputManager {
         document.body.appendChild(rightZone);
 
         this.setupJoystickZoneEvents(leftZone);
-        this.setupFireZoneEvents(rightZone);
+        this.setupStrafeZoneEvents(rightZone);
     }
 
     createVirtualJoystickVisual() {
@@ -252,9 +269,13 @@ export class InputManager {
         }
     }
 
-    createShootButtonVisual() {
-        const shootBtn = document.createElement('button');
-        shootBtn.innerHTML = `<svg width="42%" height="42%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    // Firing is automatic on mobile (keys.shooting is set true once and never
+    // cleared — see setupTouchControls), so this is purely a non-interactive
+    // "weapons hot" readout, not a button. Reuses the old fire button's glyph
+    // and color language, permanently in its engaged state.
+    createAutoFireIndicator() {
+        const indicator = document.createElement('div');
+        indicator.innerHTML = `<svg width="60%" height="60%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
             <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
             <line x1="12" y1="0.5" x2="12" y2="4.5" stroke="currentColor" stroke-width="1.5"/>
@@ -262,71 +283,173 @@ export class InputManager {
             <line x1="0.5" y1="12" x2="4.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
             <line x1="19.5" y1="12" x2="23.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
         </svg>`;
-        shootBtn.setAttribute('aria-label', 'Fire');
-        shootBtn.style.position = 'fixed';
-        shootBtn.style.right = '36px';
-        shootBtn.style.bottom = '36px';
-        shootBtn.style.width = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
-        shootBtn.style.height = TOUCH_CONTROLS.SHOOT_BUTTON_SIZE + 'px';
-        shootBtn.style.display = 'flex';
-        shootBtn.style.alignItems = 'center';
-        shootBtn.style.justifyContent = 'center';
-        shootBtn.style.borderRadius = '50%';
-        shootBtn.style.boxSizing = 'border-box';
-        shootBtn.style.pointerEvents = 'none';
-        shootBtn.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
+        indicator.setAttribute('aria-label', 'Weapons automatic');
+        const size = 30;
+        indicator.style.position = 'fixed';
+        indicator.style.right = `${36 + (TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH - size) / 2}px`;
+        indicator.style.bottom = `${36 + TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT + 12}px`;
+        indicator.style.width = size + 'px';
+        indicator.style.height = size + 'px';
+        indicator.style.display = 'flex';
+        indicator.style.alignItems = 'center';
+        indicator.style.justifyContent = 'center';
+        indicator.style.borderRadius = '50%';
+        indicator.style.boxSizing = 'border-box';
+        indicator.style.pointerEvents = 'none';
+        indicator.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
+        indicator.style.border = '1px solid #ff3b30';
+        indicator.style.background = '#ff3b30';
+        indicator.style.color = '#0a0d0c';
+        indicator.style.boxShadow = '0 0 16px 2px rgba(255,59,48,0.5)';
+        indicator.style.animation = 'auto-fire-pulse 1.6s ease-in-out infinite';
 
-        const idleStyle = () => {
-            shootBtn.style.border = '1px solid rgba(255,59,48,0.6)';
-            shootBtn.style.background = 'rgba(10,13,12,0.55)';
-            shootBtn.style.color = '#ff3b30';
-            shootBtn.style.boxShadow = '0 0 16px 1px rgba(255,59,48,0.25)';
-        };
-        const engagedStyle = () => {
-            shootBtn.style.border = '1px solid #ff3b30';
-            shootBtn.style.background = '#ff3b30';
-            shootBtn.style.color = '#0a0d0c';
-            shootBtn.style.boxShadow = '0 0 22px 5px rgba(255,59,48,0.6)';
-        };
-        idleStyle();
-        shootBtn.style.transition = 'transform 0.08s, box-shadow 0.08s, background 0.08s, color 0.08s';
+        if (!document.getElementById('auto-fire-pulse-kf')) {
+            const kf = document.createElement('style');
+            kf.id = 'auto-fire-pulse-kf';
+            kf.textContent = `@keyframes auto-fire-pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }`;
+            document.head.appendChild(kf);
+        }
 
-        this.setShootButtonEngaged = (engaged) => {
-            shootBtn.style.transform = engaged ? 'scale(0.92)' : 'scale(1)';
-            if (engaged) engagedStyle(); else idleStyle();
-        };
-
-        document.body.appendChild(shootBtn);
-        this.shootBtn = shootBtn;
+        document.body.appendChild(indicator);
+        this.autoFireIndicator = indicator;
     }
 
-    setupFireZoneEvents(zone) {
-        const activeTouches = new Set();
-        const updateShooting = () => {
-            this.keys.shooting = activeTouches.size > 0;
-            if (this.setShootButtonEngaged) this.setShootButtonEngaged(this.keys.shooting);
+    // Horizontal-only strafe slider — the touch equivalent of desktop's Q/E.
+    // A pill track (not a circle) so it visually reads as "one axis", with a
+    // knob that only ever moves left/right.
+    createStrafeSliderVisual() {
+        const trackW = TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH;
+        const trackH = TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT;
+        const knobSize = TOUCH_CONTROLS.STRAFE_KNOB_SIZE;
+
+        const track = document.createElement('div');
+        track.style.position = 'fixed';
+        track.style.right = '36px';
+        track.style.bottom = '36px';
+        track.style.width = trackW + 'px';
+        track.style.height = trackH + 'px';
+        track.style.background = 'rgba(10,13,12,0.55)';
+        track.style.borderRadius = (trackH / 2) + 'px';
+        track.style.pointerEvents = 'none';
+        track.style.border = '1px solid rgba(127,232,255,0.35)';
+        track.style.boxShadow = '0 0 12px 1px rgba(127,232,255,0.18) inset, 0 0 8px 0 rgba(127,232,255,0.15)';
+        track.style.boxSizing = 'border-box';
+        track.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
+
+        [['left', '‹'], ['right', '›']].forEach(([side, glyph]) => {
+            const tick = document.createElement('div');
+            tick.innerText = glyph;
+            tick.style.position = 'absolute';
+            tick.style.top = '50%';
+            tick.style.transform = 'translateY(-50%)';
+            tick.style[side] = '8px';
+            tick.style.color = 'rgba(127,232,255,0.4)';
+            tick.style.fontSize = '13px';
+            tick.style.lineHeight = '1';
+            track.appendChild(tick);
+        });
+
+        const knob = document.createElement('div');
+        knob.style.position = 'absolute';
+        knob.style.top = ((trackH - knobSize) / 2) + 'px';
+        knob.style.left = ((trackW - knobSize) / 2) + 'px';
+        knob.style.width = knobSize + 'px';
+        knob.style.height = knobSize + 'px';
+        knob.style.background = '#7fe8ff';
+        knob.style.borderRadius = '50%';
+        knob.style.border = '1px solid rgba(232,255,240,0.9)';
+        knob.style.boxShadow = '0 0 10px 3px rgba(127,232,255,0.7)';
+        knob.style.boxSizing = 'border-box';
+        knob.style.transition = 'transform 0.08s';
+        knob.style.willChange = 'transform';
+
+        track.appendChild(knob);
+        document.body.appendChild(track);
+
+        this.strafeTrack = track;
+        this.strafeKnob = knob;
+    }
+
+    setupStrafeZoneEvents(zone) {
+        const trackW = TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH;
+        const trackH = TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT;
+        const knobSize = TOUCH_CONTROLS.STRAFE_KNOB_SIZE;
+        const maxDist = trackW / 2 - knobSize / 2;
+        let touchId = null;
+        let originX = 0;
+
+        const setTrackPosition = (x, y) => {
+            this.strafeTrack.style.left = (x - trackW / 2) + 'px';
+            this.strafeTrack.style.top = (y - trackH / 2) + 'px';
+            this.strafeTrack.style.right = 'auto';
+            this.strafeTrack.style.bottom = 'auto';
+        };
+        const resetTrackPosition = () => {
+            this.strafeTrack.style.left = 'auto';
+            this.strafeTrack.style.top = 'auto';
+            this.strafeTrack.style.right = '36px';
+            this.strafeTrack.style.bottom = '36px';
+        };
+        const moveKnob = (dx) => {
+            const clamped = Math.max(-maxDist, Math.min(maxDist, dx));
+            this.strafeKnob.style.transform = `translateX(${clamped}px)`;
+            this.setStrafeVector(clamped, maxDist);
+        };
+        const resetKnob = () => {
+            this.strafeKnob.style.transform = 'translateX(0px)';
+            this.strafeValue = 0;
         };
 
         zone.addEventListener('touchstart', (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) activeTouches.add(e.changedTouches[i].identifier);
-            updateShooting();
+            if (touchId !== null) return;
+            const touch = e.changedTouches && e.changedTouches[0];
+            if (!touch || typeof touch.clientX !== 'number') return;
+
+            touchId = touch.identifier;
+            originX = touch.clientX;
+            if (this.controlsVisible) setTrackPosition(touch.clientX, touch.clientY);
+            moveKnob(0);
             e.preventDefault();
         }, { passive: false });
 
-        const release = (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) activeTouches.delete(e.changedTouches[i].identifier);
-            updateShooting();
+        zone.addEventListener('touchmove', (e) => {
+            if (touchId === null) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchId) {
+                    moveKnob(touch.clientX - originX);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        const endTouch = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchId) {
+                    touchId = null;
+                    resetKnob();
+                    resetTrackPosition();
+                    break;
+                }
+            }
         };
-        zone.addEventListener('touchend', release, { passive: false });
-        zone.addEventListener('touchcancel', release);
+        zone.addEventListener('touchend', endTouch, { passive: false });
+        zone.addEventListener('touchcancel', endTouch);
     }
 
-    // Hides/shows only the joystick and fire-button graphics; the underlying
-    // touch zones keep working either way (Settings > Touch Controls).
+    setStrafeVector(dx, maxDist) {
+        const deadzone = TOUCH_CONTROLS.STRAFE_DEADZONE;
+        this.strafeValue = Math.abs(dx) > deadzone ? Math.max(-1, Math.min(1, dx / maxDist)) : 0;
+    }
+
+    // Hides/shows only the joystick/strafe-slider/auto-fire graphics; the
+    // underlying touch zones keep working either way (Settings > Touch Controls).
     setControlsVisible(visible) {
         this.controlsVisible = visible;
         if (this.joystickBase) this.joystickBase.style.display = visible ? 'block' : 'none';
-        if (this.shootBtn) this.shootBtn.style.display = visible ? 'flex' : 'none';
+        if (this.strafeTrack) this.strafeTrack.style.display = visible ? 'block' : 'none';
+        if (this.autoFireIndicator) this.autoFireIndicator.style.display = visible ? 'flex' : 'none';
     }
 
     resizeCanvasForMobile() {
@@ -351,12 +474,20 @@ export class InputManager {
         return this.joystickMove;
     }
 
+    // -1 (full left) .. 1 (full right); 0 when idle. Desktop has no equivalent
+    // getter — updateShipMovement reads keys.strafeLeft/strafeRight directly there.
+    getStrafeValue() {
+        return this.strafeValue;
+    }
+
     isShooting() {
         return this.keys.shooting;
     }
 
     isMoving() {
-        return this.keys.up || this.keys.down || this.keys.left || this.keys.right || 
-               (this.joystickMove && (Math.abs(this.joystickMove.x) > 0 || Math.abs(this.joystickMove.y) > 0));
+        return this.keys.up || this.keys.down || this.keys.left || this.keys.right ||
+               this.keys.strafeLeft || this.keys.strafeRight ||
+               (this.joystickMove && (Math.abs(this.joystickMove.x) > 0 || Math.abs(this.joystickMove.y) > 0)) ||
+               Math.abs(this.strafeValue) > 0;
     }
 }

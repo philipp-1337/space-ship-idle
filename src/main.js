@@ -4,7 +4,7 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, updateHullUI, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -120,6 +120,17 @@ function updateShipMovement(dt = 1) {
             ship.thrustState = 'none';
         }
 
+        // Strafe-Stick (rechte Zone): rein seitliche Bewegung relativ zur
+        // AKTUELLEN Blickrichtung, unabhängig davon, wohin der linke Stick das
+        // Schiff gerade dreht — exakt dasselbe Prinzip wie Q/E am Desktop.
+        const strafeValue = inputManager.getStrafeValue ? inputManager.getStrafeValue() : 0;
+        if (strafeValue) {
+            const strafeAccel = strafeValue * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR * dt;
+            ship.vx += Math.cos(ship.angle + Math.PI / 2) * strafeAccel;
+            ship.vy += Math.sin(ship.angle + Math.PI / 2) * strafeAccel;
+            ship.thrustState = 'forward';
+        }
+
         // Max Speed
         const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
         if (speed > ship.maxSpeed) {
@@ -161,6 +172,8 @@ function updateShipMovement(dt = 1) {
         ship.thrustState = 'forward';
     } else if (keys.down) {
         ship.thrustState = 'backward';
+    } else if (keys.strafeLeft || keys.strafeRight) {
+        ship.thrustState = 'forward'; // Triebwerke glühen auch beim reinen Strafen
     } else {
         ship.thrustState = 'none';
     }
@@ -185,6 +198,18 @@ function updateShipMovement(dt = 1) {
     if (keys.down) {
         ax -= Math.cos(ship.angle) * ship.acceleration * PHYSICS.BACKWARD_THRUST_FACTOR;
         ay -= Math.sin(ship.angle) * ship.acceleration * PHYSICS.BACKWARD_THRUST_FACTOR;
+    }
+    // Strafen (Q/E) — rein seitliche Beschleunigung relativ zur aktuellen
+    // Blickrichtung, unabhängig von Drehung (A/D) und Vorwärts-/Rückwärtsschub
+    // (W/S), damit das Schiff seitlich fahren kann, während es weiter geradeaus
+    // schießt.
+    if (keys.strafeRight) {
+        ax += Math.cos(ship.angle + Math.PI / 2) * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR;
+        ay += Math.sin(ship.angle + Math.PI / 2) * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR;
+    }
+    if (keys.strafeLeft) {
+        ax += Math.cos(ship.angle - Math.PI / 2) * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR;
+        ay += Math.sin(ship.angle - Math.PI / 2) * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR;
     }
     ship.vx += ax * dt;
     ship.vy += ay * dt;
@@ -336,7 +361,7 @@ const experienceRef = { value: experience };
 const maxXPRef = { value: maxXP };
 let autoShootTimerRef = { value: 0 };
 const easyModeRef = { value: false }; // set at the Pre-Flight Check, changeable later via Settings
-let easyArmorGranted = false; // guards the one-time Easy-mode hull bonus against repeated toggling
+let easyArmorGranted = false; // guards the one-time Easy-mode armor bonus against repeated toggling
 
 function grantEasyModeArmorBonus() {
     if (easyArmorGranted) return;
@@ -363,7 +388,12 @@ function saveRun() {
             magnet: upgrades.magnet,
             laser: upgrades.laser,
             speed: upgrades.speed,
-            armor: upgrades.armor
+            armor: upgrades.armor,
+            repairModule: upgrades.repairModule,
+            deflectorShield: upgrades.deflectorShield,
+            collectorPulse: upgrades.collectorPulse,
+            chainLightning: upgrades.chainLightning,
+            overdriveCore: upgrades.overdriveCore
         },
         hp: ship.hp,
         easyMode: easyModeRef.value
@@ -385,10 +415,14 @@ function restoreRunState() {
     easyArmorGranted = true;
 
     const savedUpgrades = saved.upgrades || {};
-    ['magnet', 'laser', 'speed', 'armor'].forEach((key) => {
+    ['magnet', 'laser', 'speed', 'armor', 'repairModule', 'deflectorShield', 'chainLightning', 'overdriveCore'].forEach((key) => {
         const count = savedUpgrades[key] || 0;
         for (let i = 0; i < count; i++) applyUpgrade(key, ship, PHYSICS);
     });
+    // Collector Pulse ist ein Sofort-Effekt-Upgrade — Level direkt setzen statt
+    // applyUpgrade() N-mal aufzurufen, sonst würde der Pull-Effekt beim
+    // Wiederherstellen unnötig N-mal ausgelöst.
+    upgrades.collectorPulse = savedUpgrades.collectorPulse || 0;
     if (typeof saved.hp === 'number') {
         ship.hp = Math.min(ship.maxHp, Math.max(1, saved.hp));
     }
@@ -415,7 +449,7 @@ const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
     PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, showWaveHint, showOverdriveHint, showBossHint,
-    displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal,
+    displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
     startEnemySpawning, autoShootTimerRef, easyModeRef,

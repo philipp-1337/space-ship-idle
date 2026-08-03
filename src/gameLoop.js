@@ -1,6 +1,6 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, OVERDRIVE, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE } from './constants.js';
-import { magnetRadius, activateOverdrive, getFireRateMultiplier } from './upgrades.js';
+import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING } from './constants.js';
+import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
@@ -17,7 +17,7 @@ export function createGameLoop(context) {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss,
-        displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint,
+        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef, easyModeRef
@@ -26,6 +26,7 @@ export function createGameLoop(context) {
     let homingMissiles = [];
     let lastMissileTime = 0;
     let drones = []; // lazy erzeugt/erweitert, sobald techUpgrades.drone/twinDrones freigeschaltet werden
+    let chainFlashes = []; // kurzlebige Blitz-Linien fürs Chain-Lightning-Upgrade
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -98,16 +99,17 @@ export function createGameLoop(context) {
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
         isShopOpenRef.value = true;
-        displayShopModal((upgradeKey) => {
+        displayShopModal(ship, upgrades, (upgradeKey) => {
             applyUpgrade(upgradeKey, ship, PHYSICS);
             if (typeof window !== 'undefined' && window.saveRunState) window.saveRunState();
-            // Overdrive: temporärer Feuerrate-/Schadens-Buff, jetzt an die Wahl von
-            // "Laser Damage" gekoppelt statt an jeden Level-Up — sonst feuert es zu
-            // oft und verliert seinen Ausnahme-Charakter.
-            if (upgradeKey === 'laser') {
+            // Overdrive: temporärer Feuerrate-/Schadens-Buff, an die Wahl von
+            // "Laser Damage" gekoppelt (sonst feuert es zu oft und verliert seinen
+            // Ausnahme-Charakter) — außer das Overdrive-Core-Upgrade ist aktiv,
+            // das genau diese Einschränkung aufhebt und JEDE Wahl triggert.
+            if (upgradeKey === 'laser' || upgrades.overdriveCore > 0) {
                 activateOverdrive();
                 if (typeof showOverdriveHint === 'function') {
-                    showOverdriveHint(OVERDRIVE.DURATION_MS);
+                    showOverdriveHint(getOverdriveDurationMs());
                 }
             }
             isShopOpenRef.value = false;
@@ -334,9 +336,59 @@ export function createGameLoop(context) {
                             }
                         }
                     }
+
+                    // Chain Lightning (XP-Upgrade): Chance, dass der Treffer auf einen
+                    // zweiten nahen Gegner überspringt (reduzierter Schaden). Nutzt das
+                    // Grid statt aller Gegner, aus demselben Performance-Grund wie oben.
+                    if (upgrades.chainLightning > 0) {
+                        const arcChance = Math.min(CHAIN_LIGHTNING.MAX_CHANCE, upgrades.chainLightning * CHAIN_LIGHTNING.CHANCE_PER_LEVEL);
+                        if (Math.random() < arcChance) {
+                            const nearby = enemyGrid.queryRadius(enemy.x, enemy.y, CHAIN_LIGHTNING.RANGE);
+                            let arcTarget = null, minDist = Infinity;
+                            for (const other of nearby) {
+                                if (other === enemy || !other.alive || other.exploding) continue;
+                                const adx = other.x - enemy.x, ady = other.y - enemy.y;
+                                const dist = Math.sqrt(adx * adx + ady * ady);
+                                if (dist < minDist) { minDist = dist; arcTarget = other; }
+                            }
+                            if (arcTarget) {
+                                const arcDamage = laser.damage * CHAIN_LIGHTNING.DAMAGE_MULT;
+                                arcTarget.hp = Math.max(0, arcTarget.hp - arcDamage);
+                                if (arcTarget.hp <= 0) {
+                                    arcTarget.destroy();
+                                } else if (!arcTarget.isHit) {
+                                    arcTarget.isHit = true;
+                                    arcTarget.hitTimer = arcTarget.hitDuration;
+                                }
+                                awardKillIfNeeded(arcTarget);
+                                chainFlashes.push({ x1: enemy.x, y1: enemy.y, x2: arcTarget.x, y2: arcTarget.y, life: CHAIN_LIGHTNING.FLASH_LIFE });
+                            }
+                        }
+                    }
                     if (laserConsumed) break;
                 }
             }
+        }
+
+        // Chain-Lightning-Blitze zeichnen und ausblenden lassen.
+        for (let i = chainFlashes.length - 1; i >= 0; i--) {
+            const flash = chainFlashes[i];
+            flash.life -= dt;
+            if (flash.life <= 0) {
+                chainFlashes.splice(i, 1);
+                continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, flash.life / CHAIN_LIGHTNING.FLASH_LIFE);
+            ctx.strokeStyle = '#7fe8ff';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = '#7fe8ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(flash.x1, flash.y1);
+            ctx.lineTo(flash.x2, flash.y2);
+            ctx.stroke();
+            ctx.restore();
         }
         // XP und Plasma nach den Gegnern zeichnen, damit sie darüber liegen
         handleXpCollection(
@@ -436,7 +488,6 @@ export function createGameLoop(context) {
         }
         updateExperienceBar(experienceRef.value, maxXPRef.value);
         displayLevel(levelRef.value);
-        if (typeof updateHullUI === 'function') updateHullUI(ship.hp, ship.maxHp);
         autoShootLogic();
         autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);

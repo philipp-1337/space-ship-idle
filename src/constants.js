@@ -24,6 +24,7 @@ export const PHYSICS = {
     SHIP_ROTATION_MIN_FACTOR: 0.35, // fraction of full turn speed on the very first held frame (tap = small turn)
     ACCELERATION_UPGRADE_INCREASE: 0.02, // Zuwachs der Beschleunigung pro Upgrade-Level
     BACKWARD_THRUST_FACTOR: 0.7,
+    STRAFE_THRUST_FACTOR: 0.8, // lateral (Q/E, mobile strafe stick) thrust relative to forward acceleration
     SPEED_UPGRADE_INCREASE: 1.2,
     MARGIN_FACTOR: 0.2, // 20% of canvas for world boundaries
     MOBILE_JOYSTICK_SENSITIVITY: 0.08
@@ -39,7 +40,7 @@ export const MAGNET = {
 export const ARMOR = {
     BASE_HP: 1,
     HP_PER_UPGRADE: 1,
-    INVULNERABLE_MS: 1200
+    INVULNERABLE_MS: 2400 // doubled per player feedback — the old 1200ms window felt like frequent insta-deaths
 };
 
 export const OVERDRIVE = {
@@ -48,12 +49,27 @@ export const OVERDRIVE = {
     DAMAGE_MULT: 1.25
 };
 
+export const OVERDRIVE_CORE = {
+    DURATION_MULT_PER_LEVEL: 0.5, // level N -> duration x(1 + 0.5*N), capped at MAX_LEVEL
+    MAX_LEVEL: 3
+};
+
 export const RAPID_FIRE = {
     COOLDOWN_MULT: 0.75 // permanent, stacks multiplicatively with Overdrive
 };
 
-export const SHIELD_REGEN = {
-    INTERVAL_MS: 8000 // +1 hull point per interval while below max HP
+export const REPAIR_MODULE = {
+    BASE_INTERVAL_MS: 8000, // level 1: +1 armor point every 8s while below max HP
+    INTERVAL_STEP_MS: 1500, // each further level shortens the interval by this much
+    MIN_INTERVAL_MS: 2000 // floor — reached at level 5
+};
+
+export const CHAIN_LIGHTNING = {
+    CHANCE_PER_LEVEL: 0.2, // level N -> arc chance N*20%, capped at MAX_CHANCE
+    MAX_CHANCE: 0.9, // reached at level 5
+    DAMAGE_MULT: 0.5, // arc damage relative to the triggering laser's damage
+    RANGE: 140, // px, how far the arc can jump to find a second target
+    FLASH_LIFE: 10 // frames the visual arc line stays visible
 };
 
 export const EXPLOSIVE_ROUNDS = {
@@ -74,8 +90,16 @@ export const DRONE = {
 };
 
 export const COLLECTOR_PULSE = {
-    DURATION_MS: 1500,
+    BASE_DURATION_MS: 1500, // level 1 pull duration
+    DURATION_STEP_MS: 400, // each further level extends the pull by this much
+    MAX_DURATION_MS: 3500, // ceiling, reached at level 6 — stays offered past this, just stops growing
     STRENGTH: 0.12 // per-frame pull toward the ship, same mechanism as the magnet
+};
+
+export const DEFLECTOR_SHIELD = {
+    BASE_RECHARGE_MS: 15000, // level 1 recharge time after a charge is consumed
+    RECHARGE_STEP_MS: 3000, // each further level shortens the recharge by this much
+    MIN_RECHARGE_MS: 6000 // floor — reached at level 4
 };
 
 export const EFFECTS = {
@@ -114,9 +138,15 @@ export const TOUCH_CONTROLS = {
     JOYSTICK_STICK_SIZE: 25,
     JOYSTICK_DEADZONE: 8,
     SHOOT_BUTTON_SIZE: 47,
+    // Horizontal-only strafe slider (right zone) — a pill, not a circle, so it
+    // visually reads as "one axis" and isn't mistaken for a second movement stick.
+    STRAFE_SLIDER_WIDTH: 130,
+    STRAFE_SLIDER_HEIGHT: 46,
+    STRAFE_KNOB_SIZE: 34,
+    STRAFE_DEADZONE: 8,
     CONTAINER_HEIGHT: '40vh',
     // Unscaled px kept clear at the top of the full-height touch zones, so the
-    // Level/Hull/Pause/Settings (left) and Plasma/Tech-Tree (right) HUD chrome
+    // Level/Pause/Settings (left) and Plasma/Tech-Tree (right) HUD chrome
     // stays tappable instead of being swallowed by the joystick/fire zones.
     HUD_TOP_RESERVE: 200
 };

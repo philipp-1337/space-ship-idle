@@ -1,7 +1,7 @@
 import Laser from './laser.js';
 import { upgrades, techUpgrades } from './upgrades.js';
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
-import { ARMOR, SHIELD_REGEN } from './constants.js';
+import { ARMOR, REPAIR_MODULE, DEFLECTOR_SHIELD } from './constants.js';
 
 const SHIP_X_MIN = -22, SHIP_X_MAX = 22, SHIP_Y_MIN = -19, SHIP_Y_MAX = 19;
 const SHIP_DISPLAY_W = SHIP_X_MAX - SHIP_X_MIN;
@@ -93,14 +93,41 @@ class Ship {
         this.hp = this.maxHp;
         this.invulnerableUntil = 0;
         this.hitFlashUntil = 0;
+
+        // Repair Module (XP upgrade, stackable): very slow passive armor regen
+        // while below max. Level 0 = not owned; each further level shortens
+        // the interval (see upgrades.js: repairModuleIntervalFor).
+        this.repairModule = 0;
+        this.nextRegenAt = null;
+
+        // Deflector Shield (XP upgrade, stackable): a rechargeable charge that
+        // blocks one hit completely, before armor is touched. Level 0 = not
+        // owned; each further level shortens the recharge time (see
+        // upgrades.js: deflectorRechargeFor).
+        this.shieldLevel = 0;
+        this.shieldCharge = false;
+        this.shieldRechargeAt = null;
+        this.shieldFlashUntil = 0;
     }
 
     // Wendet Schaden an, respektiert Unverwundbarkeitsfenster nach dem letzten Treffer.
-    // Rückgabe: 'blocked' (Unverwundbarkeit aktiv, nichts passiert), 'hit' (Treffer registriert,
-    // Rumpf hält noch) oder 'dead' (Rumpf auf 0 HP, Aufrufer soll explode() auslösen).
+    // Rückgabe: 'blocked' (Unverwundbarkeit/Schild aktiv, nichts passiert), 'hit' (Treffer
+    // registriert, Rumpf hält noch) oder 'dead' (Rumpf auf 0 HP, Aufrufer soll explode() auslösen).
     damage(amount) {
         const now = performance.now();
         if (now < this.invulnerableUntil || this.isExploding) return 'blocked';
+        if (this.shieldCharge) {
+            // Schild fängt den Treffer komplett ab, bevor Armor verloren geht —
+            // danach normales Unverwundbarkeits-Fenster, damit nicht im selben
+            // Frame sofort ein zweiter Treffer durchkommt. Aufladezeit hängt
+            // vom Deflector-Shield-Level ab (mehr Käufe = schnelleres Reload).
+            this.shieldCharge = false;
+            const recharge = Math.max(DEFLECTOR_SHIELD.MIN_RECHARGE_MS, DEFLECTOR_SHIELD.BASE_RECHARGE_MS - (this.shieldLevel - 1) * DEFLECTOR_SHIELD.RECHARGE_STEP_MS);
+            this.shieldRechargeAt = now + recharge;
+            this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
+            this.shieldFlashUntil = now + 200;
+            return 'blocked';
+        }
         this.hp = Math.max(0, this.hp - amount);
         this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
         this.hitFlashUntil = now + 150;
@@ -122,16 +149,27 @@ class Ship {
             this.particles = this.particles.filter(p => p.life > 0);
         }
 
-        if (!this.isExploding && techUpgrades.shieldRegen) {
+        if (!this.isExploding && this.repairModule > 0) {
+            const interval = Math.max(REPAIR_MODULE.MIN_INTERVAL_MS, REPAIR_MODULE.BASE_INTERVAL_MS - (this.repairModule - 1) * REPAIR_MODULE.INTERVAL_STEP_MS);
             if (this.hp < this.maxHp) {
                 const now = performance.now();
-                if (!this.nextRegenAt) this.nextRegenAt = now + SHIELD_REGEN.INTERVAL_MS;
+                if (!this.nextRegenAt) this.nextRegenAt = now + interval;
                 if (now >= this.nextRegenAt) {
                     this.hp = Math.min(this.maxHp, this.hp + 1);
-                    this.nextRegenAt = now + SHIELD_REGEN.INTERVAL_MS;
+                    this.nextRegenAt = now + interval;
                 }
             } else {
                 this.nextRegenAt = null; // full HP: restart the interval fresh next time it's needed
+            }
+        }
+
+        if (!this.isExploding && this.shieldLevel > 0 && !this.shieldCharge) {
+            const recharge = Math.max(DEFLECTOR_SHIELD.MIN_RECHARGE_MS, DEFLECTOR_SHIELD.BASE_RECHARGE_MS - (this.shieldLevel - 1) * DEFLECTOR_SHIELD.RECHARGE_STEP_MS);
+            const now = performance.now();
+            if (!this.shieldRechargeAt) this.shieldRechargeAt = now + recharge;
+            if (now >= this.shieldRechargeAt) {
+                this.shieldCharge = true;
+                this.shieldRechargeAt = null;
             }
         }
 
@@ -201,16 +239,13 @@ class Ship {
         }
     }
 
-    // Hull-Integritätsring direkt ums Schiff — ergänzt (nicht ersetzt) das
-    // Hull-Dial im HUD, das den exakten Zahlenwert behält. Ein Segment pro
-    // Hull-Punkt, solange die Werte klein bleiben; ab MAX_SEGMENTS (z.B. bei
-    // vielen Armor-Plating-Käufen) auf einen durchgehenden Füllbogen
-    // umgeschaltet, damit die Segmente nicht zu winzig/überladen werden.
-    // Erscheint erst ab dem ersten Armor-Plating-Kauf (wie der Magnetring erst
-    // ab Magnet-Level 1) — bei der Basis-Hull von 1 wäre er nur ein fast
-    // geschlossener Kreis ohne echte Segment-Information.
+    // Armor-Integritätsring direkt ums Schiff — die EINZIGE Armor-Anzeige (kein
+    // Zahlen-HUD mehr, siehe ui.js). Ein Segment pro Armor-Punkt, solange die
+    // Werte klein bleiben; ab MAX_SEGMENTS (z.B. bei vielen Armor-Plating-Käufen)
+    // auf einen durchgehenden Füllbogen umgeschaltet, damit die Segmente nicht
+    // zu winzig/überladen werden. Bei der Basis-Armor von 1 ist das ein einzelnes
+    // (fast) geschlossenes Segment — reicht als reines "am Leben"-Signal.
     drawIntegrityRing(ctx) {
-        if (this.maxHp <= ARMOR.BASE_HP) return;
         const MAX_SEGMENTS = 12;
         const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
         const radius = this.width * 0.62;
@@ -248,6 +283,40 @@ class Ship {
             ctx.strokeStyle = color;
             ctx.beginPath();
             ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    // Deflector Shield ring — sits just outside the armor integrity ring, only
+    // drawn once the upgrade is owned. Bright scope-cyan and full when a charge
+    // is ready, a dim partial arc while recharging, and a brief white flash the
+    // instant a hit gets absorbed.
+    drawShieldRing(ctx) {
+        if (this.shieldLevel <= 0) return;
+        const radius = this.width * 0.62 + 6;
+        const now = performance.now();
+        const flashing = now < this.shieldFlashUntil;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.lineWidth = 2;
+
+        if (this.shieldCharge) {
+            ctx.globalAlpha = flashing ? 1 : 0.85;
+            ctx.strokeStyle = flashing ? '#ffffff' : '#7fe8ff';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        } else {
+            ctx.globalAlpha = 0.9;
+            ctx.strokeStyle = flashing ? '#ffffff' : '#7fe8ff';
+            const total = Math.max(DEFLECTOR_SHIELD.MIN_RECHARGE_MS, DEFLECTOR_SHIELD.BASE_RECHARGE_MS - (this.shieldLevel - 1) * DEFLECTOR_SHIELD.RECHARGE_STEP_MS);
+            const remaining = this.shieldRechargeAt ? Math.max(0, this.shieldRechargeAt - now) : total;
+            const rechargeRatio = 1 - Math.min(1, remaining / total);
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + rechargeRatio * Math.PI * 2);
             ctx.stroke();
         }
 
@@ -293,6 +362,7 @@ class Ship {
         }
 
         this.drawIntegrityRing(ctx);
+        this.drawShieldRing(ctx);
 
         const now = performance.now();
         const invulnerable = now < this.invulnerableUntil;

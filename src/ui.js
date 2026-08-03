@@ -1,9 +1,10 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/ui.js
 // Night-Flight Console — cockpit instrument HUD (see index.html body comment
 // for the direction contract).
-import { MOBILE, ARMOR } from './constants.js';
+import { MOBILE, OVERDRIVE_CORE } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
+import { getUpgradeStatPreview, getRecommendedUpgradeKey } from './upgrades.js';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
@@ -35,12 +36,10 @@ const INK = {
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 
-// HUD row offsets (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
+// HUD row offset (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
 // Tech Tree) sits below the XP tape (14px tall) with a small gap, instead of
-// at the very top edge — the tape and the row used to overlap. Row 2 (Hull
-// dial) keeps the same relative gap it always had below row 1.
+// at the very top edge — the tape and the row used to overlap.
 const HUD_TOP_ROW1 = 22;
-const HUD_TOP_ROW2 = 100 + (HUD_TOP_ROW1 - 10);
 
 function chamferClip(px) {
     const c = `${px}px`;
@@ -307,30 +306,14 @@ export function updatePlasmaUI(count) {
     _plasmaDial.needle.style.transform = `rotate(${count * 15}deg)`;
 }
 
-// ---------------------------------------------------------------------------
-// Hull dial — mirrors the Level dial's slot on the opposite side, showing
-// remaining armor as a bounded -90deg..+90deg sweep (unlike Level/Plasma,
-// hull is a ratio, not an ever-growing count).
-// ---------------------------------------------------------------------------
-let _hullDial = null;
-
-export function updateHullUI(hp, maxHp) {
-    if (!_hullDial) {
-        _hullDial = buildInstrumentDial({ id: 'hull-display', captionText: 'Hull', color: INK.caution, glowColor: 'rgba(255,176,0,0.6)' });
-        _hullDial.wrap.style.left = scale(10);
-        _hullDial.wrap.style.top = scale(HUD_TOP_ROW2); // clears the Level dial's full footprint (face + caption)
-        document.body.appendChild(_hullDial.wrap);
-    }
-    const ratio = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
-    _hullDial.readout.innerText = `${hp}/${maxHp}`;
-    _hullDial.needle.style.transform = `rotate(${-90 + ratio * 180}deg)`;
-}
+// Armor is shown solely via the integrity ring around the ship (see
+// ship.js: drawIntegrityRing) — no numeric HUD dial. Freed-up screen space
+// matters most on mobile, and the ring is legible enough on its own.
 
 export function initializeUI() {
     updateExperienceBar(0, 1);
     displayLevel(1);
     updatePlasmaUI(0);
-    updateHullUI(ARMOR.BASE_HP, ARMOR.BASE_HP);
 }
 
 // ---------------------------------------------------------------------------
@@ -367,6 +350,7 @@ function consoleButton({ text, color, glowColor, filled = false, fontSize = 16 }
     setState(filled);
     btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(18)}px ${scaleNum(3)}px ${glowColor}`; };
     btn.onmouseleave = () => { setState(filled); };
+    mirrorHoverOnFocus(btn); // keyboard focus (Arrow-key nav) gets the same glow bump as hover
     return btn;
 }
 
@@ -432,6 +416,52 @@ function consolePanelModal({ id, zIndex, accent = INK.phosphor }) {
     return { modal, panel };
 }
 
+// Shared Left/Right + Enter keyboard navigation for modal panels, so every
+// console menu (Shop, Pause, Settings, Tech Tree, Pre-Flight Check, ...) is
+// usable without a mouse. Moves real DOM focus between a panel's buttons —
+// the existing global `button:focus-visible` outline (see DESIGN.md) is what
+// visually highlights the active item, so no new visual language is needed
+// here. Harmless (and effectively inert) on touch devices.
+function enableArrowKeyNav(panel) {
+    const getItems = () => Array.from(panel.querySelectorAll('button:not([disabled])'));
+    let idx = -1;
+    const focusItem = (i) => {
+        const items = getItems();
+        if (!items.length) return;
+        idx = ((i % items.length) + items.length) % items.length;
+        items[idx].focus();
+    };
+    panel.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            e.stopPropagation(); // don't let this also reach input.js's window-level ship-movement listener
+            focusItem(idx + 1);
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            e.stopPropagation();
+            focusItem(idx - 1);
+        } else if (e.key === 'Enter') {
+            const items = getItems();
+            if (idx >= 0 && items[idx]) {
+                e.preventDefault();
+                e.stopPropagation();
+                items[idx].click();
+            }
+        }
+    });
+    focusItem(0);
+}
+
+// Mirrors a row/button's existing mouse-hover visuals onto keyboard focus, so
+// Arrow-key navigation (see enableArrowKeyNav) gets the same background
+// intensification a mouse hover already gets — on top of the global focus
+// outline. Only needed for bespoke rows that aren't built via consoleButton()
+// (which already does this itself).
+function mirrorHoverOnFocus(el) {
+    el.addEventListener('focus', () => { if (el.onmouseenter) el.onmouseenter(); });
+    el.addEventListener('blur', () => { if (el.onmouseleave) el.onmouseleave(); });
+}
+
 // ---------------------------------------------------------------------------
 // Pre-flight check — difficulty select, shown once before the game loop
 // begins. `onSelect` receives 'easy' or 'normal'.
@@ -474,6 +504,7 @@ export function displayStartScreen(onSelect) {
         row.innerHTML = `<div style="font-weight:600;font-size:${scale(14)};letter-spacing:0.03em;text-transform:uppercase;color:${INK.phosphor}">${mode.label}</div><div style="font-size:${scale(12)};color:${INK.textDim};margin-top:${scale(4)}">${mode.desc}</div>`;
         row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = INK.phosphor; };
         row.onmouseleave = () => { row.style.background = INK.panel; row.style.borderColor = INK.hairline; };
+        mirrorHoverOnFocus(row);
         row.onclick = () => {
             document.body.removeChild(modal);
             onSelect(mode.key);
@@ -510,6 +541,7 @@ export function displayStartScreen(onSelect) {
     }
 
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 // ---------------------------------------------------------------------------
@@ -538,12 +570,45 @@ export function displayGameOverScreen(currentLevel) {
     panel.appendChild(restartButton);
 
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 // ---------------------------------------------------------------------------
 // Shop modal
 // ---------------------------------------------------------------------------
-export function displayShopModal(onUpgrade) {
+// Rarity tiers map directly onto existing design tokens (see DESIGN.md) rather
+// than inventing new colors: Common = neutral text-dim grey, Rare = Scope Cyan
+// (the existing "tech/secondary" register), Legendary = Target Gold (the
+// existing "target of opportunity" color) — a natural fit for a rare, high-
+// value pick.
+const RARITY_WEIGHTS = { common: 70, rare: 25, legendary: 5 };
+const RARITY_STYLE = {
+    common: { label: 'Common', text: INK.textDim, border: 'rgba(232,255,240,0.35)', borderHover: 'rgba(232,255,240,0.7)', glow: 'rgba(232,255,240,0.25)' },
+    rare: { label: 'Rare', text: INK.scope, border: 'rgba(127,232,255,0.45)', borderHover: INK.scope, glow: INK.scopeDim },
+    legendary: { label: 'Legendary', text: INK.gold, border: 'rgba(255,210,63,0.5)', borderHover: INK.gold, glow: 'rgba(255,210,63,0.6)' }
+};
+
+// Weighted draw of `count` distinct entries from `pool` (no replacement) —
+// replaces the old uniform Fisher-Yates shuffle so rarer upgrades really do
+// show up less often.
+function drawWeightedUpgrades(pool, count) {
+    const remaining = [...pool];
+    const picked = [];
+    while (remaining.length && picked.length < count) {
+        const totalWeight = remaining.reduce((sum, u) => sum + RARITY_WEIGHTS[u.rarity], 0);
+        let r = Math.random() * totalWeight;
+        let chosenIdx = remaining.length - 1;
+        for (let i = 0; i < remaining.length; i++) {
+            r -= RARITY_WEIGHTS[remaining[i].rarity];
+            if (r <= 0) { chosenIdx = i; break; }
+        }
+        picked.push(remaining[chosenIdx]);
+        remaining.splice(chosenIdx, 1);
+    }
+    return picked;
+}
+
+export function displayShopModal(ship, upgrades, onUpgrade) {
     if (document.getElementById('shop-modal')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
 
@@ -552,21 +617,27 @@ export function displayShopModal(onUpgrade) {
     panel.appendChild(panelTitleBar('Upgrade Available', INK.phosphor));
 
     const upgradePool = [
-        { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.' },
-        { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.` },
-        { key: 'speed', label: "Ship Speed", desc: "Increases your ship's maximum speed." },
-        { key: 'armor', label: 'Armor Plating', desc: 'Adds a hull point and fully repairs your ship.' }
+        { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.', rarity: 'common' },
+        { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.`, rarity: 'common' },
+        { key: 'speed', label: 'Ship Speed', desc: "Increases your ship's maximum speed.", rarity: 'common' },
+        { key: 'armor', label: 'Armor Plating', desc: 'Adds an armor point and fully repairs your ship.', rarity: 'common' },
+        { key: 'collectorPulse', label: 'Collector Pulse', desc: 'Instantly pulls every XP orb and Plasma Cell on the field to your ship. Each purchase extends how long the pull lasts.', rarity: 'common' },
+        { key: 'chainLightning', label: 'Chain Lightning', desc: 'Lasers have a chance to arc to a second nearby enemy for reduced damage. Each purchase increases the arc chance.', rarity: 'common', maxLevel: 5 },
+        { key: 'repairModule', label: 'Repair Module', desc: 'Regenerates 1 armor point over time while below max. Each purchase shortens the regen interval.', rarity: 'rare', maxLevel: 5 },
+        { key: 'overdriveCore', label: 'Overdrive Core', desc: 'Overdrive now triggers on every upgrade pick, not just Laser Damage, and lasts longer with each purchase.', rarity: 'rare', maxLevel: OVERDRIVE_CORE.MAX_LEVEL },
+        { key: 'deflectorShield', label: 'Deflector Shield', desc: 'Adds a rechargeable shield charge that blocks the next hit completely. Each purchase shortens the recharge time.', rarity: 'legendary', maxLevel: 4 }
     ];
-    // Randomisiere Auswahl UND Reihenfolge, damit nicht jedes Level-Up dieselben
-    // drei Optionen in derselben Reihenfolge zeigt (Fisher-Yates shuffle).
-    const shuffled = [...upgradePool];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    const upgradesData = shuffled.slice(0, 3);
+    // Capped upgrades drop out of the pool once their level ceiling is reached —
+    // picking them again would do nothing further.
+    const availablePool = upgradePool.filter(u => !u.maxLevel || (upgrades[u.key] || 0) < u.maxLevel);
+    const upgradesData = drawWeightedUpgrades(availablePool, 3);
+    const recommendedKey = getRecommendedUpgradeKey(ship, upgrades);
 
     upgradesData.forEach(upg => {
+        const rarity = RARITY_STYLE[upg.rarity];
+        const preview = getUpgradeStatPreview(upg.key, ship, upgrades);
+        const isRecommended = upg.key === recommendedKey;
+
         const row = document.createElement('button');
         row.style.width = '100%';
         row.style.boxSizing = 'border-box';
@@ -576,13 +647,33 @@ export function displayShopModal(onUpgrade) {
         row.style.cursor = 'pointer';
         row.style.clipPath = chamferClip(scaleNum(8));
         row.style.background = INK.panel;
-        row.style.border = `1px solid ${INK.hairline}`;
+        row.style.border = `1px solid ${rarity.border}`;
         row.style.color = INK.text;
         row.style.fontFamily = FONT;
-        row.style.transition = 'background 0.08s, border-color 0.08s';
-        row.innerHTML = `<div style="font-weight:600;font-size:${scale(14)};letter-spacing:0.03em;text-transform:uppercase;color:${INK.phosphor}">${upg.label}</div><div style="font-size:${scale(12)};color:${INK.textDim};margin-top:${scale(4)}">${upg.desc}</div>`;
-        row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = INK.phosphor; };
-        row.onmouseleave = () => { row.style.background = INK.panel; row.style.borderColor = INK.hairline; };
+        row.style.transition = 'background 0.08s, border-color 0.08s, box-shadow 0.08s';
+
+        let badgesHtml = `<span style="font-size:${scale(9)};letter-spacing:0.1em;text-transform:uppercase;color:${rarity.text}">${rarity.label}</span>`;
+        if (isRecommended) {
+            badgesHtml += `<span style="font-size:${scale(9)};letter-spacing:0.1em;text-transform:uppercase;color:${INK.phosphor};margin-left:${scale(8)}">&#9679; Recommended</span>`;
+        }
+        const maxBadge = preview && preview.capped
+            ? ` <span style="color:${INK.textDim};letter-spacing:0.05em">(MAX)</span>`
+            : '';
+        const previewHtml = preview
+            ? `<div style="font-size:${scale(11)};color:${INK.scope};margin-top:${scale(6)};font-variant-numeric:tabular-nums">${preview.label}: ${preview.from}${preview.unit || ''} &rarr; ${preview.to}${preview.unit || ''}${maxBadge}</div>`
+            : '';
+
+        row.innerHTML = `
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(8)}">
+                <span style="font-weight:600;font-size:${scale(14)};letter-spacing:0.03em;text-transform:uppercase;color:${INK.text}">${upg.label}</span>
+                <span style="flex-shrink:0;white-space:nowrap">${badgesHtml}</span>
+            </div>
+            <div style="font-size:${scale(12)};color:${INK.textDim};margin-top:${scale(4)}">${upg.desc}</div>
+            ${previewHtml}
+        `;
+        row.onmouseenter = () => { row.style.background = INK.panelRaised; row.style.borderColor = rarity.borderHover; row.style.boxShadow = `0 0 ${scaleNum(12)}px ${scaleNum(1)}px ${rarity.glow}`; };
+        row.onmouseleave = () => { row.style.background = INK.panel; row.style.borderColor = rarity.border; row.style.boxShadow = 'none'; };
+        mirrorHoverOnFocus(row);
         row.onclick = () => {
             document.body.removeChild(modal);
             if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
@@ -592,6 +683,7 @@ export function displayShopModal(onUpgrade) {
     });
 
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 // ---------------------------------------------------------------------------
@@ -695,7 +787,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
     panel.appendChild(diffRow);
 
     const diffNote = document.createElement('div');
-    diffNote.innerText = 'Applies to enemies from now on. Switching to Easy also reinforces your hull once.';
+    diffNote.innerText = 'Applies to enemies from now on. Switching to Easy also reinforces your armor once.';
     diffNote.style.fontFamily = FONT;
     diffNote.style.fontSize = scale(11);
     diffNote.style.color = INK.textDim;
@@ -715,7 +807,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         panel.appendChild(toggleBtn);
 
         const ctrlNote = document.createElement('div');
-        ctrlNote.innerText = 'The joystick and fire zones cover the full left/right half of the screen either way — this only shows or hides the graphics.';
+        ctrlNote.innerText = 'The move and strafe zones cover the full left/right half of the screen either way — this only shows or hides the graphics. Firing is always automatic.';
         ctrlNote.style.fontFamily = FONT;
         ctrlNote.style.fontSize = scale(11);
         ctrlNote.style.color = INK.textDim;
@@ -732,6 +824,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
     panel.appendChild(closeBtn);
 
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 export function displayPauseMenu(stats, onResume, onRestart) {
@@ -790,6 +883,7 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     function menuCleanup() { modal.remove(); }
 
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 export function removePauseMenu() {
@@ -918,6 +1012,7 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
 
     panel.appendChild(row);
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 // Builds one tree node "card" — smaller/denser than the old full-width rows,
@@ -978,6 +1073,10 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</span><span style="font-size:${scale(13)};opacity:0.55;flex-shrink:0">&#8250;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
 
     header.onclick = () => showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade);
+    // Hover styling lives on the parent `node`, not this button — mirror it
+    // onto keyboard focus the same way mirrorHoverOnFocus() does elsewhere.
+    header.addEventListener('focus', () => { if (node.onmouseenter) node.onmouseenter(); });
+    header.addEventListener('blur', () => { if (node.onmouseleave) node.onmouseleave(); });
 
     node.appendChild(header);
     return node;
@@ -1113,6 +1212,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     panel.appendChild(closeBtn);
 
     document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
 }
 
 // ---------------------------------------------------------------------------
