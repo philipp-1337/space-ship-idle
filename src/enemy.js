@@ -206,8 +206,8 @@ class Enemy {
         this.y = y;
         this.size = 30;
         // Flache Skalierung: Gegner behalten weitgehend ihre Basis-HP, damit sie keine Bullet-Sponges werden.
-        // Nur minimaler HP-Zuwachs (z.B. +0.5 HP pro Level).
-        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * 0.5) * (easyMode ? 0.5 : 1)));
+        // HP-Zuwachs (+1.0 HP pro Level).
+        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * 1.0) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;
@@ -225,7 +225,7 @@ class Enemy {
         this.canShoot = !!type.canShoot;
         this.shootCooldown = 0;
         // Speed-Skalierung bleibt wie zuvor oder kann angepasst werden
-        this.speed = type.baseSpeed * (1 + Math.floor((level-1)/5) * 0.02);
+        this.speed = type.baseSpeed * (1 + Math.floor((level-1)/4) * 0.03);
 
         // Für Hit-Flash
         this.isHit = false;
