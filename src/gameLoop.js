@@ -31,6 +31,7 @@ export function createGameLoop(context) {
     let drones = []; // lazy erzeugt/erweitert, sobald techUpgrades.drone/twinDrones freigeschaltet werden
     let chainFlashes = []; // kurzlebige Blitz-Linien fürs Chain-Lightning-Upgrade
     let explosiveVisuals = []; // kurzlebige Explosions-Kreise für Explosive Rounds
+    let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500 };
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -69,20 +70,13 @@ export function createGameLoop(context) {
                 // A Boss orb always guarantees a level up upon collection.
                 xpPoints.push(new XP(enemy.x, enemy.y, 0, true));
                 
-                // Insta Death Ray + Popcorn Wave Reward
+                // Insta Death Ray Sweep + Popcorn Wave Reward
                 spawnBossRewardWave(canvas, enemy.x, enemy.y, easyModeRef ? easyModeRef.value : false);
                 
-                // Spawn 16 massive piercing lasers (Death Ray burst)
-                for (let i = 0; i < 16; i++) {
-                    const angle = (Math.PI * 2 / 16) * i;
-                    // upgradeLevel 9 for maximum size/damage, huge pierce
-                    const deathRay = new Laser(enemy.x, enemy.y, angle, 9, { pierce: 9999 });
-                    deathRay.damage = 9999;
-                    deathRay.width = 60;
-                    deathRay.height = 15;
-                    deathRay.speed = 12;
-                    lasers.push(deathRay);
-                }
+                sweepRay.active = true;
+                sweepRay.timer = 0;
+                sweepRay.startAngle = ship.angle;
+                sweepRay.angle = ship.angle;
                 
                 effectsSystem.triggerScreenShake(20, 30);
                 AudioManager.play('SHIP_LASER');
@@ -575,6 +569,58 @@ export function createGameLoop(context) {
             }
         }
         
+        if (sweepRay.active) {
+            sweepRay.timer += dt * (1000/60);
+            if (sweepRay.timer >= sweepRay.duration) {
+                sweepRay.active = false;
+            } else {
+                const progress = sweepRay.timer / sweepRay.duration;
+                // 1.5 rotations over the duration
+                sweepRay.angle = sweepRay.startAngle + progress * Math.PI * 2 * 1.5;
+                
+                const beamLength = 2000;
+                const endX = ship.x + Math.cos(sweepRay.angle) * beamLength;
+                const endY = ship.y + Math.sin(sweepRay.angle) * beamLength;
+                
+                ctx.save();
+                ctx.strokeStyle = '#a832a8';
+                ctx.lineWidth = 60;
+                ctx.shadowColor = '#d942d9';
+                ctx.shadowBlur = 40;
+                ctx.beginPath();
+                ctx.moveTo(ship.x, ship.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 20;
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+                ctx.restore();
+                
+                const A = ship.x, B = ship.y;
+                const C = endX, D = endY;
+                const dx = C - A, dy = D - B;
+                const l2 = dx * dx + dy * dy;
+                
+                for (let eIdx = enemies.length - 1; eIdx >= 0; eIdx--) {
+                    const enemy = enemies[eIdx];
+                    if (!enemy.alive || enemy.exploding) continue;
+                    
+                    let t = Math.max(0, Math.min(1, ((enemy.x - A) * dx + (enemy.y - B) * dy) / l2));
+                    const projX = A + t * dx;
+                    const projY = B + t * dy;
+                    const distSq = (enemy.x - projX) * (enemy.x - projX) + (enemy.y - projY) * (enemy.y - projY);
+                    
+                    if (distSq < (enemy.size + 40) * (enemy.size + 40)) {
+                        enemy.hp = 0;
+                        enemy.destroy();
+                        awardKillIfNeeded(enemy);
+                    }
+                }
+            }
+        }
+
         if (inputManager.isMobile) {
             ctx.restore();
         }
