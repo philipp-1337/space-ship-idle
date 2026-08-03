@@ -159,14 +159,52 @@ export class EffectsSystem {
     }
 
     // === MAGNET VISUALIZATION ===
+    // Liest wie ein Traktorstrahl-Feldrand statt einer satten Farbscheibe:
+    // ein sehr schwacher Feldschimmer, ein pulsierender Ringrand und
+    // langsam rotierende Tick-Marks — knüpft an die Tick-Dial-Optik der
+    // übrigen HUD-Instrumente an, in derselben Scope-Cyan-Farbfamilie wie
+    // Plasma/Tech Tree.
     drawMagnetField(shipX, shipY, magnetRadius, magnetLevel) {
         if (magnetLevel > 0) {
+            const color = COLORS.MAGNET_COLOR;
+            const time = Date.now();
+            const pulse = 0.5 + 0.5 * Math.sin(time / 900);
+
             this.ctx.save();
-            this.ctx.globalAlpha = 0.18 + 0.07 * magnetLevel;
+            this.ctx.translate(shipX, shipY);
+
+            // Sehr schwacher Feldschimmer statt satter Füllfläche
+            const gradient = this.ctx.createRadialGradient(0, 0, magnetRadius * 0.6, 0, 0, magnetRadius);
+            gradient.addColorStop(0, `${color}00`);
+            gradient.addColorStop(1, `${color}22`);
+            this.ctx.fillStyle = gradient;
             this.ctx.beginPath();
-            this.ctx.arc(shipX, shipY, magnetRadius, 0, Math.PI * 2);
-            this.ctx.fillStyle = COLORS.MAGNET_COLOR;
+            this.ctx.arc(0, 0, magnetRadius, 0, Math.PI * 2);
             this.ctx.fill();
+
+            // Pulsierender Ringrand
+            this.ctx.globalAlpha = 0.35 + 0.25 * pulse + 0.03 * magnetLevel;
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, magnetRadius, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // Langsam rotierende Tick-Marks, wie bei den Instrument-Dials im HUD
+            this.ctx.globalAlpha = 0.5 + 0.2 * pulse;
+            this.ctx.lineWidth = 1.5;
+            const tickCount = 12;
+            const rotation = time / 6000;
+            for (let i = 0; i < tickCount; i++) {
+                const angle = rotation + (i / tickCount) * Math.PI * 2;
+                const isMajor = i % 3 === 0;
+                const innerR = magnetRadius - (isMajor ? 7 : 4);
+                this.ctx.beginPath();
+                this.ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+                this.ctx.lineTo(Math.cos(angle) * magnetRadius, Math.sin(angle) * magnetRadius);
+                this.ctx.stroke();
+            }
+
             this.ctx.restore();
         }
     }

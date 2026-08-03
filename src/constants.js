@@ -133,7 +133,7 @@ export const ENEMY_LASER = {
 export const COLORS = {
     LASER_NORMAL: 'red',
     LASER_UPGRADED: 'cyan',
-    MAGNET_COLOR: 'deepskyblue',
+    MAGNET_COLOR: '#7fe8ff', // Scope Cyan, passend zur Tech-/Sammel-Farbfamilie (Plasma, Tech Tree)
     PLASMA_COLOR: 'aqua',
     XP_COLOR: '#ffd23f', // Gold, passend zum XP-Sphere-Sprite (siehe xp.js)
 };
