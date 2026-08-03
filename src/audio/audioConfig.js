@@ -7,7 +7,7 @@ export const SOUNDS = {
     UI_ERROR: '/assets/audio/sfx/ui_error.wav',
 
     // Action
-    SHIP_LASER: '/assets/audio/sfx/ship_laser.wav',
+    SHIP_LASER: '/assets/audio/sfx/ship_laser_v2.wav',
     ENEMY_LASER: '/assets/audio/sfx/enemy_laser.wav',
     ENEMY_HIT: '/assets/audio/sfx/enemy_hit.wav',
     ENEMY_EXPLODE: '/assets/audio/sfx/enemy_explode.wav',
