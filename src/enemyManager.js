@@ -62,6 +62,7 @@ export function spawnBoss(canvas, level, easyMode = false) {
     boss.size = GAME_CONFIG.ELITE_ENEMY_SIZE;
     boss.isElite = true;
     enemies.push(boss);
+    AudioManager.play('ENEMY_BOSS');
     return boss;
 }
 
