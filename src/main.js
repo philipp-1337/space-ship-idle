@@ -535,7 +535,18 @@ if (savedSettings && savedSettings.mode) {
 window.addEventListener('focus', syncRefsToVars);
 
 // --- PWA Update Registrierung ---
+// Der Browser prüft eine registrierte sw.js standardmäßig nur bei Navigation
+// auf Änderungen. Da das Spiel oft stundenlang ohne Reload in einem Tab läuft,
+// muss der Update-Check hier aktiv per Intervall angestoßen werden, sonst
+// feuert onNeedRefresh nie.
+const SW_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const updateSW = registerSW({
+  onRegisteredSW(swUrl, registration) {
+    if (!registration) return;
+    setInterval(() => {
+      registration.update();
+    }, SW_UPDATE_CHECK_INTERVAL_MS);
+  },
   onNeedRefresh() {
     showUpdateToast(() => {
       updateSW(true);
