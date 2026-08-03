@@ -4,7 +4,7 @@
 import { MOBILE, OVERDRIVE_CORE } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
-import { getUpgradeStatPreview, getRecommendedUpgradeKey } from './upgrades.js';
+import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
 
@@ -1148,6 +1148,16 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
     panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
+
+    const plasmaLabel = document.createElement('div');
+    plasmaLabel.innerText = `Available Plasma: ${upgrades.plasmaCount || 0}`;
+    plasmaLabel.style.fontFamily = FONT;
+    plasmaLabel.style.color = INK.scope;
+    plasmaLabel.style.fontSize = scale(14);
+    plasmaLabel.style.fontWeight = '600';
+    plasmaLabel.style.marginBottom = scale(18);
+    plasmaLabel.style.textAlign = 'center';
+    panel.appendChild(plasmaLabel);
 
     const nodes = [
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },

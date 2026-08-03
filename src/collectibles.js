@@ -35,8 +35,8 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
             xp.collect();
             AudioManager.play('RES_COLLECT');
             // Modifiziere die .value Eigenschaften der übergebenen Referenzobjekte
-            experienceObj.experienceRef.value++;
-            experienceObj.xpCollectedRef.value++;
+            experienceObj.experienceRef.value += xp.value;
+            experienceObj.xpCollectedRef.value += xp.value;
             updateExperienceBar(experienceObj.experienceRef.value, experienceObj.maxXPRef.value);
             toRemove.push(xIdx);
             if (experienceObj.experienceRef.value >= experienceObj.maxXPRef.value) {

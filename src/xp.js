@@ -24,10 +24,11 @@ export const xpSprite = makePixelSprite(
 );
 
 class XP {
-    constructor(x, y) {
+    constructor(x, y, value = 1) {
         this.x = x;
         this.y = y;
-        this.radius = 7;
+        this.value = value;
+        this.radius = value > 1 ? 12 : 7;
         this.collected = false;
     }
 
