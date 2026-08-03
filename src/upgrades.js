@@ -129,7 +129,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
         return { label: 'Max Speed', from: ship.maxSpeed.toFixed(1), to: (ship.maxSpeed + PHYSICS.SPEED_UPGRADE_INCREASE).toFixed(1) };
     }
     if (key === 'armor') {
-        return { label: 'Armor', from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
+        return { label: 'Shield', from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
     }
     if (key === 'repairModule') {
         const level = currentUpgrades.repairModule;

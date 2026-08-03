@@ -88,7 +88,7 @@ export class InputManager {
         this.controlsVisible = true;
         this.keys.shooting = true;
         this.createVirtualJoystickVisual();
-        this.createAutoFireIndicator();
+
         this.createStrafeSliderVisual();
         this.createTouchZones();
     }
@@ -278,50 +278,6 @@ export class InputManager {
         return TOUCH_CONTROLS.EDGE_MARGIN + (TOUCH_CONTROLS.JOYSTICK_SIZE - TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT) / 2;
     }
 
-    // Firing is automatic on mobile (keys.shooting is set true once and never
-    // cleared — see setupTouchControls), so this is purely a non-interactive
-    // "weapons hot" readout, not a button. Reuses the old fire button's glyph
-    // and color language, permanently in its engaged state.
-    createAutoFireIndicator() {
-        const indicator = document.createElement('div');
-        indicator.innerHTML = `<svg width="60%" height="60%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
-            <line x1="12" y1="0.5" x2="12" y2="4.5" stroke="currentColor" stroke-width="1.5"/>
-            <line x1="12" y1="19.5" x2="12" y2="23.5" stroke="currentColor" stroke-width="1.5"/>
-            <line x1="0.5" y1="12" x2="4.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
-            <line x1="19.5" y1="12" x2="23.5" y2="12" stroke="currentColor" stroke-width="1.5"/>
-        </svg>`;
-        indicator.setAttribute('aria-label', 'Weapons automatic');
-        const size = 30;
-        indicator.style.position = 'fixed';
-        indicator.style.right = `${TOUCH_CONTROLS.EDGE_MARGIN + (TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH - size) / 2}px`;
-        indicator.style.bottom = `${this.strafeTrackBottomOffset() + TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT + 12}px`;
-        indicator.style.width = size + 'px';
-        indicator.style.height = size + 'px';
-        indicator.style.display = 'flex';
-        indicator.style.alignItems = 'center';
-        indicator.style.justifyContent = 'center';
-        indicator.style.borderRadius = '50%';
-        indicator.style.boxSizing = 'border-box';
-        indicator.style.pointerEvents = 'none';
-        indicator.style.zIndex = MOBILE.TOUCH_Z_INDEX.toString();
-        indicator.style.border = '1px solid #ff3b30';
-        indicator.style.background = '#ff3b30';
-        indicator.style.color = '#0a0d0c';
-        indicator.style.boxShadow = '0 0 16px 2px rgba(255,59,48,0.5)';
-        indicator.style.animation = 'auto-fire-pulse 1.6s ease-in-out infinite';
-
-        if (!document.getElementById('auto-fire-pulse-kf')) {
-            const kf = document.createElement('style');
-            kf.id = 'auto-fire-pulse-kf';
-            kf.textContent = `@keyframes auto-fire-pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }`;
-            document.head.appendChild(kf);
-        }
-
-        document.body.appendChild(indicator);
-        this.autoFireIndicator = indicator;
-    }
 
     // Horizontal-only strafe slider — the touch equivalent of desktop's Q/E.
     // A pill track (not a circle) so it visually reads as "one axis", with a
@@ -458,7 +414,7 @@ export class InputManager {
         this.controlsVisible = visible;
         if (this.joystickBase) this.joystickBase.style.display = visible ? 'block' : 'none';
         if (this.strafeTrack) this.strafeTrack.style.display = visible ? 'block' : 'none';
-        if (this.autoFireIndicator) this.autoFireIndicator.style.display = visible ? 'flex' : 'none';
+
     }
 
     resizeCanvasForMobile() {

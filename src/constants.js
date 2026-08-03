@@ -66,9 +66,9 @@ export const RAPID_FIRE = {
 };
 
 export const REPAIR_MODULE = {
-    BASE_INTERVAL_MS: 15000, // level 1: +1 armor point every 15s while below max HP — slow, passive safety net, not a real heal
-    INTERVAL_STEP_MS: 2500, // each further level shortens the interval by this much
-    MIN_INTERVAL_MS: 5000 // floor — reached at level 5 (15000 - 4*2500)
+    BASE_INTERVAL_MS: 45000, // level 1: +1 shield point every 45s while below max HP
+    INTERVAL_STEP_MS: 5000, // each further level shortens the interval by this much
+    MIN_INTERVAL_MS: 25000 // floor — reached at level 5
 };
 
 export const CHAIN_LIGHTNING = {
