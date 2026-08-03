@@ -201,6 +201,56 @@ class Ship {
         }
     }
 
+    // Hull-Integritätsring direkt ums Schiff — ergänzt (nicht ersetzt) das
+    // Hull-Dial im HUD, das den exakten Zahlenwert behält. Ein Segment pro
+    // Hull-Punkt, solange die Werte klein bleiben; ab MAX_SEGMENTS (z.B. bei
+    // vielen Armor-Plating-Käufen) auf einen durchgehenden Füllbogen
+    // umgeschaltet, damit die Segmente nicht zu winzig/überladen werden.
+    drawIntegrityRing(ctx) {
+        if (this.maxHp <= 0) return;
+        const MAX_SEGMENTS = 12;
+        const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+        const radius = this.width * 0.62;
+        const color = ratio > 0.5 ? '#39ff6a' : (ratio > 0.25 ? '#ffb000' : '#ff3b30');
+        const emptyColor = 'rgba(120,255,170,0.15)';
+        const critical = ratio > 0 && ratio <= 0.25;
+        const pulse = critical ? 0.6 + 0.4 * Math.sin(Date.now() / 220) : 1;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.lineWidth = 2.5;
+
+        if (this.maxHp <= MAX_SEGMENTS) {
+            const segments = this.maxHp;
+            const gap = 0.1; // rad Lücke zwischen Segmenten
+            const segAngle = (Math.PI * 2) / segments;
+            for (let i = 0; i < segments; i++) {
+                const start = -Math.PI / 2 + i * segAngle + gap / 2;
+                const end = start + segAngle - gap;
+                const filled = i < this.hp;
+                ctx.globalAlpha = filled ? (critical ? pulse : 0.9) : 1;
+                ctx.strokeStyle = filled ? color : emptyColor;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, start, end);
+                ctx.stroke();
+            }
+        } else {
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = emptyColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.globalAlpha = critical ? pulse : 0.9;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
     draw(ctx) {
         // Triebwerkspartikel unrotiert im Hintergrund zeichnen
         if (!this.isExploding) {
@@ -238,6 +288,8 @@ class Ship {
             ctx.restore();
             return;
         }
+
+        this.drawIntegrityRing(ctx);
 
         const now = performance.now();
         const invulnerable = now < this.invulnerableUntil;
