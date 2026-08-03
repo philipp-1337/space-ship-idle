@@ -3,6 +3,7 @@
 // for the direction contract).
 import { MOBILE, ARMOR } from './constants.js';
 import { xpSprite } from './xp.js';
+import { clearRunState, suppressAutosave } from './runState.js';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
@@ -501,7 +502,11 @@ export function displayGameOverScreen(currentLevel) {
     panel.appendChild(levelText);
 
     const restartButton = consoleButton({ text: 'Restart', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 15 });
-    restartButton.onclick = () => document.location.reload();
+    restartButton.onclick = () => {
+        suppressAutosave();
+        clearRunState();
+        document.location.reload();
+    };
     panel.appendChild(restartButton);
 
     document.body.appendChild(modal);
@@ -744,7 +749,11 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     };
 
     const restartBtn = consoleButton({ text: 'Restart', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 14 });
-    restartBtn.onclick = () => document.location.reload();
+    restartBtn.onclick = () => {
+        suppressAutosave();
+        clearRunState();
+        document.location.reload();
+    };
 
     row.appendChild(resumeBtn);
     row.appendChild(restartBtn);

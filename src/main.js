@@ -11,6 +11,7 @@ import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS,
 import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
+import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
 
 initializeUI();
 
@@ -258,6 +259,7 @@ function pauseGame() {
     if (isPaused || isGameOver || isShopOpen) return;
     isPaused = true; // Lokaler Status für das Pausenmenü-UI
     isPausedRef.value = true; // Damit der gameLoop pausiert
+    saveRun();
     removePauseButton();
     displayPauseMenu({
         level,
@@ -343,6 +345,56 @@ function grantEasyModeArmorBonus() {
     easyArmorGranted = true;
 }
 
+// --- Spielstand-Persistenz: Reload soll den laufenden Flug nicht kosten ---
+// (nur der Tod tut das, siehe endGame()/clearRunState() in gameLoop.js).
+function saveRun() {
+    // Während der Explosionsanimation (ship.hp <= 0, isGameOverRef noch false für
+    // ~1s) NICHT speichern — sonst würde ein Reload in diesem Fenster den Tod
+    // rückgängig machen, statt ihn nur nicht vorzeitig zu erzwingen.
+    if (isGameOverRef.value || ship.isExploding || ship.hp <= 0 || isAutosaveSuppressed()) return;
+    saveRunState({
+        level: levelRef.value,
+        experience: experienceRef.value,
+        maxXP: maxXPRef.value,
+        kills: killsRef.value,
+        xpCollected: xpCollectedRef.value,
+        upgrades: {
+            magnet: upgrades.magnet,
+            laser: upgrades.laser,
+            speed: upgrades.speed,
+            armor: upgrades.armor
+        },
+        hp: ship.hp,
+        easyMode: easyModeRef.value
+    });
+}
+
+function restoreRunState() {
+    const saved = loadRunState();
+    if (!saved) return false;
+
+    levelRef.value = saved.level || 1;
+    experienceRef.value = saved.experience || 0;
+    maxXPRef.value = saved.maxXP || maxXPRef.value;
+    killsRef.value = saved.kills || 0;
+    xpCollectedRef.value = saved.xpCollected || 0;
+    easyModeRef.value = !!saved.easyMode;
+    // Ein etwaiger Easy-Mode-Rüstungsbonus steckt schon in saved.upgrades.armor —
+    // nicht beim Wiederherstellen ein zweites Mal vergeben.
+    easyArmorGranted = true;
+
+    const savedUpgrades = saved.upgrades || {};
+    ['magnet', 'laser', 'speed', 'armor'].forEach((key) => {
+        const count = savedUpgrades[key] || 0;
+        for (let i = 0; i < count; i++) applyUpgrade(key, ship, PHYSICS);
+    });
+    if (typeof saved.hp === 'number') {
+        ship.hp = Math.min(ship.maxHp, Math.max(1, saved.hp));
+    }
+    syncRefsToVars();
+    return true;
+}
+
 // Synchronisiere die Werte mit den Refs im GameLoop
 function syncRefsToVars() {
     isPaused = isPausedRef.value;
@@ -379,6 +431,21 @@ loadPlasmaCount();
 setupPlasmaUI();
 window.updatePlasmaUI(upgrades.plasmaCount);
 window.getPlasmaCount = () => upgrades.plasmaCount;
+
+// Laufenden Flug wiederherstellen, falls vorhanden (Reload während des Spiels) —
+// muss VOR applySettings()/gameLoop-Start passieren, damit Ship-Stats und Refs
+// stehen, bevor die erste Frame gezeichnet wird.
+restoreRunState();
+
+// Bridge für gameLoop.js: dort werden Level-Up und Upgrade-Kauf ausgelöst,
+// beides gute Speicherpunkte (gleiches Muster wie window.syncRefsToVars).
+window.saveRunState = saveRun;
+
+setInterval(saveRun, 8000);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveRun();
+});
+window.addEventListener('beforeunload', saveRun);
 
 // --- NEU: Callback für TechTree-Änderungen ---
 window.onTechTreeChanged = function() {

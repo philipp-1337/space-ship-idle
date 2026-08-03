@@ -4,6 +4,7 @@ import { magnetRadius, activateOverdrive, getFireRateMultiplier } from './upgrad
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
+import { clearRunState, suppressAutosave } from './runState.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
 // damit eine Umkreis-Abfrage typischerweise nur eine Handvoll Zellen berührt.
@@ -87,6 +88,7 @@ export function createGameLoop(context) {
         if (isGameOverRef.value) return;
         isGameOverRef.value = true;
         clearInterval(context.enemySpawnIntervalId);
+        clearRunState(); // Tod löscht den Spielstand — nur Plasma/Tech-Tree bleiben (siehe upgrades.js)
         displayGameOverScreen(levelRef.value);
     }
 
@@ -98,6 +100,7 @@ export function createGameLoop(context) {
         isShopOpenRef.value = true;
         displayShopModal((upgradeKey) => {
             applyUpgrade(upgradeKey, ship, PHYSICS);
+            if (typeof window !== 'undefined' && window.saveRunState) window.saveRunState();
             // Overdrive: temporärer Feuerrate-/Schadens-Buff, jetzt an die Wahl von
             // "Laser Damage" gekoppelt statt an jeden Level-Up — sonst feuert es zu
             // oft und verliert seinen Ausnahme-Charakter.
@@ -263,6 +266,8 @@ export function createGameLoop(context) {
             if (!ship.isExploding && enemy.checkCollision(ship)) {
                 const result = ship.damage(enemy.isElite ? 2 : 1);
                 if (result === 'dead') {
+                    suppressAutosave();
+                    clearRunState(); // sofort, nicht erst nach dem 1s-Explosions-Delay in endGame()
                     ship.explode();
                     effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_HIT_INTENSITY, EFFECTS.SCREEN_SHAKE_HIT_DURATION);
                     setTimeout(() => endGame(), 1000);
@@ -369,6 +374,8 @@ export function createGameLoop(context) {
                 if (Math.sqrt(dx * dx + dy * dy) < ship.getCollisionRadius() + 5) {
                     const result = ship.damage(1);
                     if (result === 'dead') {
+                        suppressAutosave();
+                        clearRunState();
                         ship.explode();
                         effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY, EFFECTS.SCREEN_SHAKE_LASER_DURATION);
                         setTimeout(() => endGame(), 1000);
