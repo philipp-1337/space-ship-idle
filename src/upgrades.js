@@ -117,7 +117,8 @@ function overdriveDurationFor(level) {
 export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
     if (key === 'magnet') {
         const radiusFor = (level) => Math.round(MAGNET.BASE_RADIUS + level * MAGNET.RADIUS_INCREASE);
-        return { label: 'Range', from: radiusFor(currentUpgrades.magnet), to: radiusFor(currentUpgrades.magnet + 1), unit: 'px' };
+        const fromStr = currentUpgrades.magnet === 0 ? 'Off' : radiusFor(currentUpgrades.magnet) + 'm';
+        return { label: 'Range', from: fromStr, to: radiusFor(currentUpgrades.magnet + 1) + 'm' };
     }
     if (key === 'laser') {
         const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
