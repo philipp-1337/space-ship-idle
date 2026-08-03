@@ -25,19 +25,19 @@ export const xpSprite = makePixelSprite(
 
 export const denseXpSprite = makePixelSprite(
     XP_SPRITE_RES, XP_SPRITE_RES,
-    ['#0c96c9', '#00d7ff', '#9dffff'],
-    '#00445c',
+    ['#990099', '#ff00ff', '#ff99ff'],
+    '#330033',
     (ctx) => {
         const c = XP_SPRITE_RES / 2;
-        ctx.fillStyle = '#0c96c9';
+        ctx.fillStyle = '#990099';
         ctx.beginPath();
         ctx.arc(c, c, c - 0.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#00d7ff';
+        ctx.fillStyle = '#ff00ff';
         ctx.beginPath();
         ctx.arc(c - 0.4, c - 0.4, c - 1.3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#9dffff';
+        ctx.fillStyle = '#ff99ff';
         ctx.beginPath();
         ctx.arc(c - 1.4, c - 1.4, 1, 0, Math.PI * 2);
         ctx.fill();
@@ -49,7 +49,7 @@ class XP {
         this.x = x;
         this.y = y;
         this.value = value;
-        this.radius = value > 1 ? 12 : 7;
+        this.radius = value > 15 ? 12 : (value > 1 ? 8 : 7);
         this.collected = false;
     }
 
@@ -61,7 +61,7 @@ class XP {
             // ansammeln, und shadowBlur ist pro Aufruf teuer, besonders in Chrome.
             const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300);
             ctx.shadowBlur = 7 * pulse;
-            ctx.shadowColor = this.value > 1 ? '#00d7ff' : '#ffd23f';
+            ctx.shadowColor = this.value > 1 ? '#ff00ff' : '#ffd23f';
             ctx.translate(this.x, this.y);
             drawPixelSprite(ctx, this.value > 1 ? denseXpSprite : xpSprite, this.radius * 2 * pulse, this.radius * 2 * pulse);
             ctx.restore();
