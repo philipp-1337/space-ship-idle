@@ -16,6 +16,7 @@ export let magnetStrength = 0;
 export let techUpgrades = {
     autoShoot: false,
     drone: false, // Begleit-Drohne, kreist ums Schiff und feuert automatisch
+    twinDrones: false, // zweite Begleit-Drohne, gegenüberliegend auf der Umlaufbahn
 
     homingMissile: false, // Lenkraketen-Upgrade
     piercing: false, // Laser durchdringen Gegner
@@ -32,7 +33,8 @@ export const TECH_PREREQUISITES = {
     piercing: 'autoShoot',
     salvage: 'rapidFire',
     twinMissiles: 'homingMissile',
-    explosiveRounds: 'piercing'
+    explosiveRounds: 'piercing',
+    twinDrones: 'drone'
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {

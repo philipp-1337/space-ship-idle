@@ -818,12 +818,76 @@ function ensureTechTreeStyle() {
     document.head.appendChild(style);
 }
 
+// Opens a small detail modal for one tech node — description, status, and
+// (if purchasable) a Confirm button — stacked over the Tech Tree modal
+// itself. Replaces the old inline-expand-in-card interaction: a tap now
+// always opens the same focused, full-detail view instead of unfolding
+// content in place, which reads better once cards sit four to a row.
+function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade) {
+    const existing = document.getElementById('tech-node-detail-modal');
+    if (existing) existing.remove();
+
+    const accent = unlocked ? INK.phosphor : INK.scope;
+    const { modal, panel } = consolePanelModal({ id: 'tech-node-detail-modal', zIndex: 5050, accent });
+    panel.style.width = 'min(88vw, 380px)';
+    panel.style.alignItems = 'stretch';
+    panel.appendChild(panelTitleBar(upg.label, accent));
+
+    const desc = document.createElement('div');
+    desc.innerText = upg.desc;
+    desc.style.fontFamily = FONT;
+    desc.style.fontSize = scale(13);
+    desc.style.color = INK.text;
+    desc.style.marginBottom = scale(14);
+    panel.appendChild(desc);
+
+    const statusLine = document.createElement('div');
+    statusLine.innerText = unlocked ? 'Unlocked' : (locked ? `Requires ${upg.requiresLabel}` : `Cost: ${costLabel}`);
+    statusLine.style.fontFamily = FONT;
+    statusLine.style.fontSize = scale(11);
+    statusLine.style.letterSpacing = '0.05em';
+    statusLine.style.textTransform = 'uppercase';
+    statusLine.style.color = INK.textDim;
+    statusLine.style.marginBottom = scale(18);
+    panel.appendChild(statusLine);
+
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = scale(10);
+    row.style.width = '100%';
+
+    if (purchasable) {
+        const canAfford = typeof window !== 'undefined' && window.getPlasmaCount ? window.getPlasmaCount() >= upg.cost : true;
+        const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 13 });
+        confirmBtn.style.flex = '1';
+        if (!canAfford) {
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            confirmBtn.style.cursor = 'not-allowed';
+            confirmBtn.innerHTML = 'Not enough Plasma';
+        } else {
+            confirmBtn.onclick = () => {
+                modal.remove();
+                onUpgrade(upg.key, upg.cost);
+            };
+        }
+        row.appendChild(confirmBtn);
+    }
+
+    const closeBtn = consoleButton({ text: purchasable ? 'Cancel' : 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    closeBtn.style.flex = purchasable ? '0 0 auto' : '1';
+    closeBtn.onclick = () => modal.remove();
+    row.appendChild(closeBtn);
+
+    panel.appendChild(row);
+    document.body.appendChild(modal);
+}
+
 // Builds one tree node "card" — smaller/denser than the old full-width rows,
 // since several now sit side by side. `locked` means a prerequisite is
-// unmet (distinct from simply not being able to afford it yet). Details and
-// the purchase action are hidden behind a tap: the header always shows just
-// the label + status, a click reveals the description and (if purchasable)
-// a Confirm button, so buying always takes two deliberate taps.
+// unmet (distinct from simply not being able to afford it yet). A tap opens
+// a focused detail modal (see showTechNodeDetail) rather than expanding
+// content inline.
 function techTreeNode(upg, unlocked, locked, onUpgrade) {
     const purchasable = !unlocked && !locked;
     const costLabel = `${upg.cost} Plasma Cell${upg.cost === 1 ? '' : 's'}`;
@@ -874,50 +938,11 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
         ? 'Unlocked'
         : (locked ? `Requires ${upg.requiresLabel}` : `Cost: ${costLabel}`);
     const labelClass = upg.requires ? 'tt-child-label' : '';
-    header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</span><span class="tt-chevron" style="font-size:${scale(11)};opacity:0.55;flex-shrink:0">&#9662;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
+    header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</span><span style="font-size:${scale(13)};opacity:0.55;flex-shrink:0">&#8250;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
 
-    const details = document.createElement('div');
-    details.style.display = 'none';
-    details.style.padding = `0 ${scale(12)} ${scale(12)} ${scale(12)}`;
-
-    const desc = document.createElement('div');
-    desc.innerText = upg.desc;
-    desc.style.fontFamily = FONT;
-    desc.style.fontSize = scale(11);
-    desc.style.opacity = '0.8';
-    desc.style.marginBottom = purchasable ? scale(10) : '0';
-    details.appendChild(desc);
-
-    if (purchasable) {
-        const canAfford = typeof window !== 'undefined' && window.getPlasmaCount ? window.getPlasmaCount() >= upg.cost : true;
-        const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 11 });
-        confirmBtn.style.width = '100%';
-        confirmBtn.style.padding = `${scale(8)} ${scale(12)}`;
-        
-        if (!canAfford) {
-            confirmBtn.disabled = true;
-            confirmBtn.style.opacity = '0.5';
-            confirmBtn.style.cursor = 'not-allowed';
-            confirmBtn.innerHTML = `Not enough Plasma &mdash; ${costLabel}`;
-        } else {
-            confirmBtn.onclick = (e) => {
-                e.stopPropagation();
-                onUpgrade(upg.key, upg.cost);
-            };
-        }
-        details.appendChild(confirmBtn);
-    }
-
-    let expanded = false;
-    header.onclick = () => {
-        expanded = !expanded;
-        details.style.display = expanded ? 'block' : 'none';
-        const chevron = header.querySelector('.tt-chevron');
-        if (chevron) chevron.innerHTML = expanded ? '&#9652;' : '&#9662;';
-    };
+    header.onclick = () => showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade);
 
     node.appendChild(header);
-    node.appendChild(details);
     return node;
 }
 
@@ -927,17 +952,18 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     ensureTechTreeStyle();
 
     const { modal, panel } = consolePanelModal({ id: 'tech-tree-modal', zIndex: 5000, accent: INK.scope });
-    panel.style.width = 'min(92vw, 480px)';
+    panel.style.width = 'min(92vw, 560px)';
     panel.style.maxHeight = '86vh';
     panel.style.overflowY = 'auto';
     panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
 
     const nodes = [
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
-        { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own laser at nearby enemies.', cost: 12, col: 3, row: 1 },
+        { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own laser at nearby enemies.', cost: 12, col: 4, row: 1 },
         { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 1, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 5, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
         { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 2, row: 5, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 3, row: 5, requires: 'piercing', requiresLabel: 'Piercing Rounds' }
@@ -946,7 +972,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     const grid = document.createElement('div');
     grid.className = 'tt-grid';
     grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
     grid.style.columnGap = scale(8);
     grid.style.rowGap = scale(10);
     grid.style.alignItems = 'start';
@@ -1004,6 +1030,17 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     cv1.style.height = scale(16);
     cv1.style.justifySelf = 'center';
     grid.appendChild(cv1);
+
+    // Drone -> Twin Drones (eigene, unabhängige Spalte 4 — kein gemeinsamer
+    // Ast mit Auto-Fires Baum, da Drone kein Kind von Auto-Fire ist)
+    const cvDrone = document.createElement('div');
+    cvDrone.className = 'tt-connector';
+    cvDrone.style.gridColumn = '4';
+    cvDrone.style.gridRow = '2';
+    cvDrone.style.borderLeft = `2px solid ${upgrades['drone'] ? INK.scope : INK.hairlineDim}`;
+    cvDrone.style.height = scale(16);
+    cvDrone.style.justifySelf = 'center';
+    grid.appendChild(cvDrone);
 
     // level 2 -> level 3
     [1, 2, 3].forEach(col => {

@@ -146,13 +146,13 @@ export const PROGRESSION = {
 };
 
 export const MOBILE = {
-    CANVAS_SCALE_FACTOR: 1.2,
+    CANVAS_SCALE_FACTOR: 1.0,
     // War 5000 — höher als jedes Modal (Shop 3000, Pre-Flight 3500, Pause 4000,
     // Settings 4500, Tech Tree 5000), wodurch Joystick/Feuer-Zone über den
     // Modals lagen und deren Buttons für Touch unerreichbar machten (sichtbar
     // z.B. beim Pre-Flight-Screen). Jetzt unter dem niedrigsten Modal-Wert.
     TOUCH_Z_INDEX: 1500,
-    UI_SCALE_FACTOR: 1.1, // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
+    UI_SCALE_FACTOR: 1.0, // Skalierungsfaktor für UI-Elemente (Texte, Padding etc.) auf Mobilgeräten
     // War 1.5, kalibriert bevor es einen viewport-Meta-Tag gab: Handy-Browser
     // nahmen damals ohne den Tag eine ~980px-Viewport an und skalierten die
     // Seite selbst auf Bildschirmgröße runter — GAME_ZOOM kompensierte genau

@@ -24,7 +24,7 @@ export function createGameLoop(context) {
 
     let homingMissiles = [];
     let lastMissileTime = 0;
-    let drone = null; // lazy erzeugt, sobald techUpgrades.drone freigeschaltet wird
+    let drones = []; // lazy erzeugt/erweitert, sobald techUpgrades.drone/twinDrones freigeschaltet werden
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -210,14 +210,21 @@ export function createGameLoop(context) {
         ship.update(dt);
         ship.draw(ctx);
 
-        // Begleit-Drohne (Tech-Tree-Waffe): kreist ums Schiff und feuert
-        // eigenständig auf den nächsten Gegner in Reichweite.
+        // Begleit-Drohne(n) (Tech-Tree-Waffe): kreisen ums Schiff und feuern
+        // eigenständig auf den nächsten Gegner in Reichweite. Die zweite
+        // Drohne (Twin Drones) startet exakt gegenüber der ersten.
         if (techUpgrades.drone) {
-            if (!drone) drone = new Drone();
-            drone.update(ship, dt);
-            drone.draw(ctx);
-            const droneShot = drone.tryShoot(enemies, upgrades.laser);
-            if (droneShot) lasers.push(droneShot);
+            const desiredDrones = techUpgrades.twinDrones ? 2 : 1;
+            while (drones.length < desiredDrones) {
+                const initialAngle = drones.length === 0 ? undefined : drones[0].orbitAngle + Math.PI;
+                drones.push(new Drone(initialAngle));
+            }
+            drones.forEach(d => {
+                d.update(ship, dt);
+                d.draw(ctx);
+                const droneShot = d.tryShoot(enemies, upgrades.laser);
+                if (droneShot) lasers.push(droneShot);
+            });
         }
 
         effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet); // Korrigiert: magnetRadius direkt verwenden
