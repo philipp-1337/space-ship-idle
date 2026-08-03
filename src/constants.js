@@ -1,5 +1,12 @@
 // constants.js - Game Configuration and Constants
 
+// Shared touch-device check — mirrors the inline detection duplicated in
+// input.js/ui.js, centralized here for code that needs it in more than one
+// module (see upgrades.js: mobile Auto-Fire tech bypass).
+export function isTouchDevice() {
+    return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+}
+
 export const GAME_CONFIG = {
     BASE_LASER_DAMAGE: 0.8,
     ENEMY_SPAWN_INTERVAL: 2500, // Erhöht die Spawn-Frequenz der Gegner
@@ -59,9 +66,9 @@ export const RAPID_FIRE = {
 };
 
 export const REPAIR_MODULE = {
-    BASE_INTERVAL_MS: 8000, // level 1: +1 armor point every 8s while below max HP
-    INTERVAL_STEP_MS: 1500, // each further level shortens the interval by this much
-    MIN_INTERVAL_MS: 2000 // floor — reached at level 5
+    BASE_INTERVAL_MS: 15000, // level 1: +1 armor point every 15s while below max HP — slow, passive safety net, not a real heal
+    INTERVAL_STEP_MS: 2500, // each further level shortens the interval by this much
+    MIN_INTERVAL_MS: 5000 // floor — reached at level 5 (15000 - 4*2500)
 };
 
 export const CHAIN_LIGHTNING = {
@@ -137,7 +144,12 @@ export const TOUCH_CONTROLS = {
     JOYSTICK_SIZE: 60,
     JOYSTICK_STICK_SIZE: 25,
     JOYSTICK_DEADZONE: 8,
-    SHOOT_BUTTON_SIZE: 47,
+    // Shared left/right inset from the screen edge for both the joystick and
+    // the strafe slider, so they sit the same distance from their respective
+    // edge (see input.js: strafeTrackBottomOffset() also derives the strafe
+    // slider's vertical position from this so the two controls' centers line
+    // up despite the slider being shorter than the joystick).
+    EDGE_MARGIN: 36,
     // Horizontal-only strafe slider (right zone) — a pill, not a circle, so it
     // visually reads as "one axis" and isn't mistaken for a second movement stick.
     STRAFE_SLIDER_WIDTH: 130,

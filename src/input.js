@@ -131,8 +131,8 @@ export class InputManager {
 
         const joystickBase = document.createElement('div');
         joystickBase.style.position = 'fixed';
-        joystickBase.style.left = '36px';
-        joystickBase.style.bottom = '36px';
+        joystickBase.style.left = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
+        joystickBase.style.bottom = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
         joystickBase.style.width = joystickSize + 'px';
         joystickBase.style.height = joystickSize + 'px';
         joystickBase.style.background = 'rgba(10,13,12,0.55)';
@@ -198,9 +198,9 @@ export class InputManager {
             this.joystickBase.style.bottom = 'auto';
         };
         const resetBasePosition = () => {
-            this.joystickBase.style.left = '36px';
+            this.joystickBase.style.left = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
             this.joystickBase.style.top = 'auto';
-            this.joystickBase.style.bottom = '36px';
+            this.joystickBase.style.bottom = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
         };
         const moveStick = (dx, dy) => {
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -269,6 +269,15 @@ export class InputManager {
         }
     }
 
+    // The strafe slider (pill, height STRAFE_SLIDER_HEIGHT) is shorter than the
+    // movement joystick (circle, height JOYSTICK_SIZE) — matching their bottom
+    // CSS offsets alone would still leave the slider visually lower, since the
+    // two centers wouldn't line up. This derives the slider's `bottom` so its
+    // vertical center matches the joystick's.
+    strafeTrackBottomOffset() {
+        return TOUCH_CONTROLS.EDGE_MARGIN + (TOUCH_CONTROLS.JOYSTICK_SIZE - TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT) / 2;
+    }
+
     // Firing is automatic on mobile (keys.shooting is set true once and never
     // cleared — see setupTouchControls), so this is purely a non-interactive
     // "weapons hot" readout, not a button. Reuses the old fire button's glyph
@@ -286,8 +295,8 @@ export class InputManager {
         indicator.setAttribute('aria-label', 'Weapons automatic');
         const size = 30;
         indicator.style.position = 'fixed';
-        indicator.style.right = `${36 + (TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH - size) / 2}px`;
-        indicator.style.bottom = `${36 + TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT + 12}px`;
+        indicator.style.right = `${TOUCH_CONTROLS.EDGE_MARGIN + (TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH - size) / 2}px`;
+        indicator.style.bottom = `${this.strafeTrackBottomOffset() + TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT + 12}px`;
         indicator.style.width = size + 'px';
         indicator.style.height = size + 'px';
         indicator.style.display = 'flex';
@@ -324,8 +333,8 @@ export class InputManager {
 
         const track = document.createElement('div');
         track.style.position = 'fixed';
-        track.style.right = '36px';
-        track.style.bottom = '36px';
+        track.style.right = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
+        track.style.bottom = `${this.strafeTrackBottomOffset()}px`;
         track.style.width = trackW + 'px';
         track.style.height = trackH + 'px';
         track.style.background = 'rgba(10,13,12,0.55)';
@@ -387,8 +396,8 @@ export class InputManager {
         const resetTrackPosition = () => {
             this.strafeTrack.style.left = 'auto';
             this.strafeTrack.style.top = 'auto';
-            this.strafeTrack.style.right = '36px';
-            this.strafeTrack.style.bottom = '36px';
+            this.strafeTrack.style.right = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
+            this.strafeTrack.style.bottom = `${this.strafeTrackBottomOffset()}px`;
         };
         const moveKnob = (dx) => {
             const clamped = Math.max(-maxDist, Math.min(maxDist, dx));

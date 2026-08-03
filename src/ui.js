@@ -633,8 +633,14 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
         { key: 'deflectorShield', label: 'Deflector Shield', desc: 'Adds a rechargeable shield charge that blocks the next hit completely. Each purchase shortens the recharge time.', rarity: 'legendary', maxLevel: 4 }
     ];
     // Capped upgrades drop out of the pool once their level ceiling is reached —
-    // picking them again would do nothing further.
-    const availablePool = upgradePool.filter(u => !u.maxLevel || (upgrades[u.key] || 0) < u.maxLevel);
+    // picking them again would do nothing further. Repair Module also stays out
+    // until at least one Armor Plating has been bought — with only the base 1 HP,
+    // there's nothing meaningful for it to regenerate.
+    const availablePool = upgradePool.filter(u => {
+        if (u.maxLevel && (upgrades[u.key] || 0) >= u.maxLevel) return false;
+        if (u.key === 'repairModule' && (upgrades.armor || 0) <= 0) return false;
+        return true;
+    });
     const upgradesData = drawWeightedUpgrades(availablePool, 3);
     const recommendedKey = getRecommendedUpgradeKey(ship, upgrades);
 
@@ -961,10 +967,12 @@ function ensureTechTreeStyle() {
     style.id = 'tech-tree-style';
     style.textContent = `
         @media (max-width: 460px) {
-            #tech-tree-modal .tt-grid { grid-template-columns: 1fr !important; row-gap: ${scale(10)} !important; }
+            #tech-tree-modal .tt-grid { grid-template-columns: 1fr !important; row-gap: ${scale(6)} !important; }
             #tech-tree-modal .tt-grid > * { grid-column: 1 !important; grid-row: auto !important; }
             #tech-tree-modal .tt-connector { display: none !important; }
             #tech-tree-modal .tt-child-label::before { content: "\\21B3  "; opacity: 0.6; }
+            #tech-tree-modal .tt-panel { max-height: 80vh !important; padding: ${scale(16)} ${scale(14)} !important; }
+            #tech-tree-modal .tt-node-header { padding: ${scale(7)} ${scale(10)} !important; }
         }
     `;
     document.head.appendChild(style);
@@ -1081,6 +1089,7 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     }
 
     const header = document.createElement('button');
+    header.className = 'tt-node-header';
     header.style.width = '100%';
     header.style.boxSizing = 'border-box';
     header.style.textAlign = 'left';
@@ -1116,9 +1125,16 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     ensureTechTreeStyle();
 
     const { modal, panel } = consolePanelModal({ id: 'tech-tree-modal', zIndex: 5000, accent: INK.scope });
+    panel.classList.add('tt-panel');
     panel.style.width = 'min(92vw, 560px)';
     panel.style.maxHeight = '86vh';
     panel.style.overflowY = 'auto';
+    // html/body run with touch-action:none globally (keeps the touch joystick from
+    // triggering page scroll/pull-to-refresh) — that also blocks finger-scrolling
+    // inside this panel unless explicitly re-enabled here, which left the Close
+    // button unreachable below the fold on phones with no way to scroll to it.
+    panel.style.touchAction = 'pan-y';
+    panel.style.webkitOverflowScrolling = 'touch';
     panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
 
     const nodes = [
@@ -1173,24 +1189,25 @@ export function showTechTreeModal(upgrades, onUpgrade) {
         grid.appendChild(c);
     }
     
-    // AutoShoot -> level 2
+    // AutoShoot -> level 2 (also "unlocked" on mobile — see nodes.forEach below)
+    const autoShootUnlocked = !!upgrades['autoShoot'] || _isMobile;
     const c1 = document.createElement('div');
     c1.className = 'tt-connector';
     c1.style.gridColumn = '1 / 4';
     c1.style.gridRow = '2';
-    c1.style.borderTop = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
-    c1.style.borderLeft = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
-    c1.style.borderRight = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
+    c1.style.borderTop = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
+    c1.style.borderLeft = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
+    c1.style.borderRight = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
     c1.style.width = `calc(66.66% + ${scale(8)})`;
     c1.style.height = scale(16);
     c1.style.justifySelf = 'center';
     grid.appendChild(c1);
-    
+
     const cv1 = document.createElement('div');
     cv1.className = 'tt-connector';
     cv1.style.gridColumn = '2';
     cv1.style.gridRow = '2';
-    cv1.style.borderLeft = `2px solid ${upgrades['autoShoot'] ? INK.scope : INK.hairlineDim}`;
+    cv1.style.borderLeft = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
     cv1.style.height = scale(16);
     cv1.style.justifySelf = 'center';
     grid.appendChild(cv1);
@@ -1220,8 +1237,14 @@ export function showTechTreeModal(upgrades, onUpgrade) {
     });
 
     nodes.forEach(n => {
-        const prereqMet = !n.requires || !!upgrades[n.requires];
-        const node = techTreeNode(n, !!upgrades[n.key], !prereqMet, onUpgrade);
+        // Auto-Fire is redundant on mobile (firing is already always-on via touch
+        // controls — see input.js), so treat it as already unlocked there: the
+        // node itself displays "Online" instead of a purchase, and its
+        // prerequisite-gated children unlock for free without spending Plasma
+        // on something mobile players already effectively have.
+        const unlocked = n.key === 'autoShoot' ? (!!upgrades[n.key] || _isMobile) : !!upgrades[n.key];
+        const prereqMet = !n.requires || (n.requires === 'autoShoot' ? (!!upgrades[n.requires] || _isMobile) : !!upgrades[n.requires]);
+        const node = techTreeNode(n, unlocked, !prereqMet, onUpgrade);
         node.style.gridColumn = String(n.col);
         node.style.gridRow = String(n.row);
         grid.appendChild(node);

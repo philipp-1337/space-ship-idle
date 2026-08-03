@@ -132,9 +132,13 @@ export function createGameLoop(context) {
                     showBossHint();
                 }
             }
-            // Fix: Reset shooting flag when shop closes
+            // Reset shooting flag when shop closes (prevents an instant shot from
+            // a stale keydown/mousedown carried into the resumed frame) — except
+            // on mobile, where keys.shooting is the permanent auto-fire flag with
+            // no button to press again, so clearing it here silently killed fire
+            // for the rest of the run after the very first shop visit.
             if (inputManager && inputManager.keys) {
-                inputManager.keys.shooting = false;
+                inputManager.keys.shooting = inputManager.isMobile;
             }
             // GameLoop nach Shop schließen fortsetzen
             requestAnimationFrame(gameLoop);

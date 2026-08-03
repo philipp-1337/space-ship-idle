@@ -1,6 +1,6 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING } from './constants.js';
+import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, isTouchDevice } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 
 export let upgrades = {
@@ -30,6 +30,17 @@ export let techUpgrades = {
     salvage: false, // erhöhte Plasma-Drop-Chance
     twinMissiles: false // zwei Lenkraketen pro Salve
 };
+
+// Mobile firing is always-on (see input.js: keys.shooting is forced true,
+// there's no manual fire button), which makes the Auto-Fire tech redundant
+// there. Treat it as already unlocked on touch devices so its prerequisite-
+// gated children (Rapid-Fire/Homing/Piercing) don't sit behind paying for
+// something mobile players already have — without silently doubling their
+// fire rate, since techUpgrades.autoShoot itself stays false/unpurchased and
+// autoShootLogic() (the independent auto-fire timer) never activates from this.
+export function isAutoShootUnlocked() {
+    return techUpgrades.autoShoot || isTouchDevice();
+}
 
 // Manche Tech-Upgrades setzen ein anderes voraus (Baum-Struktur im Tech-Tree-UI)
 export const TECH_PREREQUISITES = {
@@ -269,7 +280,8 @@ export function savePlasmaCount() {
 }
 export function handleTechUpgrade(key, cost) {
     const prereq = TECH_PREREQUISITES[key];
-    if (prereq && !techUpgrades[prereq]) return; // Voraussetzung im Tech-Baum nicht erfüllt
+    const prereqMet = !prereq || (prereq === 'autoShoot' ? isAutoShootUnlocked() : techUpgrades[prereq]);
+    if (!prereqMet) return; // Voraussetzung im Tech-Baum nicht erfüllt
     if (upgrades.plasmaCount >= cost && !techUpgrades[key]) {
         upgrades.plasmaCount -= cost;
         techUpgrades[key] = true;

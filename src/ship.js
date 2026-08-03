@@ -241,6 +241,16 @@ class Ship {
         }
     }
 
+    // 0..1 progress toward the Repair Module's next armor point, so the
+    // integrity ring can show the next segment slowly filling in instead of
+    // just popping full once the interval elapses (see drawIntegrityRing).
+    getRegenProgress() {
+        if (this.repairModule <= 0 || this.hp >= this.maxHp || !this.nextRegenAt) return 0;
+        const interval = Math.max(REPAIR_MODULE.MIN_INTERVAL_MS, REPAIR_MODULE.BASE_INTERVAL_MS - (this.repairModule - 1) * REPAIR_MODULE.INTERVAL_STEP_MS);
+        const remaining = Math.max(0, this.nextRegenAt - performance.now());
+        return 1 - Math.min(1, remaining / interval);
+    }
+
     // Armor-Integritätsring direkt ums Schiff — die EINZIGE Armor-Anzeige (kein
     // Zahlen-HUD mehr, siehe ui.js). Ein Segment pro Armor-Punkt, solange die
     // Werte klein bleiben; ab MAX_SEGMENTS (z.B. bei vielen Armor-Plating-Käufen)
@@ -255,6 +265,10 @@ class Ship {
         const emptyColor = 'rgba(120,255,170,0.15)';
         const critical = ratio > 0 && ratio <= 0.25;
         const pulse = critical ? 0.6 + 0.4 * Math.sin(Date.now() / 220) : 1;
+        // Repair Module: the next segment to regenerate slowly fills in instead
+        // of just popping full once the interval elapses, so the heal is visible
+        // as it happens rather than a sudden jump.
+        const regenProgress = this.getRegenProgress();
 
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -268,11 +282,19 @@ class Ship {
                 const start = -Math.PI / 2 + i * segAngle + gap / 2;
                 const end = start + segAngle - gap;
                 const filled = i < this.hp;
+                const healing = !filled && i === this.hp && regenProgress > 0;
                 ctx.globalAlpha = filled ? (critical ? pulse : 0.9) : 1;
                 ctx.strokeStyle = filled ? color : emptyColor;
                 ctx.beginPath();
                 ctx.arc(0, 0, radius, start, end);
                 ctx.stroke();
+                if (healing) {
+                    ctx.globalAlpha = 0.85;
+                    ctx.strokeStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, start, start + (end - start) * regenProgress);
+                    ctx.stroke();
+                }
             }
         } else {
             ctx.globalAlpha = 1;
@@ -284,7 +306,8 @@ class Ship {
             ctx.globalAlpha = critical ? pulse : 0.9;
             ctx.strokeStyle = color;
             ctx.beginPath();
-            ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + ratio * Math.PI * 2);
+            const filledRatio = Math.min(1, ratio + regenProgress / this.maxHp);
+            ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + filledRatio * Math.PI * 2);
             ctx.stroke();
         }
 
