@@ -33,6 +33,11 @@ export function createGameLoop(context) {
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
+    let frameCount = 0;
+    let lastFpsTime = performance.now();
+    let currentFps = 60;
+    let lastMagnetDropTime = 0;
+
     // requestAnimationFrame feuert mit der Bildwiederholrate des Displays (60Hz
     // Desktop, aber oft 90/120Hz auf Handys). Bewegung/Timer wurden vorher pro
     // Frame um einen festen Betrag erhöht statt pro vergangener Echtzeit, wodurch
@@ -235,6 +240,39 @@ export function createGameLoop(context) {
             requestAnimationFrame(gameLoop);
             return;
         }
+
+        const now = performance.now();
+        frameCount++;
+        if (now - lastFpsTime >= 1000) {
+            currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+            frameCount = 0;
+            lastFpsTime = now;
+            
+            if (typeof window !== 'undefined' && !inputManager.isMobile) {
+                let fpsEl = document.getElementById('fps-display');
+                if (!fpsEl) {
+                    fpsEl = document.createElement('div');
+                    fpsEl.id = 'fps-display';
+                    fpsEl.style.position = 'fixed';
+                    fpsEl.style.bottom = '10px';
+                    fpsEl.style.left = '10px';
+                    fpsEl.style.fontFamily = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
+                    fpsEl.style.fontSize = '10px';
+                    fpsEl.style.color = 'rgba(120,255,170,0.5)';
+                    fpsEl.style.zIndex = '9999';
+                    fpsEl.style.pointerEvents = 'none';
+                    document.body.appendChild(fpsEl);
+                }
+                fpsEl.innerText = `FPS: ${currentFps}`;
+            }
+
+            // Drop a magnet if FPS is too low (< 20) and cooldown (60s) has passed
+            if (currentFps < 20 && now - lastMagnetDropTime >= 60000) {
+                tractorItems.push(new TractorItem(ship.x, ship.y - 40));
+                lastMagnetDropTime = now;
+            }
+        }
+
         const shakeActive = effectsSystem.applyScreenShake(dt);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
