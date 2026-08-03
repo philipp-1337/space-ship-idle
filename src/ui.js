@@ -1158,3 +1158,81 @@ export function showBossHint() {
     annunciator({ id: 'boss-hint', top: '96px', text: 'Warning — Boss Approaching', color: INK.danger, duration: 3500 });
 }
 
+export function showToast({ id, message, buttonLabel, onClick, isShopOpenRef, isPausedRef, color = INK.scope }) {
+    // Remove existing toast if there is one
+    const existing = document.getElementById(id);
+    if (existing) {
+        existing.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.id = id;
+    toast.style.position = 'fixed';
+    toast.style.bottom = scale(24);
+    toast.style.right = scale(24);
+    toast.style.zIndex = '9999';
+    toast.style.display = 'flex';
+    toast.style.flexDirection = 'column';
+    toast.style.gap = scale(12);
+    toast.style.alignItems = 'center';
+    toast.style.padding = `${scale(16)} ${scale(24)}`;
+    toast.style.pointerEvents = 'auto';
+
+    panelBase(toast, { color: `${color}55`, chamfer: 12 });
+    toast.style.boxShadow = `0 0 ${scaleNum(20)}px ${scaleNum(2)}px ${color}33, 0 ${scaleNum(4)}px ${scaleNum(12)}px 0 rgba(0,0,0,0.8)`;
+
+    const msg = document.createElement('div');
+    msg.textContent = message;
+    msg.style.color = color;
+    msg.style.fontFamily = FONT;
+    msg.style.fontSize = scale(16);
+    msg.style.fontWeight = 'bold';
+    msg.style.textTransform = 'uppercase';
+    msg.style.letterSpacing = '1px';
+    
+    toast.appendChild(msg);
+
+    if (buttonLabel && onClick) {
+        const btn = consoleButton({
+            label: buttonLabel,
+            color: color,
+            onClick: () => {
+                toast.remove();
+                onClick();
+            }
+        });
+        btn.style.width = '100%';
+        toast.appendChild(btn);
+    }
+
+    document.body.appendChild(toast);
+
+    // Check visibility periodically so it doesn't cover shop/pause modals
+    if (isShopOpenRef || isPausedRef) {
+        const interval = setInterval(() => {
+            if (!document.getElementById(id)) {
+                clearInterval(interval);
+                return;
+            }
+            if (isShopOpenRef?.value || isPausedRef?.value) {
+                toast.style.display = 'none';
+            } else {
+                toast.style.display = 'flex';
+            }
+        }, 200);
+    }
+    
+    return toast;
+}
+
+export function showUpdateToast(onReload, isShopOpenRef, isPausedRef) {
+    showToast({
+        id: 'pwa-update-toast',
+        message: 'Update verfügbar',
+        buttonLabel: 'Jetzt neu laden',
+        onClick: onReload,
+        isShopOpenRef,
+        isPausedRef,
+        color: INK.scope
+    });
+}

@@ -4,7 +4,7 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, updateHullUI, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu } from './ui.js';
+import { updateExperienceBar, displayLevel, updateHullUI, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -12,6 +12,7 @@ import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrade
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
+import { registerSW } from 'virtual:pwa-register';
 
 initializeUI();
 
@@ -496,3 +497,15 @@ if (savedSettings && savedSettings.mode) {
 
 // Nach jedem Shop-Upgrade und Level-Up synchronisieren
 window.addEventListener('focus', syncRefsToVars);
+
+// --- PWA Update Registrierung ---
+const updateSW = registerSW({
+  onNeedRefresh() {
+    showUpdateToast(() => {
+      updateSW(true);
+    }, isShopOpenRef, isPausedRef);
+  },
+  onOfflineReady() {
+    console.log('App is ready for offline use.');
+  }
+});
