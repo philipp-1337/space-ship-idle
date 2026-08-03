@@ -6,6 +6,7 @@ import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
 import { getUpgradeStatPreview, getRecommendedUpgradeKey } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
@@ -819,6 +820,17 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         rerender(easyMode, controlsVisible);
     };
     panel.appendChild(sfxBtn);
+
+    panel.appendChild(label('Screen Shake', INK.textDim));
+    const shakeEnabled = isScreenShakeEnabled();
+    const shakeBtn = consoleButton({ text: shakeEnabled ? 'On' : 'Off', color: INK.phosphor, glowColor: INK.phosphorDim, filled: shakeEnabled, fontSize: 13 });
+    shakeBtn.style.width = '100%';
+    shakeBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
+    shakeBtn.onclick = () => {
+        setScreenShakeEnabled(!shakeEnabled);
+        rerender(easyMode, controlsVisible);
+    };
+    panel.appendChild(shakeBtn);
 
     if (isMobile) {
         panel.appendChild(label('Touch Controls', INK.textDim));

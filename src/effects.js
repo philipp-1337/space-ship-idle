@@ -2,6 +2,19 @@
 
 import { EFFECTS, STARS, COLORS } from './constants.js';
 
+const SHAKE_STORAGE_KEY = 'spaceShipIdle_shakeEnabled';
+const savedShake = localStorage.getItem(SHAKE_STORAGE_KEY);
+let screenShakeEnabled = savedShake === null ? true : savedShake === 'true';
+
+export function setScreenShakeEnabled(enabled) {
+    screenShakeEnabled = !!enabled;
+    localStorage.setItem(SHAKE_STORAGE_KEY, String(screenShakeEnabled));
+}
+
+export function isScreenShakeEnabled() {
+    return screenShakeEnabled;
+}
+
 export class EffectsSystem {
     constructor(canvas) {
         this.canvas = canvas;
@@ -24,6 +37,7 @@ export class EffectsSystem {
 
     // === SCREEN SHAKE SYSTEM ===
     triggerScreenShake(intensity = EFFECTS.SCREEN_SHAKE_INTENSITY, duration = EFFECTS.SCREEN_SHAKE_DURATION) {
+        if (!screenShakeEnabled) return;
         this.shakeTime = duration;
         this.shakeIntensity = intensity;
     }
