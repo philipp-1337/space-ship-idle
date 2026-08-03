@@ -851,11 +851,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
                 onConfirm: () => {
                     onDifficultyChange(opt.key);
                     if (typeof window !== 'undefined' && window.saveRunState) {
-                        import('./runState.js').then(({ suppressAutosave, clearRunState }) => {
-                            suppressAutosave();
-                            clearRunState();
-                            document.location.reload();
-                        });
+                        suppressAutosave();
+                        clearRunState();
+                        document.location.reload();
                     }
                 }
             });
@@ -927,11 +925,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
             onConfirm: () => {
                 localStorage.removeItem('spaceShipIdleSettings');
                 if (typeof window !== 'undefined' && window.saveRunState) {
-                    import('./runState.js').then(({ suppressAutosave, clearRunState }) => {
-                        suppressAutosave();
-                        clearRunState();
-                        document.location.reload();
-                    });
+                    suppressAutosave();
+                    clearRunState();
+                    document.location.reload();
                 }
             }
         });
