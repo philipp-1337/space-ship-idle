@@ -795,15 +795,29 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         btn.style.flex = '1';
         btn.style.padding = `${scale(10)} ${scale(12)}`;
         btn.onclick = () => {
-            onDifficultyChange(opt.key);
-            rerender(opt.key === 'easy', controlsVisible);
+            if (active) return;
+            showConfirmModal({
+                title: 'Change Difficulty',
+                text: 'Changing the difficulty will abort your current flight and start a new one. All current progress will be lost. Continue?',
+                confirmText: 'Change & Restart',
+                onConfirm: () => {
+                    onDifficultyChange(opt.key);
+                    if (typeof window !== 'undefined' && window.saveRunState) {
+                        import('./runState.js').then(({ suppressAutosave, clearRunState }) => {
+                            suppressAutosave();
+                            clearRunState();
+                            document.location.reload();
+                        });
+                    }
+                }
+            });
         };
         diffRow.appendChild(btn);
     });
     panel.appendChild(diffRow);
 
     const diffNote = document.createElement('div');
-    diffNote.innerText = 'Applies to enemies from now on. Switching to Easy also reinforces your shield once.';
+    diffNote.innerText = 'Switching difficulty will start a new run.';
     diffNote.style.fontFamily = FONT;
     diffNote.style.fontSize = scale(11);
     diffNote.style.color = INK.textDim;
@@ -852,6 +866,29 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         ctrlNote.style.margin = `0 0 ${scale(20)} 0`;
         panel.appendChild(ctrlNote);
     }
+
+    panel.appendChild(label('Factory Reset', INK.danger));
+    const resetBtn = consoleButton({ text: 'Reset Game', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 13 });
+    resetBtn.style.width = '100%';
+    resetBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
+    resetBtn.onclick = () => {
+        showConfirmModal({
+            title: 'Factory Reset',
+            text: 'This will erase your current run, all settings, and return you to the Pre-Flight check. Are you sure?',
+            confirmText: 'Reset',
+            onConfirm: () => {
+                localStorage.removeItem('spaceShipIdleSettings');
+                if (typeof window !== 'undefined' && window.saveRunState) {
+                    import('./runState.js').then(({ suppressAutosave, clearRunState }) => {
+                        suppressAutosave();
+                        clearRunState();
+                        document.location.reload();
+                    });
+                }
+            }
+        });
+    };
+    panel.appendChild(resetBtn);
 
     const closeBtn = consoleButton({ text: 'Close', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
     closeBtn.onclick = () => {
