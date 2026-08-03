@@ -127,16 +127,16 @@ export default class HomingMissile {
         this.MAX_LOST_TARGET_GRACE_FRAMES = options.maxLostTargetGraceFrames || 90; 
     }
 
-    update(enemies) {
+    update(enemies, dt = 1) {
         if (this.isExploding) {
-            this.explosionFrame++;
-            this.updateExplosionParticles();
+            this.explosionFrame += dt;
+            this.updateExplosionParticles(dt);
             return;
         }
-        if (this.exploded) return; 
+        if (this.exploded) return;
 
         if (!this.target || !this.target.alive) {
-            this.target = null; 
+            this.target = null;
 
             let closestNewTarget = null;
             let minDist = Infinity;
@@ -154,15 +154,15 @@ export default class HomingMissile {
 
             if (closestNewTarget) {
                 this.target = closestNewTarget;
-                this.lostTargetGracePeriod = 0; 
+                this.lostTargetGracePeriod = 0;
                 this.orbitPhase = Math.atan2(this.target.y - this.y, this.target.x - this.x);
             } else {
-                this.lostTargetGracePeriod++;
-                this.x += Math.cos(this.angle) * this.speed; 
-                this.y += Math.sin(this.angle) * this.speed;
+                this.lostTargetGracePeriod += dt;
+                this.x += Math.cos(this.angle) * this.speed * dt;
+                this.y += Math.sin(this.angle) * this.speed * dt;
 
                 if (this.lostTargetGracePeriod > this.MAX_LOST_TARGET_GRACE_FRAMES) {
-                    this.life = 0; 
+                    this.life = 0;
                 }
             }
         }
@@ -170,25 +170,26 @@ export default class HomingMissile {
         if (this.target) {
             this.lostTargetGracePeriod = 0;
 
-            this.orbitPhase += 0.13;
+            this.orbitPhase += 0.13 * dt;
             const tx = this.target.x + Math.cos(this.orbitPhase) * this.orbitRadius;
             const ty = this.target.y + Math.sin(this.orbitPhase) * this.orbitRadius;
             const desiredAngle = Math.atan2(ty - this.y, tx - this.x);
             let da = desiredAngle - this.angle;
             while (da > Math.PI) da -= 2 * Math.PI;
             while (da < -Math.PI) da += 2 * Math.PI;
-            this.angle += Math.max(-this.turnSpeed, Math.min(this.turnSpeed, da));
-            this.x += Math.cos(this.angle) * this.speed;
-            this.y += Math.sin(this.angle) * this.speed;
+            const turnStep = this.turnSpeed * dt;
+            this.angle += Math.max(-turnStep, Math.min(turnStep, da));
+            this.x += Math.cos(this.angle) * this.speed * dt;
+            this.y += Math.sin(this.angle) * this.speed * dt;
         }
 
-        this.life--;
+        this.life -= dt;
 
         // Blockiger Retro-Trail generieren
         const M_LENGTH = this.radius * 2.8;
         const tailX = this.x - Math.cos(this.angle) * (M_LENGTH * 0.4);
         const tailY = this.y - Math.sin(this.angle) * (M_LENGTH * 0.4);
-        
+
         // Füge jeden Frame ein Trail-Partikel hinzu
         this.trailParticles.push({
             x: tailX + (Math.random() - 0.5) * 2,
@@ -200,15 +201,15 @@ export default class HomingMissile {
         });
 
         // Trail updaten
-        this.trailParticles.forEach(p => p.life--);
+        this.trailParticles.forEach(p => p.life -= dt);
         this.trailParticles = this.trailParticles.filter(p => p.life > 0);
     }
 
-    updateExplosionParticles() {
+    updateExplosionParticles(dt = 1) {
         this.explosionParticles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life--;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= dt;
             p.alpha = Math.max(0, p.life / p.initialLife);
         });
         this.explosionParticles = this.explosionParticles.filter(p => p.life > 0);

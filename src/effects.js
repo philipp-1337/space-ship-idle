@@ -28,13 +28,13 @@ export class EffectsSystem {
         this.shakeIntensity = intensity;
     }
 
-    applyScreenShake() {
+    applyScreenShake(dt = 1) {
         if (this.shakeTime > 0) {
             const dx = (Math.random() - 0.5) * this.shakeIntensity;
             const dy = (Math.random() - 0.5) * this.shakeIntensity;
             this.ctx.save();
             this.ctx.translate(dx, dy);
-            this.shakeTime--;
+            this.shakeTime -= dt;
             return true; // Indicates shake is active
         }
         return false;
@@ -60,15 +60,15 @@ export class EffectsSystem {
         }
     }
 
-    updateAndDrawXpParticles() {
+    updateAndDrawXpParticles(dt = 1) {
         for (let i = this.xpParticles.length - 1; i >= 0; i--) {
             const p = this.xpParticles[i];
-            
+
             // Update particle
-            p.x += Math.cos(p.angle) * p.speed;
-            p.y += Math.sin(p.angle) * p.speed;
-            p.speed *= EFFECTS.XP_PARTICLE_FRICTION;
-            p.life--;
+            p.x += Math.cos(p.angle) * p.speed * dt;
+            p.y += Math.sin(p.angle) * p.speed * dt;
+            p.speed *= Math.pow(EFFECTS.XP_PARTICLE_FRICTION, dt);
+            p.life -= dt;
             
             // Draw particle — no shadowBlur here on purpose: these are small,
             // numerous (up to a dozen per pickup) and short-lived, and

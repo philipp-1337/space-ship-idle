@@ -4,7 +4,7 @@ import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPul
 import { COLORS, COLLECTOR_PULSE } from './constants.js';
 import { updateExperienceBar } from './ui.js';
 
-export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienceObj, levelUpCallback) {
+export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienceObj, levelUpCallback, dt = 1) {
     // ACHTUNG: Niemals xpPoints während des forEach direkt verändern!
     // Stattdessen: Indizes merken und nach der Schleife entfernen
     const toRemove = [];
@@ -17,7 +17,7 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
             const dy = ship.y - xp.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (pulseActive || dist < magnetRadius) {
-                const strength = pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength;
+                const strength = 1 - Math.pow(1 - (pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
                 xp.x += dx * strength;
                 xp.y += dy * strength;
             }
@@ -68,7 +68,7 @@ export function handleTractorCollection(ship, tractorItems, effectsSystem, ctx) 
     }
 }
 
-export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx) {
+export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt = 1) {
     const pulseActive = isCollectorPulseActive();
     plasmaCells.forEach((plasma, pIdx) => {
         // plasma.draw() bringt seinen eigenen shadowBlur-Glow mit; das hier
@@ -81,7 +81,7 @@ export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx) {
             const dy = ship.y - plasma.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (pulseActive || dist < magnetRadius) {
-                const strength = pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength;
+                const strength = 1 - Math.pow(1 - (pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
                 plasma.x += dx * strength;
                 plasma.y += dy * strength;
             }

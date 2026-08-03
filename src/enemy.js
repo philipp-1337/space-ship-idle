@@ -155,6 +155,7 @@ class Enemy {
         this.alreadyAwardedXP = false; // NEU: Flag um doppelte XP-Vergabe zu verhindern
         this.explosionFrame = 0;
         this.maxExplosionFrames = 14;
+        this.explosionParticlesSpawned = false;
         this.particles = [];
         this.canShoot = !!type.canShoot;
         this.shootCooldown = 0;
@@ -167,17 +168,18 @@ class Enemy {
         this.hitDuration = 6; // Dauer des Flashes in Frames
     }
 
-    update(shipX, shipY) {
+    update(shipX, shipY, dt = 1) {
         if (this.exploding) {
-            this.explosionFrame++;
+            this.explosionFrame += dt;
             // Partikel animieren
             this.particles.forEach(p => {
-                p.x += Math.cos(p.angle) * p.speed;
-                p.y += Math.sin(p.angle) * p.speed;
-                p.life--;
+                p.x += Math.cos(p.angle) * p.speed * dt;
+                p.y += Math.sin(p.angle) * p.speed * dt;
+                p.life -= dt;
             });
             this.particles = this.particles.filter(p => p.life > 0);
-            if (this.explosionFrame === 1) {
+            if (!this.explosionParticlesSpawned) {
+                this.explosionParticlesSpawned = true;
                 // Partikel erzeugen (nur beim Start der Explosion)
                 for (let i = 0; i < 16; i++) {
                     this.particles.push({
@@ -210,8 +212,9 @@ class Enemy {
         }
 
         if (this.hitTimer > 0) {
-            this.hitTimer--;
-            if (this.hitTimer === 0) {
+            this.hitTimer -= dt;
+            if (this.hitTimer <= 0) {
+                this.hitTimer = 0;
                 this.isHit = false;
             }
         }
@@ -220,8 +223,8 @@ class Enemy {
             const angle = Math.atan2(shipY - this.y, shipX - this.x);
             const dx = Math.cos(angle) * this.speed;
             const dy = Math.sin(angle) * this.speed;
-            this.x += dx * 0.5;
-            this.y += dy * 0.5;
+            this.x += dx * 0.5 * dt;
+            this.y += dy * 0.5 * dt;
             // Shooter-Logik
             if (this.canShoot && this.shootCooldown <= 0) {
                 this.shootCooldown = 150 + Math.random()*60;
@@ -230,7 +233,7 @@ class Enemy {
                 }
             }
             if (this.canShoot && this.shootCooldown > 0) {
-                this.shootCooldown--;
+                this.shootCooldown -= dt;
             }
         }
     }

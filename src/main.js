@@ -86,7 +86,7 @@ ship.friction = PHYSICS.SHIP_FRICTION;
 let marginX, marginY; // Deklarieren für spätere Zuweisung
 let worldOffsetX = 0; // Für Sternen-Parallax und Weltverschiebung
 let worldOffsetY = 0;
-function updateShipMovement() {
+function updateShipMovement(dt = 1) {
     if (ship.isExploding) return;
 
     const keys = inputManager.getKeys();
@@ -101,7 +101,7 @@ function updateShipMovement() {
             // Accelerate based on joystick distance
             const maxDist = TOUCH_CONTROLS.JOYSTICK_SIZE / 2 - TOUCH_CONTROLS.JOYSTICK_STICK_SIZE / 2;
             const normalizedDist = Math.min(dist / maxDist, 1);
-            const accel = normalizedDist * ship.acceleration;
+            const accel = normalizedDist * ship.acceleration * dt;
             const nx = dx / dist, ny = dy / dist;
             ship.vx += nx * accel;
             ship.vy += ny * accel;
@@ -111,24 +111,24 @@ function updateShipMovement() {
             // Normalisiere den Winkel auf -PI bis PI, damit es nicht "außenrum" dreht
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
-            ship.angle += diff * 0.15;
-            
+            ship.angle += diff * (1 - Math.pow(1 - PHYSICS.MOBILE_JOYSTICK_SENSITIVITY, dt));
+
             ship.thrustState = 'forward';
         } else {
             ship.thrustState = 'none';
         }
-        
+
         // Max Speed
         const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
         if (speed > ship.maxSpeed) {
             ship.vx *= ship.maxSpeed / speed;
             ship.vy *= ship.maxSpeed / speed;
         }
-        
+
         // Friction/Drift
-        ship.vx *= ship.friction;
-        ship.vy *= ship.friction;
-        
+        ship.vx *= Math.pow(ship.friction, dt);
+        ship.vy *= Math.pow(ship.friction, dt);
+
         // Welt-Offset wie gehabt
         let nextX = ship.x + ship.vx;
         let nextY = ship.y + ship.vy;
@@ -166,11 +166,11 @@ function updateShipMovement() {
     // Drehen — Geschwindigkeit rampt beim Halten hoch, damit ein kurzer Tap
     // eine kleine, präzise Richtungsänderung ergibt statt eines abrupten Sprungs.
     if (keys.left || keys.right) {
-        ship.turnRamp = Math.min(1, (ship.turnRamp || 0) + PHYSICS.SHIP_ROTATION_RAMP_STEP);
+        ship.turnRamp = Math.min(1, (ship.turnRamp || 0) + PHYSICS.SHIP_ROTATION_RAMP_STEP * dt);
     } else {
         ship.turnRamp = 0;
     }
-    const turnSpeed = PHYSICS.SHIP_ROTATION_SPEED * (PHYSICS.SHIP_ROTATION_MIN_FACTOR + (1 - PHYSICS.SHIP_ROTATION_MIN_FACTOR) * ship.turnRamp);
+    const turnSpeed = PHYSICS.SHIP_ROTATION_SPEED * (PHYSICS.SHIP_ROTATION_MIN_FACTOR + (1 - PHYSICS.SHIP_ROTATION_MIN_FACTOR) * ship.turnRamp) * dt;
     if (keys.left) ship.angle -= turnSpeed;
     if (keys.right) ship.angle += turnSpeed;
 
@@ -184,8 +184,8 @@ function updateShipMovement() {
         ax -= Math.cos(ship.angle) * ship.acceleration * PHYSICS.BACKWARD_THRUST_FACTOR;
         ay -= Math.sin(ship.angle) * ship.acceleration * PHYSICS.BACKWARD_THRUST_FACTOR;
     }
-    ship.vx += ax;
-    ship.vy += ay;
+    ship.vx += ax * dt;
+    ship.vy += ay * dt;
     // Max Speed
     const speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
     if (speed > ship.maxSpeed) {
@@ -193,8 +193,8 @@ function updateShipMovement() {
         ship.vy *= ship.maxSpeed / speed;
     }
     // Friction/Drift
-    ship.vx *= ship.friction;
-    ship.vy *= ship.friction;
+    ship.vx *= Math.pow(ship.friction, dt);
+    ship.vy *= Math.pow(ship.friction, dt);
 
     // --- NEU: Welt verschieben, wenn Schiff Randbereich erreicht ---
     let nextX = ship.x + ship.vx;

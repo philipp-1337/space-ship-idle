@@ -26,6 +26,26 @@ export function createGameLoop(context) {
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
+    // requestAnimationFrame feuert mit der Bildwiederholrate des Displays (60Hz
+    // Desktop, aber oft 90/120Hz auf Handys). Bewegung/Timer wurden vorher pro
+    // Frame um einen festen Betrag erhöht statt pro vergangener Echtzeit, wodurch
+    // das Spiel auf High-Refresh-Displays spürbar schneller lief. dt normalisiert
+    // auf eine 60fps-Basis (dt=1 bei 60fps), damit alle bestehenden Konstanten
+    // (Geschwindigkeiten, Cooldown-"Frames" etc.) unverändert weiter passen.
+    let lastTimestamp = null;
+    const MAX_FRAME_MS = 50; // deckelt den Delta-Sprung nach Pause/Tab-Wechsel
+
+    function computeDeltaFactor(timestamp) {
+        const now = typeof timestamp === 'number' ? timestamp : performance.now();
+        let dt = 1;
+        if (lastTimestamp !== null) {
+            const deltaMs = Math.min(now - lastTimestamp, MAX_FRAME_MS);
+            dt = deltaMs / (1000 / 60);
+        }
+        lastTimestamp = now;
+        return dt;
+    }
+
     // Gemeinsame Belohnungslogik für einen getöteten Gegner — genutzt vom
     // direkten Lasertreffer UND vom Explosive-Rounds-Flächenschaden, damit
     // beide Pfade konsistent XP/Plasma/Kill vergeben.
@@ -156,26 +176,27 @@ export function createGameLoop(context) {
         }
     }
 
-    function gameLoop() {
+    function gameLoop(timestamp) {
+        const dt = computeDeltaFactor(timestamp);
         if (isGameOverRef.value || isPausedRef.value) return;
         if (isShopOpenRef.value) {
             requestAnimationFrame(gameLoop);
             return;
         }
-        const shakeActive = effectsSystem.applyScreenShake();
+        const shakeActive = effectsSystem.applyScreenShake(dt);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
         if (inputManager.isMobile) {
             ctx.save();
             ctx.scale(MOBILE.GAME_ZOOM, MOBILE.GAME_ZOOM);
         }
         effectsSystem.updateStars(ship.x, ship.y);
         effectsSystem.drawStars();
-        effectsSystem.updateAndDrawXpParticles();
+        effectsSystem.updateAndDrawXpParticles(dt);
         if (!ship.isExploding) {
-            context.updateShipMovement();
+            context.updateShipMovement(dt);
         }
-        ship.update();
+        ship.update(dt);
         ship.draw(ctx);
         effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet); // Korrigiert: magnetRadius direkt verwenden
         if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades))) {
@@ -194,7 +215,7 @@ export function createGameLoop(context) {
         // Standard-sichere Weg, während der Iteration zu entfernen.
         for (let lIdx = lasers.length - 1; lIdx >= 0; lIdx--) {
             const laser = lasers[lIdx];
-            laser.update(canvas.width, canvas.height);
+            laser.update(canvas.width, canvas.height, dt);
             effectsSystem.drawLaserWithGlow(laser, laser.upgradeLevel);
             if (!laser.isActive) {
                 lasers.splice(lIdx, 1);
@@ -208,7 +229,7 @@ export function createGameLoop(context) {
         enemyGrid.clear();
         for (let eIdx = enemies.length - 1; eIdx >= 0; eIdx--) {
             const enemy = enemies[eIdx];
-            enemy.update(ship.x, ship.y);
+            enemy.update(ship.x, ship.y, dt);
             enemy.draw(ctx);
             if (!ship.isExploding && enemy.checkCollision(ship)) {
                 const result = ship.damage(enemy.isElite ? 2 : 1);
@@ -290,17 +311,18 @@ export function createGameLoop(context) {
             () => {
                 levelUp();
                 if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
-            }
+            },
+            dt
         );
         if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
-        handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx);
+        handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt);
         handleTractorCollection(ship, tractorItems, effectsSystem, ctx);
 
         for (let idx = enemyLasers.length - 1; idx >= 0; idx--) {
             const l = enemyLasers[idx];
-            l.x += Math.cos(l.angle) * l.speed;
-            l.y += Math.sin(l.angle) * l.speed;
-            l.life--;
+            l.x += Math.cos(l.angle) * l.speed * dt;
+            l.y += Math.sin(l.angle) * l.speed * dt;
+            l.life -= dt;
             effectsSystem.drawEnemyLaser({
                 x: l.x,
                 y: l.y,
@@ -332,7 +354,7 @@ export function createGameLoop(context) {
         for (let i = homingMissiles.length-1; i >= 0; i--) {
             const m = homingMissiles[i];
 
-            m.update(enemies); // Update kümmert sich auch um die Explosionsanimation
+            m.update(enemies, dt); // Update kümmert sich auch um die Explosionsanimation
 
             if (m.shouldBeRemoved()) {
                 homingMissiles.splice(i, 1);

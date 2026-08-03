@@ -66,11 +66,11 @@ class Laser {
         this.damage = baseDamage * Math.pow(1.10, this.upgradeLevel) * getDamageMultiplier();
     }
 
-    update(canvasWidth, canvasHeight) {
+    update(canvasWidth, canvasHeight, dt = 1) {
         this.prevX = this.x;
         this.prevY = this.y;
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
+        this.x += Math.cos(this.angle) * this.speed * dt;
+        this.y += Math.sin(this.angle) * this.speed * dt;
         if (this.x < 0 || this.x > canvasWidth || this.y < 0 || this.y > canvasHeight) {
             this.isActive = false;
         }

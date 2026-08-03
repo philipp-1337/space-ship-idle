@@ -111,13 +111,13 @@ class Ship {
         return performance.now() < this.invulnerableUntil;
     }
 
-    update() {
+    update(dt = 1) {
         if (this.isExploding) {
-            this.explosionFrame++;
+            this.explosionFrame += dt;
             this.particles.forEach(p => {
-                p.x += Math.cos(p.angle) * p.speed;
-                p.y += Math.sin(p.angle) * p.speed;
-                p.life--;
+                p.x += Math.cos(p.angle) * p.speed * dt;
+                p.y += Math.sin(p.angle) * p.speed * dt;
+                p.life -= dt;
             });
             this.particles = this.particles.filter(p => p.life > 0);
         }
@@ -176,9 +176,9 @@ class Ship {
         }
 
         this.thrustParticles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life--;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= dt;
         });
         this.thrustParticles = this.thrustParticles.filter(p => p.life > 0);
     }
