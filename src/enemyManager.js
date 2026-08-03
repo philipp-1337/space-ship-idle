@@ -22,15 +22,16 @@ export function spawnEnemyLaser(x, y, angle) {
 // Helper function to get random spawn position on the canvas edge
 function getRandomSpawnPosition(canvas) {
     let x, y;
+    const padding = 80; // Spawn completely outside the screen
     const edge = Math.floor(Math.random() * 4);
     if (edge === 0) { // Left edge
-        x = 0; y = Math.random() * window.logicalHeight;
+        x = -padding; y = Math.random() * window.logicalHeight;
     } else if (edge === 1) { // Right edge
-        x = window.logicalWidth; y = Math.random() * window.logicalHeight;
+        x = window.logicalWidth + padding; y = Math.random() * window.logicalHeight;
     } else if (edge === 2) { // Top edge
-        x = Math.random() * window.logicalWidth; y = 0;
+        x = Math.random() * window.logicalWidth; y = -padding;
     } else { // Bottom edge (edge === 3)
-        x = Math.random() * window.logicalWidth; y = window.logicalHeight;
+        x = Math.random() * window.logicalWidth; y = window.logicalHeight + padding;
     }
     return { x, y };
 }

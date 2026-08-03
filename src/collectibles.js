@@ -13,7 +13,7 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
     
     // Performance Guard: Merge älteste XP-Orbs in nahegelegene Orbs,
     // um die maximale Anzahl strikt zu deckeln, ohne XP zu verschenken.
-    const OVERFLOW_LIMIT = 60;
+    const OVERFLOW_LIMIT = 120;
     while (xpPoints.length > OVERFLOW_LIMIT) {
         const oldest = xpPoints[0];
         let minD2 = Infinity;
