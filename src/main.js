@@ -562,15 +562,28 @@ window.addEventListener('focus', syncRefsToVars);
 // --- PWA Update Registrierung ---
 // Der Browser prüft eine registrierte sw.js standardmäßig nur bei Navigation
 // auf Änderungen. Da das Spiel oft stundenlang ohne Reload in einem Tab läuft,
-// muss der Update-Check hier aktiv per Intervall angestoßen werden, sonst
-// feuert onNeedRefresh nie.
+// muss der Update-Check hier aktiv angestoßen werden, sonst feuert
+// onNeedRefresh nie. Ein reines setInterval reicht dafür nicht: Timer werden
+// gedrosselt/pausiert, sobald der Tab (bzw. die installierte PWA) in den
+// Hintergrund geht, was bei einem Idle-Game der Normalfall ist. Deshalb wird
+// zusätzlich bei jedem Sichtbarwerden des Tabs geprüft — das deckt genau den
+// Fall "App war im Hintergrund, User kommt zurück" ab.
 const SW_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const SW_UPDATE_CHECK_MIN_GAP_MS = 60 * 1000;
 const updateSW = registerSW({
   onRegisteredSW(swUrl, registration) {
     if (!registration) return;
-    setInterval(() => {
+    let lastCheck = Date.now();
+    const checkForUpdate = () => {
+      const now = Date.now();
+      if (now - lastCheck < SW_UPDATE_CHECK_MIN_GAP_MS) return;
+      lastCheck = now;
       registration.update();
-    }, SW_UPDATE_CHECK_INTERVAL_MS);
+    };
+    setInterval(checkForUpdate, SW_UPDATE_CHECK_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkForUpdate();
+    });
   },
   onNeedRefresh() {
     showUpdateToast(() => {
