@@ -12,7 +12,8 @@ export const SOUNDS = {
     ENEMY_HIT: '/assets/audio/sfx/enemy_hit.wav',
     ENEMY_EXPLODE: '/assets/audio/sfx/enemy_explode.wav',
     SHIP_HIT: '/assets/audio/sfx/ship_hit.wav',
-    SHIP_MISSILE: '/assets/audio/sfx/ship_missle.wav',
+    SHIP_MISSILE: '/assets/audio/sfx/ship_missile_start.wav',
+    SHIP_MISSILE_EXPLOSION: '/assets/audio/sfx/ship_missile_explosion.wav',
 
     // Idle & Resources
     RES_COLLECT: '/assets/audio/sfx/res_collect.wav',

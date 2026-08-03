@@ -1,5 +1,6 @@
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 import { SALVAGE_DRIVE } from './constants.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 const EXPLOSION_ANIMATION_DURATION = 30; 
 const EXPLOSION_PARTICLE_COUNT = 35;
@@ -314,6 +315,8 @@ export default class HomingMissile {
             });
         }
 
+        let destroyedAnyEnemy = false;
+
         for (const e of enemies) {
             if (e.alive && !e.exploding) {
                 const dx = e.x - this.x;
@@ -349,6 +352,7 @@ export default class HomingMissile {
                             e.alreadyAwardedXP = true;
                         }
                         e.destroy(); 
+                        destroyedAnyEnemy = true;
                     } else if (wasAliveBeforeHit) { 
                         if (!e.isHit) {
                            e.isHit = true;
@@ -357,6 +361,10 @@ export default class HomingMissile {
                     }
                 }
             }
+        }
+        
+        if (!destroyedAnyEnemy) {
+            AudioManager.play('SHIP_MISSILE_EXPLOSION');
         }
     }
 
