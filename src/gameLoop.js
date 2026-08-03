@@ -154,7 +154,6 @@ export function createGameLoop(context) {
                 } else {
                     lasers.push(shots);
                 }
-                AudioManager.play('SHIP_LASER');
                 autoShootTimerRef.value = performance.now();
             }
         }
@@ -193,6 +192,7 @@ export function createGameLoop(context) {
                             { speed: 2.2, explosionRadius: 60, damage: 6 }
                         ));
                     }
+                    AudioManager.play('SHIP_MISSILE');
                     lastMissileTime = now;
                 }
             }
@@ -247,7 +247,6 @@ export function createGameLoop(context) {
             } else {
                 lasers.push(shots);
             }
-            AudioManager.play('SHIP_LASER');
             gameLoop.lastShot = performance.now();
         }
         // Rückwärts-Schleife statt forEach+splice: forEach hält einen internen
