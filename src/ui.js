@@ -537,15 +537,15 @@ export function displayStartScreen(onSelect) {
     if (_isMobile) {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
-            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Virtual Joystick for movement</div>
-            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Auto-Fire is always ON.</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Move (Virtual Joystick)</div>
+            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Roll/Strafe (Slider). Auto-Fire is ON.</div>
         `;
     } else {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
             <div>Move: <kbd style="${kbdStyle}">W</kbd><kbd style="${kbdStyle}">A</kbd><kbd style="${kbdStyle}">S</kbd><kbd style="${kbdStyle}">D</kbd></div>
-            <div style="margin-top:${scale(6)}">Fire: <kbd style="${kbdStyle}">SPACE</kbd> or <kbd style="${kbdStyle}">Mouse Click</kbd></div>
-            <div style="margin-top:${scale(6)}">Aim: <kbd style="${kbdStyle}">Q</kbd> / <kbd style="${kbdStyle}">E</kbd> or <kbd style="${kbdStyle}">Mouse</kbd></div>
+            <div style="margin-top:${scale(6)}">Fire: <kbd style="${kbdStyle}">SPACE</kbd></div>
+            <div style="margin-top:${scale(6)}">Roll / Strafe: <kbd style="${kbdStyle}">Q</kbd> / <kbd style="${kbdStyle}">E</kbd></div>
         `;
     }
     panel.appendChild(controls);
