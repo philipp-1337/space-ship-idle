@@ -6,6 +6,8 @@ import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
 import { clearRunState, suppressAutosave } from './runState.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { spawnBossRewardWave } from './enemyManager.js';
+import Laser from './laser.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
 // damit eine Umkreis-Abfrage typischerweise nur eine Handvoll Zellen berührt.
@@ -60,6 +62,24 @@ export function createGameLoop(context) {
             if (enemy.isElite) {
                 // A Boss orb always guarantees a level up upon collection.
                 xpPoints.push(new XP(enemy.x, enemy.y, 0, true));
+                
+                // Insta Death Ray + Popcorn Wave Reward
+                spawnBossRewardWave(canvas, enemy.x, enemy.y, easyModeRef ? easyModeRef.value : false);
+                
+                // Spawn 16 massive piercing lasers (Death Ray burst)
+                for (let i = 0; i < 16; i++) {
+                    const angle = (Math.PI * 2 / 16) * i;
+                    // upgradeLevel 9 for maximum size/damage, huge pierce
+                    const deathRay = new Laser(enemy.x, enemy.y, angle, 9, { pierce: 9999 });
+                    deathRay.damage = 9999;
+                    deathRay.width = 60;
+                    deathRay.height = 15;
+                    deathRay.speed = 12;
+                    lasers.push(deathRay);
+                }
+                
+                effectsSystem.triggerScreenShake(20, 30);
+                AudioManager.play('SHIP_LASER');
             } else {
                 xpPoints.push(new XP(enemy.x, enemy.y, enemy.xpValue));
             }

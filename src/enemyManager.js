@@ -81,6 +81,22 @@ export function spawnEnemyWave(canvas, level, easyMode = false) {
         enemies.push(new Enemy(x, y, level, easyMode));
     }
 }
+
+export function spawnBossRewardWave(canvas, x, y, easyMode = false) {
+    const numEnemies = 60;
+    const radius = 180;
+    
+    for (let i = 0; i < numEnemies; i++) {
+        const angle = (Math.PI * 2 / numEnemies) * i;
+        const ex = x + Math.cos(angle) * radius;
+        const ey = y + Math.sin(angle) * radius;
+        // Spawn popcorn enemies (level 1)
+        const enemy = new Enemy(ex, ey, 1, easyMode);
+        // Add a small delay so the laser has time to spawn and hit them
+        enemy.hitTimer = 0;
+        enemies.push(enemy);
+    }
+}
 export function startEnemySpawning(canvas, levelRef, techUpgradesRef, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef) {
     if (enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
     enemySpawnIntervalId = setInterval(() => {
