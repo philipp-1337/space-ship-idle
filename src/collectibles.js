@@ -1,6 +1,6 @@
 // collectibles.js
 // Verwaltung von XP- und Plasma-Handling (Sammeln, Magnet, UI)
-import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive } from './upgrades.js';
+import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse } from './upgrades.js';
 import { COLORS, COLLECTOR_PULSE } from './constants.js';
 import { updateExperienceBar } from './ui.js';
 
@@ -57,9 +57,7 @@ export function handleTractorCollection(ship, tractorItems, effectsSystem, ctx) 
         if (Math.sqrt(dx * dx + dy * dy) < ship.getXpRadius() + item.radius && !item.collected) {
             effectsSystem.spawnXpParticles(item.x, item.y, '#9c27b0');
             item.collected = true;
-            import('./upgrades.js').then(module => {
-                module.triggerCollectorPulse();
-            });
+            triggerCollectorPulse();
             toRemove.push(idx);
         }
     });
