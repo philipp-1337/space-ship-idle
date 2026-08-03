@@ -2,6 +2,7 @@
 import { PROGRESSION, OVERDRIVE, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
+import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
@@ -23,6 +24,7 @@ export function createGameLoop(context) {
 
     let homingMissiles = [];
     let lastMissileTime = 0;
+    let drone = null; // lazy erzeugt, sobald techUpgrades.drone freigeschaltet wird
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -207,6 +209,17 @@ export function createGameLoop(context) {
         }
         ship.update(dt);
         ship.draw(ctx);
+
+        // Begleit-Drohne (Tech-Tree-Waffe): kreist ums Schiff und feuert
+        // eigenständig auf den nächsten Gegner in Reichweite.
+        if (techUpgrades.drone) {
+            if (!drone) drone = new Drone();
+            drone.update(ship, dt);
+            drone.draw(ctx);
+            const droneShot = drone.tryShoot(enemies, upgrades.laser);
+            if (droneShot) lasers.push(droneShot);
+        }
+
         effectsSystem.drawMagnetField(ship.x, ship.y, magnetRadius, upgrades.magnet); // Korrigiert: magnetRadius direkt verwenden
         if (inputManager.isShooting() && !ship.isExploding && (!gameLoop.lastShot || performance.now() - gameLoop.lastShot > GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades))) {
             const shots = ship.shoot();

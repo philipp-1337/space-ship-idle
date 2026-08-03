@@ -34,10 +34,10 @@ const INK = {
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 
-// HUD row offsets (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings)
-// sits below the XP tape (14px tall) with a small gap, instead of at the very
-// top edge — the tape and the row used to overlap. Row 2 (Hull dial, Tech
-// Tree button) keeps the same relative gap it always had below row 1.
+// HUD row offsets (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
+// Tech Tree) sits below the XP tape (14px tall) with a small gap, instead of
+// at the very top edge — the tape and the row used to overlap. Row 2 (Hull
+// dial) keeps the same relative gap it always had below row 1.
 const HUD_TOP_ROW1 = 22;
 const HUD_TOP_ROW2 = 100 + (HUD_TOP_ROW1 - 10);
 
@@ -763,20 +763,41 @@ export function removePauseMenu() {
 // ---------------------------------------------------------------------------
 // Tech tree
 // ---------------------------------------------------------------------------
+// Small icon button, same footprint/material as Pause + Settings, sitting
+// immediately left of the Plasma dial — mirrors the Level dial's Pause/Settings
+// pair on the opposite side, instead of a full-width labeled button stacked
+// below the dial.
 export function showTechTreeButton(onClick) {
     let btn = document.getElementById('tech-tree-btn');
     if (!btn) {
-        btn = consoleButton({ text: 'Tech&nbsp;Tree', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+        btn = document.createElement('button');
         btn.id = 'tech-tree-btn';
+        btn.innerHTML = `<svg width="${scaleNum(16)}" height="${scaleNum(16)}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="5" r="2.5" stroke="${INK.scope}" stroke-width="2"/>
+            <circle cx="5" cy="19" r="2.5" stroke="${INK.scope}" stroke-width="2"/>
+            <circle cx="19" cy="19" r="2.5" stroke="${INK.scope}" stroke-width="2"/>
+            <path d="M12 7.5V12M12 12L5 16.5M12 12L19 16.5" stroke="${INK.scope}" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+        btn.setAttribute('aria-label', 'Tech Tree');
         btn.style.position = 'fixed';
-        btn.style.top = scale(HUD_TOP_ROW2); // clears the Plasma dial's full footprint (face + caption)
-        btn.style.right = scale(10);
+        btn.style.top = scale(HUD_TOP_ROW1);
+        btn.style.right = scale(84); // clears the Plasma dial (10 right + 64 diameter + 10 gap)
         btn.style.zIndex = '1200';
-        btn.style.padding = `${scale(8)} ${scale(16)}`;
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.width = scale(32);
+        btn.style.height = scale(32);
+        btn.style.cursor = 'pointer';
+        btn.style.transition = 'box-shadow 0.15s, background 0.15s';
+        panelBase(btn, { color: INK.scopeDim, chamfer: 6 });
+        btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.scopeDim}`;
+        btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.scope}`; };
+        btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.scopeDim}`; };
         btn.onclick = onClick;
         document.body.appendChild(btn);
     }
-    btn.style.display = 'block';
+    btn.style.display = 'flex';
 }
 
 // One-time responsive stylesheet for the tech tree: collapses the 3-column
@@ -913,6 +934,7 @@ export function showTechTreeModal(upgrades, onUpgrade) {
 
     const nodes = [
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
+        { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own laser at nearby enemies.', cost: 12, col: 3, row: 1 },
         { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 1, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },

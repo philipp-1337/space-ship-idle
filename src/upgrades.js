@@ -15,6 +15,7 @@ export let magnetStrength = 0;
 
 export let techUpgrades = {
     autoShoot: false,
+    drone: false, // Begleit-Drohne, kreist ums Schiff und feuert automatisch
 
     homingMissile: false, // Lenkraketen-Upgrade
     piercing: false, // Laser durchdringen Gegner

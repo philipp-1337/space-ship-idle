@@ -65,6 +65,14 @@ export const SALVAGE_DRIVE = {
     DROP_CHANCE_MULT: 2 // doubles GAME_CONFIG.PLASMA_DROP_CHANCE
 };
 
+export const DRONE = {
+    ORBIT_RADIUS: 55,
+    ORBIT_SPEED: 0.035, // rad pro Frame @60fps
+    SIZE: 14,
+    FIRE_RANGE: 220,
+    FIRE_COOLDOWN_MS: 650
+};
+
 export const COLLECTOR_PULSE = {
     DURATION_MS: 1500,
     STRENGTH: 0.12 // per-frame pull toward the ship, same mechanism as the magnet
