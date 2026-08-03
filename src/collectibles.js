@@ -35,8 +35,13 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
             xp.collect();
             AudioManager.play('RES_COLLECT_XP');
             // Modifiziere die .value Eigenschaften der übergebenen Referenzobjekte
-            experienceObj.experienceRef.value += xp.value;
-            experienceObj.xpCollectedRef.value += xp.value;
+            let xpGained = xp.value;
+            if (xp.isBossOrb) {
+                // Ein Boss-Orb füllt die Leiste immer exakt auf.
+                xpGained = Math.max(1, experienceObj.maxXPRef.value - experienceObj.experienceRef.value);
+            }
+            experienceObj.experienceRef.value += xpGained;
+            experienceObj.xpCollectedRef.value += xpGained;
             updateExperienceBar(experienceObj.experienceRef.value, experienceObj.maxXPRef.value);
             toRemove.push(xIdx);
             if (experienceObj.experienceRef.value >= experienceObj.maxXPRef.value) {

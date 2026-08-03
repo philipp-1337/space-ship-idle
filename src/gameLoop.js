@@ -58,8 +58,8 @@ export function createGameLoop(context) {
         if (enemy.hp <= 0 && !enemy.alreadyAwardedXP) {
             // Spawn boss XP or regular XP
             if (enemy.isElite) {
-                const xpNeeded = Math.max(1, maxXPRef.value - experienceRef.value);
-                xpPoints.push(new XP(enemy.x, enemy.y, xpNeeded));
+                // A Boss orb always guarantees a level up upon collection.
+                xpPoints.push(new XP(enemy.x, enemy.y, 0, true));
             } else {
                 xpPoints.push(new XP(enemy.x, enemy.y, enemy.xpValue));
             }

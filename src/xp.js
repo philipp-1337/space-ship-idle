@@ -45,11 +45,12 @@ export const denseXpSprite = makePixelSprite(
 );
 
 class XP {
-    constructor(x, y, value = 1) {
+    constructor(x, y, value = 1, isBossOrb = false) {
         this.x = x;
         this.y = y;
         this.value = value;
-        this.radius = value > 15 ? 12 : (value > 1 ? 8 : 7);
+        this.isBossOrb = isBossOrb;
+        this.radius = isBossOrb ? 12 : (value > 15 ? 12 : (value > 1 ? 8 : 7));
         this.collected = false;
     }
 
@@ -61,9 +62,10 @@ class XP {
             // ansammeln, und shadowBlur ist pro Aufruf teuer, besonders in Chrome.
             const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300);
             ctx.shadowBlur = 7 * pulse;
-            ctx.shadowColor = this.value > 1 ? '#ff00ff' : '#ffd23f';
+            ctx.shadowColor = this.isBossOrb ? '#ffd23f' : (this.value > 1 ? '#ff00ff' : '#ffd23f');
             ctx.translate(this.x, this.y);
-            drawPixelSprite(ctx, this.value > 1 ? denseXpSprite : xpSprite, this.radius * 2 * pulse, this.radius * 2 * pulse);
+            const spriteToUse = this.isBossOrb ? xpSprite : (this.value > 1 ? denseXpSprite : xpSprite);
+            drawPixelSprite(ctx, spriteToUse, this.radius * 2 * pulse, this.radius * 2 * pulse);
             ctx.restore();
         }
     }
