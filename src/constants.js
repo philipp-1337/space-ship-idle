@@ -123,7 +123,6 @@ export const ENEMY_LASER = {
 };
 
 export const COLORS = {
-    ELITE_ENEMY_COLOR: 'gold',
     LASER_NORMAL: 'red',
     LASER_UPGRADED: 'cyan',
     MAGNET_COLOR: 'deepskyblue',

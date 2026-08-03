@@ -109,7 +109,7 @@ Functional-first, like before, but the mapping is now literalized as real instru
 ### Tertiary
 - **Caution Amber** (`#ffb000`): anticipatory warnings only — currently just the enemy-wave annunciator ("Caution — Enemy Wave Incoming"). This is a semantic change from the old system, which used red for this; amber is reserved for "heads up, not yet critical," keeping red exclusively for actual danger.
 - **Danger Red** (`#ff3b30`): true danger or a destructive action — the pause-menu Restart button, the mobile fire button, the Systems Failure (game-over) panel. Never used for anticipatory states.
-- **Target Gold** (`#ffd23f`): a target of opportunity, not a threat — the Elite Scanner annunciator ("Elite Contact Detected"). Ties back to `COLORS.ELITE_ENEMY_COLOR` (`gold`) in the gameplay layer, reinforcing the same meaning across both systems.
+- **Target Gold** (`#ffd23f`): a target of opportunity, not a threat — used for the Weapon Overdrive annunciator ("Weapon Overdrive Engaged") and the XP tape/pickup color. No longer tied to the boss/elite enemy, which now reads as a real threat (Danger Red aura, see gameplay layer) rather than an opportunity.
 
 ### Neutral
 - **Void** (`#000000`): canvas background, and the text color inside every "engaged" filled button (dark legend on a lit switch).

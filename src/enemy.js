@@ -91,11 +91,52 @@ const circleSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
     }
 );
 
+// Boss-Sprite: gepanzerter, bestachelter Sechseck-Rumpf mit glühendem
+// Reaktorkern in Warnrot/Schwarz statt einer der zufälligen Standard-Formen —
+// jeder Boss sieht dadurch gleich und sofort als eigene Bedrohungsklasse
+// erkennbar aus, statt "zufälliger Gegner mit dünnem Goldring".
+const bossSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#1a1a1a', '#ff3b30', '#8a0f0a', '#ffb000', '#fff3c4'], '#000000',
+    (ctx) => {
+        const s = 15.5;
+        const hex = [];
+        for (let i = 0; i < 6; i++) {
+            const a = -Math.PI / 2 + i * Math.PI / 3;
+            hex.push([Math.cos(a) * s / 2, Math.sin(a) * s / 2]);
+        }
+        // Gepanzerter Rumpf
+        enemyPath(ctx, hex, '#1a1a1a');
+        // Kernplatten
+        enemyPath(ctx, [hex[5], hex[0], hex[1], [0, 0]], '#8a0f0a');
+        enemyPath(ctx, [hex[2], hex[3], hex[4], [0, 0]], '#ff3b30');
+        // Panzerstacheln an jeder Ecke
+        hex.forEach(([px, py]) => {
+            const nx = px / (s / 2), ny = py / (s / 2);
+            const tx = -ny, ty = nx;
+            enemyPath(ctx, [
+                [px + tx * 1.1, py + ty * 1.1],
+                [px + nx * 4, py + ny * 4],
+                [px - tx * 1.1, py - ty * 1.1]
+            ], '#ff3b30');
+        });
+        // Glühender Reaktorkern
+        ctx.fillStyle = '#ffb000';
+        ctx.beginPath();
+        ctx.arc(enemyMx(0), enemyMy(0), Math.max(1.4, ENEMY_SPRITE_RES / (2 * ENEMY_RANGE) * 3), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff3c4';
+        ctx.beginPath();
+        ctx.arc(enemyMx(0), enemyMy(0), Math.max(0.7, ENEMY_SPRITE_RES / (2 * ENEMY_RANGE) * 1.2), 0, Math.PI * 2);
+        ctx.fill();
+    }
+);
+
 const ENEMY_SPRITES = {
     triangle: { normal: triangleSprite, hit: makeFlashSprite(triangleSprite, '#ffffff') },
     square: { normal: squareSprite, hit: makeFlashSprite(squareSprite, '#ffffff') },
     pentagon: { normal: pentagonSprite, hit: makeFlashSprite(pentagonSprite, '#ffffff') },
     circle: { normal: circleSprite, hit: makeFlashSprite(circleSprite, '#ffffff') },
+    boss: { normal: bossSprite, hit: makeFlashSprite(bossSprite, '#ffffff') },
 };
 
 const ENEMY_TYPES = [
@@ -134,11 +175,26 @@ const ENEMY_TYPES = [
     }
 ];
 
+// Eigenes Stat-Profil für den Boss statt einer zufällig aus ENEMY_TYPES
+// gewählten Form — sonst würde ein Boss je nach Zufallstreffer mal ein
+// schwaches Dreieck (baseHp 4), mal ein zähes Shooter-Sechseck (baseHp 25)
+// sein, obwohl er optisch immer gleich (bossSprite) aussieht.
+export const BOSS_TYPE = {
+    name: 'boss',
+    shape: 'boss',
+    baseHp: 30,
+    baseSpeed: 0.4,
+    color: 'crimson',
+    canShoot: true
+};
+
 class Enemy {
-    constructor(x, y, level = 1, easyMode = false) {
-        // Typ nach Level bestimmen
-        const availableTypes = ENEMY_TYPES.filter(t => level >= t.minLevel);
-        const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+    constructor(x, y, level = 1, easyMode = false, forcedType = null) {
+        // Typ nach Level bestimmen (oder fest vorgegeben, z.B. BOSS_TYPE)
+        const type = forcedType || (() => {
+            const availableTypes = ENEMY_TYPES.filter(t => level >= t.minLevel);
+            return availableTypes[Math.floor(Math.random() * availableTypes.length)];
+        })();
         this.type = type;
         this.x = x;
         this.y = y;
@@ -269,25 +325,44 @@ class Enemy {
         if (this.alive) {
             ctx.save();
             ctx.translate(this.x, this.y);
+
+            // Boss-Aura: pulsierender Warnrot-Ring statt des alten dünnen
+            // Goldrings — Gold steht im Design-System für ein "Beute-Ziel",
+            // Warnrot für echte Gefahr, was zu einem Endgegner besser passt.
+            // Hinter dem Sprite gezeichnet, damit sie wie ein Halo wirkt.
             if (this.isElite) {
-                ctx.strokeStyle = 'gold';
-                ctx.lineWidth = 4;
+                const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 260);
+                ctx.save();
+                ctx.globalAlpha = 0.55 * pulse;
+                ctx.strokeStyle = '#ff3b30';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 14 * pulse;
+                ctx.shadowColor = '#ff3b30';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2 + 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
             }
 
             const sprites = ENEMY_SPRITES[this.type.shape];
             const sprite = (this.isHit && this.hitTimer > 0) ? sprites.hit : sprites.normal;
             drawPixelSprite(ctx, sprite, this.size, this.size);
-            // HP-Balken
+            // HP-Balken (beim Boss breiter, in Warnrot, mit "BOSS"-Label)
             if (this.maxHp > 1) {
-                ctx.fillStyle = 'black'; // HP-Balken Hintergrundfarbe explizit setzen
-                ctx.fillRect(-this.size/2, -this.size/2-8, this.size, 5);
-                ctx.fillStyle = 'lime'; // HP-Balken Füllfarbe explizit setzen
-                ctx.fillRect(-this.size/2, -this.size/2-8, this.size * (this.hp/this.maxHp), 5);
-            }
-            if (this.isElite) {
-                ctx.beginPath();
-                ctx.arc(0, 0, this.size/2 + 6, 0, Math.PI*2);
-                ctx.stroke();
+                const barWidth = this.isElite ? this.size * 1.15 : this.size;
+                const barHeight = this.isElite ? 6 : 5;
+                const barY = -this.size / 2 - (this.isElite ? 14 : 8);
+                ctx.fillStyle = 'black';
+                ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
+                ctx.fillStyle = this.isElite ? '#ff3b30' : 'lime';
+                ctx.fillRect(-barWidth / 2, barY, barWidth * (this.hp / this.maxHp), barHeight);
+                if (this.isElite) {
+                    ctx.fillStyle = '#ff3b30';
+                    ctx.font = '700 10px "IBM Plex Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('BOSS', 0, barY - 3);
+                }
             }
             ctx.restore();
         }

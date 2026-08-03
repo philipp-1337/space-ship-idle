@@ -14,8 +14,8 @@ export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
-        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave,
-        displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint,
+        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss,
+        displayLevel, updateExperienceBar, updateHullUI, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef, easyModeRef
@@ -112,6 +112,15 @@ export function createGameLoop(context) {
                 spawnEnemyWave(canvas, levelRef.value, easyModeRef ? easyModeRef.value : false);
                 if (typeof showWaveHint === 'function') {
                     showWaveHint();
+                }
+            }
+            // Boss: genau ein stärkerer Gegner pro ELITE_ENEMY_INTERVAL-Level, ausgelöst
+            // einmalig beim Level-Aufstieg (statt vorher wiederholt bei jedem
+            // Enemy-Spawn-Tick, solange das Level ein Vielfaches von 10 war).
+            if (levelRef.value % GAME_CONFIG.ELITE_ENEMY_INTERVAL === 0) {
+                spawnBoss(canvas, levelRef.value, easyModeRef ? easyModeRef.value : false);
+                if (typeof showBossHint === 'function') {
+                    showBossHint();
                 }
             }
             // Fix: Reset shooting flag when shop closes

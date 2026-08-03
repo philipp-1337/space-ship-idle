@@ -1086,3 +1086,7 @@ export function showOverdriveHint(duration) {
     annunciator({ id: 'overdrive-hint', top: '172px', text: 'Weapon Overdrive Engaged', color: INK.gold, duration });
 }
 
+export function showBossHint() {
+    annunciator({ id: 'boss-hint', top: '96px', text: 'Warning — Boss Approaching', color: INK.danger, duration: 3500 });
+}
+

@@ -1,7 +1,7 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
-import Enemy from './enemy.js'; // Added COLORS
-import { GAME_CONFIG, COLORS } from './constants.js';
+import Enemy, { BOSS_TYPE } from './enemy.js';
+import { GAME_CONFIG } from './constants.js';
 
 export let enemies = [];
 export let enemyLasers = [];
@@ -37,18 +37,20 @@ export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
     // Spawn a regular enemy
     const regularPos = getRandomSpawnPosition(canvas);
     enemies.push(new Enemy(regularPos.x, regularPos.y, level, easyMode));
+}
 
-    // Check if an elite enemy should also spawn
-    if (level > 0 && level % GAME_CONFIG.ELITE_ENEMY_INTERVAL === 0) {
-        const elitePos = getRandomSpawnPosition(canvas);
-        const elite = new Enemy(elitePos.x, elitePos.y, level + GAME_CONFIG.ELITE_ENEMY_HP_BONUS, easyMode);
-        elite.color = COLORS.ELITE_ENEMY_COLOR; // Use constant
-    elite.size = GAME_CONFIG.ELITE_ENEMY_SIZE;
-        elite.isElite = true;
-        enemies.push(elite);
-
-
-    }
+// Ein einzelner Boss statt eines wiederholten Elite-Spawns: wird einmalig beim
+// Erreichen eines ELITE_ENEMY_INTERVAL-Levels ausgelöst (siehe levelUp() in
+// gameLoop.js), nicht mehr aus dem wiederkehrenden spawnEnemy()-Tick heraus —
+// sonst spawnte für die gesamte Dauer eines solchen Levels alle
+// ENEMY_SPAWN_INTERVAL ms ein weiterer Elite-Gegner zusätzlich.
+export function spawnBoss(canvas, level, easyMode = false) {
+    const pos = getRandomSpawnPosition(canvas);
+    const boss = new Enemy(pos.x, pos.y, level + GAME_CONFIG.ELITE_ENEMY_HP_BONUS, easyMode, BOSS_TYPE);
+    boss.size = GAME_CONFIG.ELITE_ENEMY_SIZE;
+    boss.isElite = true;
+    enemies.push(boss);
+    return boss;
 }
 
 export function spawnEnemyWave(canvas, level, easyMode = false) {
