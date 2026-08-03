@@ -567,11 +567,11 @@ export function displayStartScreen(onSelect) {
         let pwaHintText = '';
         const ua = navigator.userAgent;
         if (/iphone|ipad|ipod/i.test(ua)) {
-            pwaHintText = 'Tipp: Installiere das Spiel für optimale Performance über Teilen → "Zum Home-Bildschirm".';
+            pwaHintText = 'Tip: Install the game for optimal performance via Share → "Add to Home Screen".';
         } else if (/Macintosh|Mac OS X/i.test(ua) && /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|FxiOS|Firefox/i.test(ua)) {
-            pwaHintText = 'Tipp: Installiere das Spiel als Mac-App über Safari (Ablage > Zum Dock hinzufügen).';
+            pwaHintText = 'Tip: Install the game as a Mac app via Safari (File > Add to Dock).';
         } else {
-            pwaHintText = 'Tipp: Installiere das Spiel für optimale Performance über das Browser-Menü ("App installieren" oder "Zum Home-Bildschirm").';
+            pwaHintText = 'Tip: Install the game for optimal performance via the browser menu ("Install App" or "Add to Home Screen").';
         }
         
         pwaHint.innerText = pwaHintText;
