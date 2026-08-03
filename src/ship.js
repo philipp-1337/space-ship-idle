@@ -206,8 +206,11 @@ class Ship {
     // Hull-Punkt, solange die Werte klein bleiben; ab MAX_SEGMENTS (z.B. bei
     // vielen Armor-Plating-Käufen) auf einen durchgehenden Füllbogen
     // umgeschaltet, damit die Segmente nicht zu winzig/überladen werden.
+    // Erscheint erst ab dem ersten Armor-Plating-Kauf (wie der Magnetring erst
+    // ab Magnet-Level 1) — bei der Basis-Hull von 1 wäre er nur ein fast
+    // geschlossener Kreis ohne echte Segment-Information.
     drawIntegrityRing(ctx) {
-        if (this.maxHp <= 0) return;
+        if (this.maxHp <= ARMOR.BASE_HP) return;
         const MAX_SEGMENTS = 12;
         const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
         const radius = this.width * 0.62;
