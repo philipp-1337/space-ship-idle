@@ -205,9 +205,9 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.size = 30;
-        // Flache Skalierung: Gegner behalten weitgehend ihre Basis-HP, damit sie keine Bullet-Sponges werden.
-        // HP-Zuwachs (+1.0 HP pro Level).
-        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * 1.0) * (easyMode ? 0.5 : 1)));
+        // Hybride Skalierung: Flacher HP-Zuwachs (+1.2) PLUS eine minimale (2%) exponentielle Steigerung.
+        // Verhindert totale Bullet-Sponges, aber macht späte Level trotzdem spürbar zäher.
+        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * 1.2) * Math.pow(1.02, level - 1) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;
