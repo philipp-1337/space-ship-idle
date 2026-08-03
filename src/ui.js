@@ -481,6 +481,34 @@ export function displayStartScreen(onSelect) {
         panel.appendChild(row);
     });
 
+    // PWA Install Hint
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (!isStandalone) {
+        const pwaHint = document.createElement('div');
+        pwaHint.style.marginTop = scale(12);
+        pwaHint.style.padding = `${scale(10)} ${scale(14)}`;
+        pwaHint.style.border = `1px dashed ${INK.scope}88`;
+        pwaHint.style.background = `${INK.scope}11`;
+        pwaHint.style.color = INK.scope;
+        pwaHint.style.fontFamily = FONT;
+        pwaHint.style.fontSize = scale(12);
+        pwaHint.style.textAlign = 'center';
+        pwaHint.style.clipPath = chamferClip(scaleNum(6));
+        
+        let pwaHintText = '';
+        const ua = navigator.userAgent;
+        if (/iphone|ipad|ipod/i.test(ua)) {
+            pwaHintText = 'Tipp: Installiere das Spiel für optimale Performance über Teilen → "Zum Home-Bildschirm".';
+        } else if (/Macintosh|Mac OS X/i.test(ua) && /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|FxiOS|Firefox/i.test(ua)) {
+            pwaHintText = 'Tipp: Installiere das Spiel als Mac-App über Safari (Ablage > Zum Dock hinzufügen).';
+        } else {
+            pwaHintText = 'Tipp: Installiere das Spiel für optimale Performance über das Browser-Menü ("App installieren" oder "Zum Home-Bildschirm").';
+        }
+        
+        pwaHint.innerText = pwaHintText;
+        panel.appendChild(pwaHint);
+    }
+
     document.body.appendChild(modal);
 }
 
@@ -1194,13 +1222,14 @@ export function showToast({ id, message, buttonLabel, onClick, isShopOpenRef, is
 
     if (buttonLabel && onClick) {
         const btn = consoleButton({
-            label: buttonLabel,
+            text: buttonLabel,
             color: color,
-            onClick: () => {
-                toast.remove();
-                onClick();
-            }
+            glowColor: color
         });
+        btn.onclick = () => {
+            toast.remove();
+            onClick();
+        };
         btn.style.width = '100%';
         toast.appendChild(btn);
     }
