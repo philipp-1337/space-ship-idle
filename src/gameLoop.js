@@ -173,7 +173,8 @@ export function createGameLoop(context) {
             if (!lastMissileTime || now - lastMissileTime > 2500) { // Erhöhter Cooldown für weniger Raketen
                 // Ziel suchen
                 let closest = null, minDist = Infinity;
-                for (const e of enemies) {
+                const candidates = enemyGrid.queryRadius(ship.x, ship.y, 1000);
+                for (const e of candidates) {
                     if (e.alive) {
                         const dx = e.x - ship.x;
                         const dy = e.y - ship.y;
@@ -242,7 +243,7 @@ export function createGameLoop(context) {
             drones.forEach(d => {
                 d.update(ship, dt);
                 d.draw(ctx);
-                const droneShot = d.tryShoot(enemies, upgrades.laser);
+                const droneShot = d.tryShoot(enemyGrid, upgrades.laser);
                 if (droneShot) lasers.push(droneShot);
             });
         }
@@ -457,7 +458,7 @@ export function createGameLoop(context) {
         for (let i = homingMissiles.length-1; i >= 0; i--) {
             const m = homingMissiles[i];
 
-            m.update(enemies, dt); // Update kümmert sich auch um die Explosionsanimation
+            m.update(enemyGrid, dt); // Update kümmert sich auch um die Explosionsanimation
 
             if (m.shouldBeRemoved()) {
                 homingMissiles.splice(i, 1);
@@ -479,7 +480,7 @@ export function createGameLoop(context) {
                     }
 
                     if (detonateThisFrame) {
-                        m.detonate(enemies, effectsSystem, {
+                        m.detonate(enemyGrid, effectsSystem, {
                             xpPoints,
                             XP,
                             killsRef,

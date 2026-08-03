@@ -128,7 +128,7 @@ export default class HomingMissile {
         this.MAX_LOST_TARGET_GRACE_FRAMES = options.maxLostTargetGraceFrames || 90; 
     }
 
-    update(enemies, dt = 1) {
+    update(enemyGrid, dt = 1) {
         if (this.isExploding) {
             this.explosionFrame += dt;
             this.updateExplosionParticles(dt);
@@ -141,7 +141,8 @@ export default class HomingMissile {
 
             let closestNewTarget = null;
             let minDist = Infinity;
-            for (const e of enemies) {
+            const candidates = enemyGrid.queryRadius(this.x, this.y, 800);
+            for (const e of candidates) {
                 if (e.alive) {
                     const dx = e.x - this.x;
                     const dy = e.y - this.y;
@@ -287,7 +288,7 @@ export default class HomingMissile {
         ctx.restore();
     }
 
-    detonate(enemies, effectsSystem, rewardContext) { 
+    detonate(enemyGrid, effectsSystem, rewardContext) { 
         if (this.exploded || this.isExploding) return; 
 
         this.exploded = true;
@@ -317,7 +318,8 @@ export default class HomingMissile {
 
         let destroyedAnyEnemy = false;
 
-        for (const e of enemies) {
+        const candidates = enemyGrid.queryRadius(this.x, this.y, this.explosionRadius + 40);
+        for (const e of candidates) {
             if (e.alive && !e.exploding) {
                 const dx = e.x - this.x;
                 const dy = e.y - this.y;
