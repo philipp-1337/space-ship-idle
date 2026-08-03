@@ -13,65 +13,91 @@ const SHIP_SPRITE_W = 18, SHIP_SPRITE_H = 16;
 const palette = ['#2b2d31', '#d7dbe0', '#c0c5ce', '#f2f3f5', '#8b8f97', '#1f3a52', '#8fe0ff', '#e23d28'];
 const outlineColor = '#15181e'; // Etwas weicheres, bläuliches Dunkelgrau statt hartem Schwarz
 
-const shipSprite = makePixelSprite(
-    SHIP_SPRITE_W, SHIP_SPRITE_H,
-    palette,
-    outlineColor,
-    (ctx) => {
-        const mx = x => (x - SHIP_X_MIN) / (SHIP_X_MAX - SHIP_X_MIN) * SHIP_SPRITE_W;
-        const my = y => (y - SHIP_Y_MIN) / (SHIP_Y_MAX - SHIP_Y_MIN) * SHIP_SPRITE_H;
-        const path = (pts, color) => {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            pts.forEach(([x, y], i) => {
-                const px = mx(x), py = my(y);
-                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-            });
-            ctx.closePath();
-            ctx.fill();
-        };
+// Basis-Silhouette des Schiffs. Nimmt optional eine Vor-Transformation (shear/
+// extra Rotation) entgegen, damit daraus separate gebackene Pixel-Art-Frames
+// für Drehung (Turn) und seitliches Strafen (Roll) entstehen — echte eigene
+// Sprites statt eines Laufzeit-Transforms auf einem einzigen Frame.
+function drawShipShape(ctx, pretransform) {
+    ctx.save();
+    ctx.translate(SHIP_SPRITE_W / 2, SHIP_SPRITE_H / 2);
+    if (pretransform) pretransform(ctx);
+    ctx.translate(-SHIP_SPRITE_W / 2, -SHIP_SPRITE_H / 2);
 
-        // Triebwerksgehäuse
-        [-1, 1].forEach(side => {
-            path([[-19, side * 2.6], [-15, side * 2.6], [-15, side * 4.4], [-19, side * 4.4]], '#2b2d31');
+    const mx = x => (x - SHIP_X_MIN) / (SHIP_X_MAX - SHIP_X_MIN) * SHIP_SPRITE_W;
+    const my = y => (y - SHIP_Y_MIN) / (SHIP_Y_MAX - SHIP_Y_MIN) * SHIP_SPRITE_H;
+    const path = (pts, color) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        pts.forEach(([x, y], i) => {
+            const px = mx(x), py = my(y);
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         });
+        ctx.closePath();
+        ctx.fill();
+    };
 
-        // Delta-Flügel
-        [-1, 1].forEach(side => {
-            path([[4, side * 4.2], [-11, side * 17], [-15, side * 4.6]], '#d7dbe0');
-            // Flügelspitzen (Akzent)
-            path([[-7, side * 12], [-11, side * 17], [-12, side * 12]], '#e23d28');
-        });
+    // Triebwerksgehäuse
+    [-1, 1].forEach(side => {
+        path([[-19, side * 2.6], [-15, side * 2.6], [-15, side * 4.4], [-19, side * 4.4]], '#2b2d31');
+    });
 
-        // Seitenleitwerk
-        path([[-15, -2.2], [-21, 0], [-15, 2.2]], '#2b2d31');
+    // Delta-Flügel
+    [-1, 1].forEach(side => {
+        path([[4, side * 4.2], [-11, side * 17], [-15, side * 4.6]], '#d7dbe0');
+        // Flügelspitzen (Akzent)
+        path([[-7, side * 12], [-11, side * 17], [-12, side * 12]], '#e23d28');
+    });
 
-        // Rumpf Grundform
-        path([[16, -3.8], [-15, -4.2], [-15, 4.2], [16, 3.8]], '#d7dbe0');
+    // Seitenleitwerk
+    path([[-15, -2.2], [-21, 0], [-15, 2.2]], '#2b2d31');
 
-        // Mid-Tone für runderen Look
-        path([[16, 0], [-15, 0], [-15, 2.5], [15, 2.5]], '#c0c5ce');
+    // Rumpf Grundform
+    path([[16, -3.8], [-15, -4.2], [-15, 4.2], [16, 3.8]], '#d7dbe0');
 
-        // Rumpf-Highlight (oben)
-        path([[16, -3.8], [-15, -4.2], [-15, -1.5], [15, -1.5]], '#f2f3f5');
+    // Mid-Tone für runderen Look
+    path([[16, 0], [-15, 0], [-15, 2.5], [15, 2.5]], '#c0c5ce');
 
-        // Rumpf-Schatten (Hitzekacheln)
-        path([[15, 2.5], [-15, 2.5], [-15, 4.2], [16, 3.8]], '#8b8f97');
+    // Rumpf-Highlight (oben)
+    path([[16, -3.8], [-15, -4.2], [-15, -1.5], [15, -1.5]], '#f2f3f5');
 
-        // Racing-Stripe (Akzent)
-        path([[10, -0.5], [-12, -0.5], [-12, 0.5], [10, 0.5]], '#e23d28');
+    // Rumpf-Schatten (Hitzekacheln)
+    path([[15, 2.5], [-15, 2.5], [-15, 4.2], [16, 3.8]], '#8b8f97');
 
-        // Nasenkappe (Spitzer)
-        path([[22, 0], [16, -3.2], [16, 3.2]], '#2b2d31');
+    // Racing-Stripe (Akzent)
+    path([[10, -0.5], [-12, -0.5], [-12, 0.5], [10, 0.5]], '#e23d28');
 
-        // Cockpitfenster (Pixel-perfect Polygone statt Vektor-Kreise)
-        path([[10, -1.5], [13, -1.5], [14, 0], [13, 1.5], [10, 1.5]], '#1f3a52');
-        // Lichtreflexion im Cockpit
-        path([[11, -1], [13, -1], [13, 0], [11, 0]], '#8fe0ff');
-    }
-);
+    // Nasenkappe (Spitzer)
+    path([[22, 0], [16, -3.2], [16, 3.2]], '#2b2d31');
 
-const shipHitSprite = makeFlashSprite(shipSprite, '#ffffff');
+    // Cockpitfenster (Pixel-perfect Polygone statt Vektor-Kreise)
+    path([[10, -1.5], [13, -1.5], [14, 0], [13, 1.5], [10, 1.5]], '#1f3a52');
+    // Lichtreflexion im Cockpit
+    path([[11, -1], [13, -1], [13, 0], [11, 0]], '#8fe0ff');
+
+    ctx.restore();
+}
+
+// Zusätzliche Neigung beim Drehen (Gieren) — das Schiff "legt sich" kurz
+// stärker in die Kurve. Scherung beim seitlichen Strafen (Rollen) — das
+// Schiff zieht sichtbar schräg, obwohl die Blickrichtung gleich bleibt.
+const TURN_BANK_ANGLE = 0.22; // rad
+const ROLL_SHEAR = 0.3;
+
+const shipSprites = {
+    none: makePixelSprite(SHIP_SPRITE_W, SHIP_SPRITE_H, palette, outlineColor, (ctx) => drawShipShape(ctx)),
+    turnLeft: makePixelSprite(SHIP_SPRITE_W, SHIP_SPRITE_H, palette, outlineColor, (ctx) => drawShipShape(ctx, c => c.rotate(-TURN_BANK_ANGLE))),
+    turnRight: makePixelSprite(SHIP_SPRITE_W, SHIP_SPRITE_H, palette, outlineColor, (ctx) => drawShipShape(ctx, c => c.rotate(TURN_BANK_ANGLE))),
+    rollLeft: makePixelSprite(SHIP_SPRITE_W, SHIP_SPRITE_H, palette, outlineColor, (ctx) => drawShipShape(ctx, c => c.transform(1, 0, -ROLL_SHEAR, 1, 0, 0))),
+    rollRight: makePixelSprite(SHIP_SPRITE_W, SHIP_SPRITE_H, palette, outlineColor, (ctx) => drawShipShape(ctx, c => c.transform(1, 0, ROLL_SHEAR, 1, 0, 0))),
+};
+
+const shipHitSprites = {
+    none: makeFlashSprite(shipSprites.none, '#ffffff'),
+    turnLeft: makeFlashSprite(shipSprites.turnLeft, '#ffffff'),
+    turnRight: makeFlashSprite(shipSprites.turnRight, '#ffffff'),
+    rollLeft: makeFlashSprite(shipSprites.rollLeft, '#ffffff'),
+    rollRight: makeFlashSprite(shipSprites.rollRight, '#ffffff'),
+};
 
 class Ship {
     constructor(x, y) {
@@ -89,6 +115,11 @@ class Ship {
 
         this.thrustState = 'none';
         this.thrustParticles = [];
+
+        // 'none' | 'turnLeft' | 'turnRight' | 'rollLeft' | 'rollRight' — welcher
+        // gebackene Sprite-Frame gezeigt wird, gesetzt in main.js/updateShipMovement
+        // je nachdem ob gerade gedreht (Gieren) oder seitlich gestrafet (Roll) wird.
+        this.bankState = 'none';
 
         this.maxHp = ARMOR.BASE_HP;
         this.hp = this.maxHp;
@@ -400,7 +431,8 @@ class Ship {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
-        const sprite = now < this.hitFlashUntil ? shipHitSprite : shipSprite;
+        const spriteSet = now < this.hitFlashUntil ? shipHitSprites : shipSprites;
+        const sprite = spriteSet[this.bankState] || spriteSet.none;
         drawPixelSprite(ctx, sprite, SHIP_DISPLAY_W, SHIP_DISPLAY_H);
 
         ctx.restore();

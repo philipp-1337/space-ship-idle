@@ -101,6 +101,7 @@ function updateShipMovement(dt = 1) {
         // Normiere Vektor
         let dx = joystickMove.x, dy = joystickMove.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        let turnDiff = 0;
         if (dist > 0) {
             // Accelerate based on joystick distance
             const maxDist = TOUCH_CONTROLS.JOYSTICK_SIZE / 2 - TOUCH_CONTROLS.JOYSTICK_STICK_SIZE / 2;
@@ -116,6 +117,7 @@ function updateShipMovement(dt = 1) {
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
             ship.angle += diff * (1 - Math.pow(1 - PHYSICS.MOBILE_JOYSTICK_SENSITIVITY, dt));
+            turnDiff = diff;
 
             ship.thrustState = 'forward';
         } else {
@@ -131,6 +133,20 @@ function updateShipMovement(dt = 1) {
             ship.vx += Math.cos(ship.angle + Math.PI / 2) * strafeAccel;
             ship.vy += Math.sin(ship.angle + Math.PI / 2) * strafeAccel;
             ship.thrustState = 'forward';
+        }
+
+        // Sprite-Bank-State fürs Schiffsbild: Strafen (Roll) hat Vorrang vor der
+        // Auto-Ausrichtung (Turn), sonst würde der Turn-Frame beim Diagonalfahren
+        // fast dauerhaft zeigen. Kleine Auto-Face-Korrekturen unterhalb der
+        // Deadband bleiben "none", damit der Turn-Frame nur bei echten
+        // Richtungswechseln aufblitzt.
+        const TURN_BANK_DEADBAND = 0.35; // rad
+        if (Math.abs(strafeValue) > 0.15) {
+            ship.bankState = strafeValue > 0 ? 'rollRight' : 'rollLeft';
+        } else if (Math.abs(turnDiff) > TURN_BANK_DEADBAND) {
+            ship.bankState = turnDiff > 0 ? 'turnRight' : 'turnLeft';
+        } else {
+            ship.bankState = 'none';
         }
 
         // Max Speed
@@ -190,6 +206,15 @@ function updateShipMovement(dt = 1) {
     const turnSpeed = PHYSICS.SHIP_ROTATION_SPEED * (PHYSICS.SHIP_ROTATION_MIN_FACTOR + (1 - PHYSICS.SHIP_ROTATION_MIN_FACTOR) * ship.turnRamp) * dt;
     if (keys.left) ship.angle -= turnSpeed;
     if (keys.right) ship.angle += turnSpeed;
+
+    // Sprite-Bank-State: Strafen (Roll) hat Vorrang vor Drehen (Turn), falls
+    // beide Tasten gleichzeitig gehalten werden — dieselbe Priorität wie im
+    // Mobile-Joystick-Pfad oben.
+    if (keys.strafeLeft) ship.bankState = 'rollLeft';
+    else if (keys.strafeRight) ship.bankState = 'rollRight';
+    else if (keys.left) ship.bankState = 'turnLeft';
+    else if (keys.right) ship.bankState = 'turnRight';
+    else ship.bankState = 'none';
 
     // Beschleunigung
     let ax = 0, ay = 0;
