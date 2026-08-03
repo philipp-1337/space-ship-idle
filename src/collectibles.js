@@ -10,15 +10,24 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
     // Stattdessen: Indizes merken und nach der Schleife entfernen
     const toRemove = [];
     const pulseActive = isCollectorPulseActive();
+    
+    // Performance Guard: Wenn zu viele XP-Orbs existieren, werden die ältesten 
+    // automatisch angezogen (wirkt wie ein partieller Collector Pulse).
+    const OVERFLOW_LIMIT = 120;
+    const excessCount = Math.max(0, xpPoints.length - OVERFLOW_LIMIT);
+
     xpPoints.forEach((xp, xIdx) => {
         // Magnetwirkung — der Collector-Pulse nutzt denselben Zug, nur ohne
         // Reichweitenbegrenzung und mit fester Stärke, egal ob Magnet gekauft wurde.
-        if ((upgrades.magnet > 0 || pulseActive) && !xp.collected) {
+        const forcePull = xIdx < excessCount;
+        const effectivePulse = pulseActive || forcePull;
+        
+        if ((upgrades.magnet > 0 || effectivePulse) && !xp.collected) {
             const dx = ship.x - xp.x;
             const dy = ship.y - xp.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (pulseActive || dist < magnetRadius) {
-                const strength = 1 - Math.pow(1 - (pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
+            if (effectivePulse || dist < magnetRadius) {
+                const strength = 1 - Math.pow(1 - (effectivePulse ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
                 xp.x += dx * strength;
                 xp.y += dy * strength;
             }
