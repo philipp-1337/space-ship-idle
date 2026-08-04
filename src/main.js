@@ -96,8 +96,12 @@ function updateShipMovement(dt = 1) {
     const keys = inputManager.getKeys();
     const joystickMove = inputManager.getJoystickMove();
     const rightManeuver = inputManager.getRightManeuver ? inputManager.getRightManeuver() : { x: 0, y: 0 };
+    const oneHanded = inputManager.isMobile && inputManager.mobileControlScheme === 'one-handed';
     const strafeValue = rightManeuver.x;
     const maneuverThrust = rightManeuver.y;
+    const leftTurnInput = oneHanded && joystickMove ? joystickMove.x : 0;
+    const leftThrustInput = oneHanded && joystickMove ? -joystickMove.y : 0;
+    const thrustValue = oneHanded && Math.abs(maneuverThrust) < 0.001 ? leftThrustInput : maneuverThrust;
 
     // --- Mobile absolute Steuerung (Joystick) ---
     if ((joystickMove && (typeof joystickMove.x === 'number') && (typeof joystickMove.y === 'number')) || strafeValue || maneuverThrust) {
@@ -105,7 +109,12 @@ function updateShipMovement(dt = 1) {
         let dx = joystickMove ? joystickMove.x : 0, dy = joystickMove ? joystickMove.y : 0;
         const dist = Math.sqrt(dx * dx + dy * dy);
         let turnDiff = 0;
-        if (dist > 0) {
+        if (oneHanded) {
+            const turnInput = Math.sign(leftTurnInput) * Math.pow(Math.abs(leftTurnInput), PHYSICS.MOBILE_JOYSTICK_RESPONSE_CURVE);
+            const turnStep = PHYSICS.MOBILE_JOYSTICK_TURN_SPEED * turnInput * dt;
+            ship.angle += turnStep;
+            turnDiff = turnInput;
+        } else if (dist > 0) {
             const nx = dx / dist, ny = dy / dist;
             // The left stick only selects the ship's facing. Thrust comes from
             // the right maneuver stick, so reverse flight remains available
@@ -120,17 +129,17 @@ function updateShipMovement(dt = 1) {
             ship.angle += Math.max(-turnStep, Math.min(turnStep, diff));
             turnDiff = diff;
 
-        } else if (!maneuverThrust && !strafeValue) {
+        } else if (!thrustValue && !strafeValue) {
             ship.thrustState = 'none';
         }
 
         // Right maneuver stick: vertical thrust and horizontal strafing are
         // both relative to the current facing, independent of the left stick.
-        if (maneuverThrust) {
-            const thrustAccel = maneuverThrust * ship.acceleration * (maneuverThrust < 0 ? PHYSICS.BACKWARD_THRUST_FACTOR : 1) * dt;
+        if (thrustValue) {
+            const thrustAccel = thrustValue * ship.acceleration * (thrustValue < 0 ? PHYSICS.BACKWARD_THRUST_FACTOR : 1) * dt;
             ship.vx += Math.cos(ship.angle) * thrustAccel;
             ship.vy += Math.sin(ship.angle) * thrustAccel;
-            ship.thrustState = maneuverThrust > 0 ? 'forward' : 'backward';
+            ship.thrustState = thrustValue > 0 ? 'forward' : 'backward';
         }
 
         // Horizontal right-stick input: purely lateral movement relative to the
@@ -140,7 +149,7 @@ function updateShipMovement(dt = 1) {
             const strafeAccel = strafeValue * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR * dt;
             ship.vx += Math.cos(ship.angle + Math.PI / 2) * strafeAccel;
             ship.vy += Math.sin(ship.angle + Math.PI / 2) * strafeAccel;
-            if (!maneuverThrust) ship.thrustState = 'forward';
+            if (!thrustValue) ship.thrustState = 'forward';
         }
 
         // Sprite-Bank-State fürs Schiffsbild: Strafen (Roll) hat Vorrang vor der
@@ -523,11 +532,12 @@ window.onTechTreeChanged = function() {
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 };
 
-function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
+function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mobileControlScheme = 'twin-stick') {
     easyModeRef.value = mode === 'easy';
     if (easyModeRef.value) grantEasyModeArmorBonus();
     if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(controlsVisible);
     if (typeof inputManager.setMobileAdvancedControls === 'function') inputManager.setMobileAdvancedControls(mobileAdvancedControls);
+    if (typeof inputManager.setMobileControlScheme === 'function') inputManager.setMobileControlScheme(mobileControlScheme);
 
     gameLoop();
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
@@ -538,6 +548,7 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
             easyMode: easyModeRef.value,
             controlsVisible: inputManager.controlsVisible !== false,
             mobileAdvancedControls: inputManager.mobileAdvancedControls === true,
+            mobileControlScheme: inputManager.mobileControlScheme,
             isMobile: inputManager.isMobile,
             onDifficultyChange: (nextMode) => {
                 easyModeRef.value = nextMode === 'easy';
@@ -558,17 +569,23 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
                 settings.mobileAdvancedControls = enabled;
                 localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
             },
+            onChangeControlScheme: (scheme) => {
+                if (typeof inputManager.setMobileControlScheme === 'function') inputManager.setMobileControlScheme(scheme);
+                const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
+                settings.mobileControlScheme = scheme;
+                localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
+            },
         });
     });
 }
 
 const savedSettings = JSON.parse(localStorage.getItem('spaceShipIdleSettings'));
 if (savedSettings && savedSettings.mode) {
-    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false, savedSettings.mobileAdvancedControls === true);
+    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false, savedSettings.mobileAdvancedControls === true, savedSettings.mobileControlScheme);
     showMobileMovementUpdateNotice();
 } else {
     displayStartScreen((mode) => {
-        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false }));
+        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false, mobileControlScheme: 'twin-stick' }));
         applySettings(mode, true);
     });
     showMobileMovementUpdateNotice();

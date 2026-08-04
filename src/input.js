@@ -17,6 +17,7 @@ export class InputManager {
         this.strafeValue = 0; // -1..1, mobile right-stick horizontal axis
         this.maneuverThrustValue = 0; // -1..1, mobile right-stick vertical axis
         this.mobileAdvancedControls = false;
+        this.mobileControlScheme = 'twin-stick';
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         this.setupKeyboardListeners();
@@ -364,7 +365,7 @@ export class InputManager {
             const scale = distance > maxDist ? maxDist / distance : 1;
             const clampedX = dx * scale;
             const clampedY = dy * scale;
-            const effectiveX = this.mobileAdvancedControls ? clampedX : 0;
+            const effectiveX = this.mobileAdvancedControls || this.mobileControlScheme === 'one-handed' ? clampedX : 0;
             this.strafeKnob.style.transform = `translate(${effectiveX}px, ${clampedY}px)`;
             this.setRightManeuverVector(effectiveX, clampedY, maxDist);
         };
@@ -422,7 +423,8 @@ export class InputManager {
             return;
         }
         const magnitude = Math.min(1, (distance - deadzone) / Math.max(1, maxDist - deadzone));
-        this.strafeValue = this.mobileAdvancedControls ? (dx / distance) * magnitude : 0;
+        const strafeEnabled = this.mobileAdvancedControls || this.mobileControlScheme === 'one-handed';
+        this.strafeValue = strafeEnabled ? (dx / distance) * magnitude : 0;
         // Screen Y is inverted: dragging up means positive forward thrust.
         this.maneuverThrustValue = (-dy / distance) * magnitude;
     }
@@ -430,6 +432,10 @@ export class InputManager {
     setMobileAdvancedControls(enabled) {
         this.mobileAdvancedControls = !!enabled;
         if (!this.mobileAdvancedControls) this.strafeValue = 0;
+    }
+
+    setMobileControlScheme(scheme) {
+        this.mobileControlScheme = scheme === 'one-handed' ? 'one-handed' : 'twin-stick';
     }
 
 

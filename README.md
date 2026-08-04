@@ -16,7 +16,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - Weapon and utility upgrades including Magnet, Collector Pulse, Chain Lightning, Weapon Overdrive, and incremental XP gain.
 - Normal and Easy difficulty modes. Normal is the default Pre-Flight selection.
 - Desktop keyboard controls, mouse interaction, and mobile touch controls with automatic firing.
-- Mobile touch controls: the left stick turns/aims only; the right stick controls forward/reverse thrust by default. Optional Advanced Controls add strafing.
+- Mobile touch controls support Twin-Stick and One-Handed schemes. Twin-Stick uses the left stick for aim and the right stick for thrust, with optional strafe. One-Handed combines turn and thrust on the left stick; the right stick can add thrust and strafe.
 - Keyboard-accessible menus and modals with spatial arrow-key navigation, W/A/S/D navigation, Enter/Space confirmation, visible selection feedback, and hover audio feedback.
 - Audio feedback for UI interaction, level-up moments, tech unlocks, shields, lasers, drones, explosions, and game over.
 - Semantic application version displayed beside the FPS counter in the lower-left HUD.
@@ -34,9 +34,9 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 
 ### Mobile
 
-- Left thumb: turn and aim the ship without applying thrust
-- Right thumb, up/down: forward / reverse thrust
-- Optional Advanced Controls: right thumb, left/right: strafe
+- Twin-Stick: left thumb turns/aims; right thumb, up/down, controls forward / reverse thrust
+- One-Handed: left thumb, left/right, turns; up/down, controls forward / reverse thrust
+- One-Handed optional right thumb: up/down adds thrust; left/right strafes
 - Firing is automatic on touch devices
 
 After the mobile control redesign, existing mobile players see a one-time acknowledgement notice. The temporary notice is versioned in `src/ui.js` and can be removed later as a self-contained cleanup.

@@ -987,7 +987,7 @@ export function displaySettingsButton(onClick) {
     document.body.appendChild(btn);
 }
 
-export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls }) {
+export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, mobileControlScheme = 'twin-stick', isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onChangeControlScheme }) {
     if (document.getElementById('settings-menu')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
 
@@ -995,9 +995,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     panel.style.width = 'min(92vw, 420px)';
     panel.appendChild(panelTitleBar('Settings', INK.phosphor));
 
-    const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls) => {
+    const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls, nextControlScheme = mobileControlScheme) => {
         modal.remove();
-        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, mobileAdvancedControls: nextAdvancedControls, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls });
+        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, mobileAdvancedControls: nextAdvancedControls, mobileControlScheme: nextControlScheme, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onChangeControlScheme });
     };
 
     panel.appendChild(label('Difficulty', INK.textDim));
@@ -1081,26 +1081,55 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         ctrlNote.style.margin = `0 0 ${scale(20)} 0`;
         panel.appendChild(ctrlNote);
 
-        panel.appendChild(label('Mobile Maneuvering', INK.textDim));
-        const advancedBtn = consoleButton({ text: mobileAdvancedControls ? 'Advanced' : 'Simple', color: INK.scope, glowColor: INK.scopeDim, filled: mobileAdvancedControls, fontSize: 13 });
-        advancedBtn.style.width = '100%';
-        advancedBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
-        advancedBtn.onclick = () => {
-            const next = !mobileAdvancedControls;
-            if (onToggleAdvancedControls) onToggleAdvancedControls(next);
-            rerender(easyMode, controlsVisible, next);
-        };
-        panel.appendChild(advancedBtn);
+        panel.appendChild(label('Mobile Control Scheme', INK.textDim));
+        const schemeRow = document.createElement('div');
+        schemeRow.style.display = 'flex';
+        schemeRow.style.gap = scale(10);
+        schemeRow.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
+        [{ key: 'twin-stick', text: 'Twin-Stick' }, { key: 'one-handed', text: 'One-Handed' }].forEach((option) => {
+            const schemeBtn = consoleButton({ text: option.text, color: INK.scope, glowColor: INK.scopeDim, filled: mobileControlScheme === option.key, fontSize: 12 });
+            schemeBtn.style.flex = '1';
+            schemeBtn.onclick = () => {
+                if (mobileControlScheme === option.key) return;
+                if (onChangeControlScheme) onChangeControlScheme(option.key);
+                rerender(easyMode, controlsVisible, mobileAdvancedControls, option.key);
+            };
+            schemeRow.appendChild(schemeBtn);
+        });
+        panel.appendChild(schemeRow);
 
-        const maneuverNote = document.createElement('div');
-        maneuverNote.innerText = mobileAdvancedControls
-            ? 'Advanced: the right stick also strafes left and right.'
-            : 'Simple: left stick aims; right stick flies forward or reverse. Strafe is disabled.';
-        maneuverNote.style.fontFamily = FONT;
-        maneuverNote.style.fontSize = scale(11);
-        maneuverNote.style.color = INK.textDim;
-        maneuverNote.style.margin = `0 0 ${scale(20)} 0`;
-        panel.appendChild(maneuverNote);
+        const schemeNote = document.createElement('div');
+        schemeNote.innerText = mobileControlScheme === 'one-handed'
+            ? 'Left stick: left/right turns, up/down flies forward or reverse. Right stick is optional and adds thrust plus strafe.'
+            : 'Left stick aims. Right stick flies forward or reverse; Advanced adds left/right strafe.';
+        schemeNote.style.fontFamily = FONT;
+        schemeNote.style.fontSize = scale(11);
+        schemeNote.style.color = INK.textDim;
+        schemeNote.style.margin = `0 0 ${scale(20)} 0`;
+        panel.appendChild(schemeNote);
+
+        if (mobileControlScheme === 'twin-stick') {
+            panel.appendChild(label('Mobile Maneuvering', INK.textDim));
+            const advancedBtn = consoleButton({ text: mobileAdvancedControls ? 'Advanced' : 'Simple', color: INK.scope, glowColor: INK.scopeDim, filled: mobileAdvancedControls, fontSize: 13 });
+            advancedBtn.style.width = '100%';
+            advancedBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
+            advancedBtn.onclick = () => {
+                const next = !mobileAdvancedControls;
+                if (onToggleAdvancedControls) onToggleAdvancedControls(next);
+                rerender(easyMode, controlsVisible, next, mobileControlScheme);
+            };
+            panel.appendChild(advancedBtn);
+
+            const maneuverNote = document.createElement('div');
+            maneuverNote.innerText = mobileAdvancedControls
+                ? 'Advanced: the right stick also strafes left and right.'
+                : 'Simple: left stick aims; right stick flies forward or reverse. Strafe is disabled.';
+            maneuverNote.style.fontFamily = FONT;
+            maneuverNote.style.fontSize = scale(11);
+            maneuverNote.style.color = INK.textDim;
+            maneuverNote.style.margin = `0 0 ${scale(20)} 0`;
+            panel.appendChild(maneuverNote);
+        }
 
     }
 
