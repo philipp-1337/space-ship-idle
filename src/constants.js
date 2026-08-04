@@ -169,17 +169,11 @@ export const TOUCH_CONTROLS = {
     JOYSTICK_SIZE: 60,
     JOYSTICK_STICK_SIZE: 25,
     JOYSTICK_DEADZONE: 8,
-    // Shared left/right inset from the screen edge for both the joystick and
-    // the strafe slider, so they sit the same distance from their respective
-    // edge (see input.js: strafeTrackBottomOffset() also derives the strafe
-    // slider's vertical position from this so the two controls' centers line
-    // up despite the slider being shorter than the joystick).
+    // Shared left/right inset from the screen edge for both maneuver sticks.
     EDGE_MARGIN: 36,
-    // Horizontal-only strafe slider (right zone) — a pill, not a circle, so it
-    // visually reads as "one axis" and isn't mistaken for a second movement stick.
-    STRAFE_SLIDER_WIDTH: 130,
-    STRAFE_SLIDER_HEIGHT: 46,
-    STRAFE_KNOB_SIZE: 34,
+    // The right stick combines relative thrust (vertical) and strafe (horizontal).
+    RIGHT_STICK_SIZE: 72,
+    RIGHT_STICK_KNOB_SIZE: 28,
     STRAFE_DEADZONE: 8,
     CONTAINER_HEIGHT: '40vh',
     // Unscaled px kept clear at the top of the full-height touch zones, so the

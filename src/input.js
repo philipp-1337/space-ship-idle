@@ -14,7 +14,8 @@ export class InputManager {
             shooting: false
         };
         this.joystickMove = null;
-        this.strafeValue = 0; // -1..1, mobile strafe slider (desktop reads keys.strafeLeft/strafeRight instead)
+        this.strafeValue = 0; // -1..1, mobile right-stick horizontal axis
+        this.maneuverThrustValue = 0; // -1..1, mobile right-stick vertical axis
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         this.setupKeyboardListeners();
@@ -72,24 +73,24 @@ export class InputManager {
         }
     }
 
-    // Touch layout: two full-height capture zones (left = move, right = strafe)
+    // Touch layout: two full-height capture zones (left = move, right = maneuver)
     // spanning nearly the whole screen, below a reserved strip that keeps the
     // HUD buttons (Pause/Settings/Tech Tree, etc.) tappable. The joystick base
-    // and strafe-slider graphics are purely visual (pointer-events: none) — all
+    // and maneuver-stick graphics are purely visual (pointer-events: none) — all
     // input logic lives on the zones, so touching anywhere in a zone works
     // exactly the same as touching the small graphic used to be.
     // `setControlsVisible` toggles only the graphics; the zones themselves
     // always stay active.
     //
     // Firing is fully automatic on mobile (see keys.shooting below) — there's
-    // no manual fire button. That freed the right zone to become a second
-    // stick dedicated to strafing (Q/E's touch equivalent) instead.
+    // no manual fire button. The right zone is a second stick: horizontal
+    // strafe, vertical forward/reverse relative to the ship's facing.
     setupTouchControls() {
         this.controlsVisible = true;
         this.keys.shooting = true;
         this.createVirtualJoystickVisual();
 
-        this.createStrafeSliderVisual();
+        this.createRightManeuverVisual();
         this.createTouchZones();
     }
 
@@ -122,7 +123,7 @@ export class InputManager {
         document.body.appendChild(rightZone);
 
         this.setupJoystickZoneEvents(leftZone);
-        this.setupStrafeZoneEvents(rightZone);
+        this.setupRightManeuverZoneEvents(rightZone);
     }
 
     createVirtualJoystickVisual() {
@@ -269,32 +270,20 @@ export class InputManager {
         }
     }
 
-    // The strafe slider (pill, height STRAFE_SLIDER_HEIGHT) is shorter than the
-    // movement joystick (circle, height JOYSTICK_SIZE) — matching their bottom
-    // CSS offsets alone would still leave the slider visually lower, since the
-    // two centers wouldn't line up. This derives the slider's `bottom` so its
-    // vertical center matches the joystick's.
-    strafeTrackBottomOffset() {
-        return TOUCH_CONTROLS.EDGE_MARGIN + (TOUCH_CONTROLS.JOYSTICK_SIZE - TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT) / 2;
-    }
-
-
-    // Horizontal-only strafe slider — the touch equivalent of desktop's Q/E.
-    // A pill track (not a circle) so it visually reads as "one axis", with a
-    // knob that only ever moves left/right.
-    createStrafeSliderVisual() {
-        const trackW = TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH;
-        const trackH = TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT;
-        const knobSize = TOUCH_CONTROLS.STRAFE_KNOB_SIZE;
+    // Right maneuver stick: horizontal movement strafes, vertical movement
+    // applies forward/reverse thrust relative to the ship's current facing.
+    createRightManeuverVisual() {
+        const trackSize = TOUCH_CONTROLS.RIGHT_STICK_SIZE;
+        const knobSize = TOUCH_CONTROLS.RIGHT_STICK_KNOB_SIZE;
 
         const track = document.createElement('div');
         track.style.position = 'fixed';
         track.style.right = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
-        track.style.bottom = `${this.strafeTrackBottomOffset()}px`;
-        track.style.width = trackW + 'px';
-        track.style.height = trackH + 'px';
+        track.style.bottom = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
+        track.style.width = trackSize + 'px';
+        track.style.height = trackSize + 'px';
         track.style.background = 'rgba(10,13,12,0.55)';
-        track.style.borderRadius = (trackH / 2) + 'px';
+        track.style.borderRadius = '50%';
         track.style.pointerEvents = 'none';
         track.style.border = '1px solid rgba(127,232,255,0.35)';
         track.style.boxShadow = '0 0 12px 1px rgba(127,232,255,0.18) inset, 0 0 8px 0 rgba(127,232,255,0.15)';
@@ -313,11 +302,23 @@ export class InputManager {
             tick.style.lineHeight = '1';
             track.appendChild(tick);
         });
+        [['top', '▲'], ['bottom', '▼']].forEach(([side, glyph]) => {
+            const tick = document.createElement('div');
+            tick.innerText = glyph;
+            tick.style.position = 'absolute';
+            tick.style.left = '50%';
+            tick.style.transform = 'translateX(-50%)';
+            tick.style[side] = '7px';
+            tick.style.color = 'rgba(127,232,255,0.4)';
+            tick.style.fontSize = '9px';
+            tick.style.lineHeight = '1';
+            track.appendChild(tick);
+        });
 
         const knob = document.createElement('div');
         knob.style.position = 'absolute';
-        knob.style.top = ((trackH - knobSize) / 2) + 'px';
-        knob.style.left = ((trackW - knobSize) / 2) + 'px';
+        knob.style.top = ((trackSize - knobSize) / 2) + 'px';
+        knob.style.left = ((trackSize - knobSize) / 2) + 'px';
         knob.style.width = knobSize + 'px';
         knob.style.height = knobSize + 'px';
         knob.style.background = '#7fe8ff';
@@ -335,17 +336,16 @@ export class InputManager {
         this.strafeKnob = knob;
     }
 
-    setupStrafeZoneEvents(zone) {
-        const trackW = TOUCH_CONTROLS.STRAFE_SLIDER_WIDTH;
-        const trackH = TOUCH_CONTROLS.STRAFE_SLIDER_HEIGHT;
-        const knobSize = TOUCH_CONTROLS.STRAFE_KNOB_SIZE;
-        const maxDist = trackW / 2 - knobSize / 2;
+    setupRightManeuverZoneEvents(zone) {
+        const trackSize = TOUCH_CONTROLS.RIGHT_STICK_SIZE;
+        const knobSize = TOUCH_CONTROLS.RIGHT_STICK_KNOB_SIZE;
+        const maxDist = trackSize / 2 - knobSize / 2;
         let touchId = null;
-        let originX = 0;
+        let originX = 0, originY = 0;
 
         const setTrackPosition = (x, y) => {
-            this.strafeTrack.style.left = (x - trackW / 2) + 'px';
-            this.strafeTrack.style.top = (y - trackH / 2) + 'px';
+            this.strafeTrack.style.left = (x - trackSize / 2) + 'px';
+            this.strafeTrack.style.top = (y - trackSize / 2) + 'px';
             this.strafeTrack.style.right = 'auto';
             this.strafeTrack.style.bottom = 'auto';
         };
@@ -353,16 +353,20 @@ export class InputManager {
             this.strafeTrack.style.left = 'auto';
             this.strafeTrack.style.top = 'auto';
             this.strafeTrack.style.right = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
-            this.strafeTrack.style.bottom = `${this.strafeTrackBottomOffset()}px`;
+            this.strafeTrack.style.bottom = `${TOUCH_CONTROLS.EDGE_MARGIN}px`;
         };
-        const moveKnob = (dx) => {
-            const clamped = Math.max(-maxDist, Math.min(maxDist, dx));
-            this.strafeKnob.style.transform = `translateX(${clamped}px)`;
-            this.setStrafeVector(clamped, maxDist);
+        const moveKnob = (dx, dy) => {
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const scale = distance > maxDist ? maxDist / distance : 1;
+            const clampedX = dx * scale;
+            const clampedY = dy * scale;
+            this.strafeKnob.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+            this.setRightManeuverVector(clampedX, clampedY, maxDist);
         };
         const resetKnob = () => {
-            this.strafeKnob.style.transform = 'translateX(0px)';
+            this.strafeKnob.style.transform = 'translate(0px, 0px)';
             this.strafeValue = 0;
+            this.maneuverThrustValue = 0;
         };
 
         zone.addEventListener('touchstart', (e) => {
@@ -372,8 +376,9 @@ export class InputManager {
 
             touchId = touch.identifier;
             originX = touch.clientX;
-            if (this.controlsVisible) setTrackPosition(touch.clientX, touch.clientY);
-            moveKnob(0);
+            originY = touch.clientY;
+            if (this.controlsVisible) setTrackPosition(originX, originY);
+            moveKnob(0, 0);
             e.preventDefault();
         }, { passive: false });
 
@@ -382,7 +387,7 @@ export class InputManager {
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (touch.identifier === touchId) {
-                    moveKnob(touch.clientX - originX);
+                    moveKnob(touch.clientX - originX, touch.clientY - originY);
                     e.preventDefault();
                     break;
                 }
@@ -403,12 +408,14 @@ export class InputManager {
         zone.addEventListener('touchcancel', endTouch);
     }
 
-    setStrafeVector(dx, maxDist) {
+    setRightManeuverVector(dx, dy, maxDist) {
         const deadzone = TOUCH_CONTROLS.STRAFE_DEADZONE;
         this.strafeValue = Math.abs(dx) > deadzone ? Math.max(-1, Math.min(1, dx / maxDist)) : 0;
+        // Screen Y is inverted: dragging up means positive forward thrust.
+        this.maneuverThrustValue = Math.abs(dy) > deadzone ? Math.max(-1, Math.min(1, -dy / maxDist)) : 0;
     }
 
-    // Hides/shows only the joystick/strafe-slider/auto-fire graphics; the
+    // Hides/shows only the joystick/maneuver-stick/auto-fire graphics; the
     // underlying touch zones keep working either way (Settings > Touch Controls).
     setControlsVisible(visible) {
         this.controlsVisible = visible;
@@ -445,6 +452,10 @@ export class InputManager {
         return this.strafeValue;
     }
 
+    getRightManeuver() {
+        return { x: this.strafeValue, y: this.maneuverThrustValue };
+    }
+
     isShooting() {
         return this.keys.shooting;
     }
@@ -453,6 +464,6 @@ export class InputManager {
         return this.keys.up || this.keys.down || this.keys.left || this.keys.right ||
                this.keys.strafeLeft || this.keys.strafeRight ||
                (this.joystickMove && (Math.abs(this.joystickMove.x) > 0 || Math.abs(this.joystickMove.y) > 0)) ||
-               Math.abs(this.strafeValue) > 0;
+               Math.abs(this.strafeValue) > 0 || Math.abs(this.maneuverThrustValue) > 0;
     }
 }

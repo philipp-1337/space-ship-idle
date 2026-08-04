@@ -95,11 +95,14 @@ function updateShipMovement(dt = 1) {
 
     const keys = inputManager.getKeys();
     const joystickMove = inputManager.getJoystickMove();
+    const rightManeuver = inputManager.getRightManeuver ? inputManager.getRightManeuver() : { x: 0, y: 0 };
+    const strafeValue = rightManeuver.x;
+    const maneuverThrust = rightManeuver.y;
 
     // --- Mobile absolute Steuerung (Joystick) ---
-    if (joystickMove && (typeof joystickMove.x === 'number') && (typeof joystickMove.y === 'number')) {
+    if ((joystickMove && (typeof joystickMove.x === 'number') && (typeof joystickMove.y === 'number')) || strafeValue || maneuverThrust) {
         // Normiere Vektor
-        let dx = joystickMove.x, dy = joystickMove.y;
+        let dx = joystickMove ? joystickMove.x : 0, dy = joystickMove ? joystickMove.y : 0;
         const dist = Math.sqrt(dx * dx + dy * dy);
         let turnDiff = 0;
         if (dist > 0) {
@@ -120,19 +123,27 @@ function updateShipMovement(dt = 1) {
             turnDiff = diff;
 
             ship.thrustState = 'forward';
-        } else {
+        } else if (!maneuverThrust && !strafeValue) {
             ship.thrustState = 'none';
         }
 
-        // Strafe-Stick (rechte Zone): rein seitliche Bewegung relativ zur
+        // Right maneuver stick: vertical thrust and horizontal strafing are
+        // both relative to the current facing, independent of the left stick.
+        if (maneuverThrust) {
+            const thrustAccel = maneuverThrust * ship.acceleration * (maneuverThrust < 0 ? PHYSICS.BACKWARD_THRUST_FACTOR : 1) * dt;
+            ship.vx += Math.cos(ship.angle) * thrustAccel;
+            ship.vy += Math.sin(ship.angle) * thrustAccel;
+            ship.thrustState = maneuverThrust > 0 ? 'forward' : 'backward';
+        }
+
+        // Horizontal right-stick input: purely lateral movement relative to the
         // AKTUELLEN Blickrichtung, unabhängig davon, wohin der linke Stick das
         // Schiff gerade dreht — exakt dasselbe Prinzip wie Q/E am Desktop.
-        const strafeValue = inputManager.getStrafeValue ? inputManager.getStrafeValue() : 0;
         if (strafeValue) {
             const strafeAccel = strafeValue * ship.acceleration * PHYSICS.STRAFE_THRUST_FACTOR * dt;
             ship.vx += Math.cos(ship.angle + Math.PI / 2) * strafeAccel;
             ship.vy += Math.sin(ship.angle + Math.PI / 2) * strafeAccel;
-            ship.thrustState = 'forward';
+            if (!maneuverThrust) ship.thrustState = 'forward';
         }
 
         // Sprite-Bank-State fürs Schiffsbild: Strafen (Roll) hat Vorrang vor der

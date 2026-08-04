@@ -610,7 +610,7 @@ export function displayStartScreen(onSelect) {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
             <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Move (Virtual Joystick)</div>
-            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Roll/Strafe (Slider). Auto-Fire is ON.</div>
+            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Up/Down = forward/reverse · Left/Right = strafe. Auto-Fire is ON.</div>
         `;
     } else {
         controls.innerHTML = `
@@ -1009,7 +1009,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         panel.appendChild(toggleBtn);
 
         const ctrlNote = document.createElement('div');
-        ctrlNote.innerText = 'The move and strafe zones cover the full left/right half of the screen either way — this only shows or hides the graphics. Firing is always automatic.';
+        ctrlNote.innerText = 'The movement and maneuver zones cover the full left/right half of the screen. On the right stick, up/down flies forward/reverse and left/right strafes. This only shows or hides the graphics. Firing is always automatic.';
         ctrlNote.style.fontFamily = FONT;
         ctrlNote.style.fontSize = scale(11);
         ctrlNote.style.color = INK.textDim;
