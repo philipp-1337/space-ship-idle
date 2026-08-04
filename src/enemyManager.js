@@ -37,9 +37,11 @@ function getRandomSpawnPosition(canvas) {
 }
 
 export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
-    // Determine how many enemies to spawn. 
-    // Base is 1. Add an extra "popcorn" (level 1) enemy for every 2 levels for the bullet heaven feel.
-    const extraSpawns = Math.floor(level / 2);
+    // Keep level-1 "popcorn" enemies as a light swarm accent instead of
+    // letting their population grow without bound. The main enemy still
+    // scales with the current level; popcorn ramps in from level 5 and caps
+    // at three extras per spawn.
+    const extraSpawns = Math.min(3, Math.floor(level / 5));
     
     // Spawn the main enemy scaled to current level
     const regularPos = getRandomSpawnPosition(canvas);

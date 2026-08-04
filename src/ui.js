@@ -59,6 +59,11 @@ _globalHudStyle.textContent = `
         outline: 2px solid ${INK.phosphor};
         outline-offset: 3px;
     }
+    button[data-keyboard-selected="true"] {
+        outline: 2px solid ${INK.phosphor};
+        outline-offset: 3px;
+        filter: brightness(1.15);
+    }
     #console-scanlines {
         position: fixed;
         inset: 0;
@@ -420,45 +425,100 @@ function consolePanelModal({ id, zIndex, accent = INK.phosphor }) {
     return { modal, panel };
 }
 
-// Shared Up/Down + Enter/Space keyboard navigation for modal panels, so every
-// console menu (Shop, Pause, Settings, Tech Tree, Pre-Flight Check, ...) is
-// usable without a mouse. W/S mirror the vertical arrow keys. Moves real DOM
-// focus between a panel's buttons —
-// the existing global `button:focus-visible` outline (see DESIGN.md) is what
-// visually highlights the active item, so no new visual language is needed
-// here. Harmless (and effectively inert) on touch devices.
+// Shared spatial keyboard navigation for modal panels, so every console menu
+// (Shop, Pause, Settings, Tech Tree, Pre-Flight Check, ...) is usable without
+// a mouse. W/S mirror Up/Down and A/D mirror Left/Right. Navigation follows
+// the visible layout instead of blindly following DOM order, which matters for
+// side-by-side pause buttons and the multi-column tech tree.
 function enableArrowKeyNav(panel) {
     const getItems = () => Array.from(panel.querySelectorAll('button:not([disabled])'));
     let idx = -1;
+    const setSelected = (item) => {
+        getItems().forEach((candidate) => {
+            candidate.dataset.keyboardSelected = candidate === item ? 'true' : 'false';
+        });
+    };
+    const centerOf = (item) => {
+        const rect = item.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+    const findDirectionalItem = (items, currentItem, direction) => {
+        if (!currentItem) return -1;
+        const current = centerOf(currentItem);
+        const candidates = items
+            .map((item, itemIndex) => ({ item, itemIndex, center: centerOf(item) }))
+            .filter(({ center }) => {
+                if (direction === 'up') return center.y < current.y - 1;
+                if (direction === 'down') return center.y > current.y + 1;
+                if (direction === 'left') return center.x < current.x - 1;
+                return center.x > current.x + 1;
+            })
+            .map(({ itemIndex, center }) => {
+                const primary = direction === 'up'
+                    ? current.y - center.y
+                    : direction === 'down'
+                        ? center.y - current.y
+                        : direction === 'left'
+                            ? current.x - center.x
+                            : center.x - current.x;
+                const perpendicular = direction === 'up' || direction === 'down'
+                    ? Math.abs(center.x - current.x)
+                    : Math.abs(center.y - current.y);
+                // Prefer the nearest row/column first, then the closest item
+                // within that row/column. This makes Tech Tree branches behave
+                // like the visual tree while keeping list navigation natural.
+                return { itemIndex, score: primary * 10 + perpendicular };
+            })
+            .sort((a, b) => a.score - b.score);
+        return candidates.length ? candidates[0].itemIndex : -1;
+    };
     const focusItem = (i) => {
         const items = getItems();
         if (!items.length) return;
         idx = ((i % items.length) + items.length) % items.length;
+        setSelected(items[idx]);
         items[idx].focus();
     };
+    panel.addEventListener('focusin', (e) => {
+        const items = getItems();
+        const focusedIndex = items.indexOf(e.target.closest('button'));
+        if (focusedIndex >= 0) {
+            idx = focusedIndex;
+            setSelected(items[idx]);
+        }
+    });
     panel.addEventListener('keydown', (e) => {
         const items = getItems();
         const focusedIndex = items.indexOf(document.activeElement);
         if (focusedIndex >= 0) idx = focusedIndex;
+        const currentItem = items[idx] || items[0];
 
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
             e.preventDefault();
             e.stopPropagation(); // don't let this also reach input.js's window-level ship-movement listener
-            focusItem(idx - 1);
+            const nextIndex = findDirectionalItem(items, currentItem, 'up');
+            if (nextIndex >= 0) focusItem(nextIndex);
         } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
             e.preventDefault();
             e.stopPropagation();
-            focusItem(idx + 1);
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-            // Horizontal arrows no longer change the selected modal item, but
-            // must still be contained so they cannot steer the ship beneath it.
+            const nextIndex = findDirectionalItem(items, currentItem, 'down');
+            if (nextIndex >= 0) focusItem(nextIndex);
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
             e.preventDefault();
             e.stopPropagation();
+            const nextIndex = findDirectionalItem(items, currentItem, 'left');
+            if (nextIndex >= 0) focusItem(nextIndex);
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            e.preventDefault();
+            e.stopPropagation();
+            const nextIndex = findDirectionalItem(items, currentItem, 'right');
+            if (nextIndex >= 0) focusItem(nextIndex);
         } else if (e.key === 'Enter' || e.code === 'Space') {
-            if (idx >= 0 && items[idx]) {
+            const activeItem = items[idx] || currentItem;
+            if (activeItem) {
                 e.preventDefault();
                 e.stopPropagation();
-                items[idx].click();
+                activeItem.click();
             }
         }
     });
