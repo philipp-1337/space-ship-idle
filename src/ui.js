@@ -38,7 +38,7 @@ const INK = {
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 // Temporary release notice for the mobile control redesign.
-const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v2';
+const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 const MOBILE_MOVEMENT_NOTICE_KEY = 'spaceShipIdleMobileMovementNotice';
 
 // HUD row offset (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
@@ -612,8 +612,9 @@ export function displayStartScreen(onSelect) {
     if (_isMobile) {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
-            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Turn / aim (Virtual Joystick)</div>
-            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Up/Down = forward/reverse. Advanced Settings can enable strafe. Auto-Fire is ON.</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Twin-Stick:</span> Left aims; right up/down flies forward/reverse. Advanced adds strafe.</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.scope}">One-Handed:</span> Left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
+            <div><span style="color:${INK.text}">Switch later:</span> Settings → Mobile Control Scheme. Auto-Fire is ON.</div>
         `;
     } else {
         controls.innerHTML = `
@@ -694,8 +695,9 @@ export function showMobileMovementUpdateNotice() {
     notice.style.border = `1px solid ${INK.hairlineDim}`;
     notice.style.clipPath = chamferClip(scaleNum(6));
     notice.innerHTML = `
-        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">Left stick:</span> turn and aim only.</div>
-        <div><span style="color:${INK.scope}">Right stick:</span> up/down flies forward or reverse. Strafe is available in Advanced Settings.</div>
+        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">Twin-Stick:</span> left stick aims; right stick up/down flies forward/reverse, with optional strafe.</div>
+        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.scope}">One-Handed:</span> left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
+        <div><span style="color:${INK.text}">Switch anytime:</span> Settings → Mobile Control Scheme.</div>
     `;
     panel.appendChild(notice);
 
@@ -993,6 +995,10 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
 
     const { modal, panel } = consolePanelModal({ id: 'settings-menu', zIndex: 4500, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 420px)';
+    panel.style.maxHeight = _isMobile ? '70vh' : '86vh';
+    panel.style.overflowY = 'auto';
+    panel.style.touchAction = 'pan-y';
+    panel.style.webkitOverflowScrolling = 'touch';
     panel.appendChild(panelTitleBar('Settings', INK.phosphor));
 
     const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls, nextControlScheme = mobileControlScheme) => {
