@@ -37,7 +37,7 @@ export function createGameLoop(context) {
     let empCooldownUntil = 0;
     let reactorNovaKillCounter = 0;
     let reactorNovaTriggering = false;
-    let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500 };
+    let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500, origin: null };
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -85,6 +85,7 @@ export function createGameLoop(context) {
                 spawnBossRewardWave(canvas, enemy.x, enemy.y, easyModeRef ? easyModeRef.value : false);
                 
                 sweepRay.active = true;
+                sweepRay.origin = enemy;
                 sweepRay.timer = 0;
                 sweepRay.startAngle = ship.angle;
                 sweepRay.angle = ship.angle;
@@ -129,8 +130,8 @@ export function createGameLoop(context) {
                 if (reactorNovaKillCounter >= REACTOR_NOVA.KILLS_PER_TRIGGER) {
                     reactorNovaKillCounter = 0;
                     reactorNovaTriggering = true;
-                    explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: REACTOR_NOVA.RADIUS, color: '#ffb000' });
-                    effectsSystem.triggerScreenShake(7, 12);
+                    explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: REACTOR_NOVA.RADIUS, color: '#ffb000', kind: 'nova' });
+                    effectsSystem.triggerScreenShake(12, 18);
                     const nearby = enemies.filter((other) => {
                         if (!other.alive || other.exploding) return false;
                         const dx = other.x - ship.x;
@@ -312,7 +313,16 @@ export function createGameLoop(context) {
                 if (enemy.alive && enemy.canShoot) enemy.shootCooldown = Math.max(enemy.shootCooldown, SIGNAL_INTERFERENCE.DISRUPTION_MS / (1000 / 60));
             });
             empCooldownUntil = now + SIGNAL_INTERFERENCE.COOLDOWN_MS;
-            explosiveVisuals.push({ x: ship.x, y: ship.y, life: 14, maxLife: 14, radius: 130, color: '#7fe8ff' });
+            explosiveVisuals.push({
+                x: ship.x,
+                y: ship.y,
+                life: 20,
+                maxLife: 20,
+                radius: Math.hypot(canvas.width, canvas.height) * 0.78,
+                color: '#7fe8ff',
+                kind: 'signal'
+            });
+            effectsSystem.triggerScreenShake(5, 10);
         }
         frameCount++;
         if (now - lastFpsTime >= 1000) {
@@ -427,7 +437,7 @@ export function createGameLoop(context) {
                     effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_HIT_INTENSITY * 0.5, EFFECTS.SCREEN_SHAKE_HIT_DURATION * 0.5);
                 }
             }
-            if (!enemy.alive) {
+            if (!enemy.alive && !(sweepRay.active && enemy === sweepRay.origin)) {
                 enemies.splice(eIdx, 1);
                 continue;
             }
@@ -549,11 +559,69 @@ export function createGameLoop(context) {
             }
             ctx.save();
             const progress = 1 - (exp.life / exp.maxLife);
-            ctx.globalAlpha = Math.max(0, exp.life / exp.maxLife) * 0.5;
-            ctx.fillStyle = exp.color || '#ff9800';
-            ctx.beginPath();
-            ctx.arc(exp.x, exp.y, exp.radius * progress, 0, Math.PI * 2);
-            ctx.fill();
+            const fade = Math.max(0, exp.life / exp.maxLife);
+            const radius = exp.radius * progress;
+            ctx.translate(exp.x, exp.y);
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.strokeStyle = exp.color || '#ff9800';
+            ctx.shadowColor = exp.color || '#ff9800';
+            ctx.shadowBlur = exp.kind === 'signal' ? 16 : 24;
+
+            if (exp.kind === 'signal') {
+                // Global EMP: the expanding radar rings communicate that this
+                // pulse reaches the full combat field and disrupts weapons.
+                ctx.globalAlpha = fade * 0.9;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = fade * 0.45;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius * 0.72, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = fade * 0.7;
+                ctx.lineWidth = 2;
+                for (let ray = 0; ray < 12; ray++) {
+                    const angle = ray * Math.PI / 6;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * radius * 0.78, Math.sin(angle) * radius * 0.78);
+                    ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+                    ctx.stroke();
+                }
+                ctx.fillStyle = '#e8fff0';
+                ctx.globalAlpha = fade;
+                ctx.fillRect(-5, -5, 10, 10);
+            } else {
+                // Local damage burst: Reactor Nova reads as a hot, dense blast.
+                ctx.globalAlpha = fade * 0.3;
+                ctx.fillStyle = '#ffb000';
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = fade;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = fade * 0.8;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius * 0.58, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.strokeStyle = '#fff3c4';
+                ctx.globalAlpha = fade;
+                ctx.lineWidth = 3;
+                for (let ray = 0; ray < 8; ray++) {
+                    const angle = ray * Math.PI / 4;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * radius * 0.35, Math.sin(angle) * radius * 0.35);
+                    ctx.lineTo(Math.cos(angle) * radius * 1.12, Math.sin(angle) * radius * 1.12);
+                    ctx.stroke();
+                }
+                ctx.fillStyle = '#fff3c4';
+                ctx.fillRect(-6, -6, 12, 12);
+            }
             ctx.restore();
         }
 
@@ -673,9 +741,11 @@ export function createGameLoop(context) {
                 // 1.5 rotations over the duration
                 sweepRay.angle = sweepRay.startAngle + progress * Math.PI * 2 * 1.5;
                 
+                const originX = sweepRay.origin?.x ?? ship.x;
+                const originY = sweepRay.origin?.y ?? ship.y;
                 const beamLength = 2000;
-                const endX = ship.x + Math.cos(sweepRay.angle) * beamLength;
-                const endY = ship.y + Math.sin(sweepRay.angle) * beamLength;
+                const endX = originX + Math.cos(sweepRay.angle) * beamLength;
+                const endY = originY + Math.sin(sweepRay.angle) * beamLength;
                 const pulse = 0.84 + Math.sin(sweepRay.timer * 0.045) * 0.16;
                 const fade = Math.min(1, progress * 12) * Math.min(1, (1 - progress) * 5);
                 const rayAlpha = pulse * fade;
@@ -688,7 +758,7 @@ export function createGameLoop(context) {
                 ctx.shadowColor = '#ffb000';
                 ctx.shadowBlur = 30;
                 ctx.beginPath();
-                ctx.moveTo(ship.x, ship.y);
+                ctx.moveTo(originX, originY);
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
                 
@@ -720,14 +790,14 @@ export function createGameLoop(context) {
                 ctx.shadowColor = '#ffd23f';
                 ctx.shadowBlur = 14;
                 ctx.beginPath();
-                ctx.arc(ship.x, ship.y, 18 + Math.sin(sweepRay.timer * 0.06) * 3, 0, Math.PI * 2);
+                ctx.arc(originX, originY, 18 + Math.sin(sweepRay.timer * 0.06) * 3, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.globalAlpha = rayAlpha;
                 ctx.fillStyle = '#e8fff0';
-                ctx.fillRect(ship.x - 4, ship.y - 4, 8, 8);
+                ctx.fillRect(originX - 4, originY - 4, 8, 8);
                 ctx.restore();
                 
-                const A = ship.x, B = ship.y;
+                const A = originX, B = originY;
                 const C = endX, D = endY;
                 const dx = C - A, dy = D - B;
                 const l2 = dx * dx + dy * dy;
