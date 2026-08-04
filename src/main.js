@@ -4,7 +4,7 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
@@ -106,14 +106,10 @@ function updateShipMovement(dt = 1) {
         const dist = Math.sqrt(dx * dx + dy * dy);
         let turnDiff = 0;
         if (dist > 0) {
-            // Accelerate based on joystick distance
-            const maxDist = TOUCH_CONTROLS.JOYSTICK_SIZE / 2 - TOUCH_CONTROLS.JOYSTICK_STICK_SIZE / 2;
-            const normalizedDist = Math.min(dist / maxDist, 1);
-            const accel = normalizedDist * ship.acceleration * dt;
             const nx = dx / dist, ny = dy / dist;
-            ship.vx += nx * accel;
-            ship.vy += ny * accel;
-            // Schiff geschmeidig in Bewegungsrichtung drehen (Lerp)
+            // The left stick only selects the ship's facing. Thrust comes from
+            // the right maneuver stick, so reverse flight remains available
+            // without the two controls fighting each other.
             const targetAngle = Math.atan2(ny, nx);
             let diff = targetAngle - ship.angle;
             // Normalisiere den Winkel auf -PI bis PI, damit es nicht "außenrum" dreht
@@ -122,7 +118,6 @@ function updateShipMovement(dt = 1) {
             ship.angle += diff * (1 - Math.pow(1 - PHYSICS.MOBILE_JOYSTICK_SENSITIVITY, dt));
             turnDiff = diff;
 
-            ship.thrustState = 'forward';
         } else if (!maneuverThrust && !strafeValue) {
             ship.thrustState = 'none';
         }
@@ -560,11 +555,13 @@ function applySettings(mode, controlsVisible) {
 const savedSettings = JSON.parse(localStorage.getItem('spaceShipIdleSettings'));
 if (savedSettings && savedSettings.mode) {
     applySettings(savedSettings.mode, savedSettings.controlsVisible !== false);
+    showMobileMovementUpdateNotice();
 } else {
     displayStartScreen((mode) => {
         localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true }));
         applySettings(mode, true);
     });
+    showMobileMovementUpdateNotice();
 }
 // --- GAME LOOP ENDE ---
 

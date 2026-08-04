@@ -37,6 +37,9 @@ const INK = {
 
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
+// Temporary release notice for the mobile control redesign.
+const MOBILE_MOVEMENT_NOTICE_VERSION = 'right-maneuver-stick-v1';
+const MOBILE_MOVEMENT_NOTICE_KEY = 'spaceShipIdleMobileMovementNotice';
 
 // HUD row offset (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
 // Tech Tree) sits below the XP tape (14px tall) with a small gap, instead of
@@ -609,7 +612,7 @@ export function displayStartScreen(onSelect) {
     if (_isMobile) {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
-            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Move (Virtual Joystick)</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Turn / aim (Virtual Joystick)</div>
             <div><span style="color:${INK.phosphor}">Right Thumb:</span> Up/Down = forward/reverse · Left/Right = strafe. Auto-Fire is ON.</div>
         `;
     } else {
@@ -649,6 +652,68 @@ export function displayStartScreen(onSelect) {
         pwaHint.innerText = pwaHintText;
         panel.appendChild(pwaHint);
     }
+
+    document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
+}
+
+// Temporary, acknowledgement-required notice for the mobile control update.
+// It is versioned so a later control redesign can show a new notice without
+// touching the user's settings or run state.
+export function showMobileMovementUpdateNotice() {
+    if (!_isMobile || document.getElementById('mobile-movement-update')) return;
+
+    try {
+        if (localStorage.getItem(MOBILE_MOVEMENT_NOTICE_KEY) === MOBILE_MOVEMENT_NOTICE_VERSION) return;
+    } catch (error) {
+        // If storage is unavailable, still show the notice for this session.
+    }
+
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
+
+    const { modal, panel } = consolePanelModal({ id: 'mobile-movement-update', zIndex: 6500, accent: INK.scope });
+    panel.style.width = 'min(92vw, 440px)';
+    panel.appendChild(panelTitleBar('Mobile Controls Updated', INK.scope));
+
+    const intro = document.createElement('div');
+    intro.innerText = 'Flight controls have been updated.';
+    intro.style.fontFamily = FONT;
+    intro.style.fontSize = scale(14);
+    intro.style.fontWeight = '600';
+    intro.style.color = INK.text;
+    intro.style.marginBottom = scale(14);
+    panel.appendChild(intro);
+
+    const notice = document.createElement('div');
+    notice.style.fontFamily = FONT;
+    notice.style.fontSize = scale(12);
+    notice.style.lineHeight = '1.55';
+    notice.style.color = INK.textDim;
+    notice.style.padding = `${scale(12)} ${scale(14)}`;
+    notice.style.background = INK.panelRaised;
+    notice.style.border = `1px solid ${INK.hairlineDim}`;
+    notice.style.clipPath = chamferClip(scaleNum(6));
+    notice.innerHTML = `
+        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">Left stick:</span> turn and aim only.</div>
+        <div><span style="color:${INK.scope}">Right stick:</span> up/down flies forward or reverse; left/right strafes.</div>
+    `;
+    panel.appendChild(notice);
+
+    const confirmBtn = consoleButton({ text: 'Got it', color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 14 });
+    confirmBtn.style.width = '100%';
+    confirmBtn.style.marginTop = scale(18);
+    confirmBtn.onclick = () => {
+        AudioManager.play('UI_CLICK');
+        try {
+            localStorage.setItem(MOBILE_MOVEMENT_NOTICE_KEY, MOBILE_MOVEMENT_NOTICE_VERSION);
+        } catch (error) {
+            // The acknowledgement can still dismiss the notice for this session.
+        }
+        modal.remove();
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
+        if (typeof window.resumeGame === 'function') window.resumeGame();
+    };
+    panel.appendChild(confirmBtn);
 
     document.body.appendChild(modal);
     enableArrowKeyNav(panel);
@@ -1009,7 +1074,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         panel.appendChild(toggleBtn);
 
         const ctrlNote = document.createElement('div');
-        ctrlNote.innerText = 'The movement and maneuver zones cover the full left/right half of the screen. On the right stick, up/down flies forward/reverse and left/right strafes. This only shows or hides the graphics. Firing is always automatic.';
+        ctrlNote.innerText = 'The turn and maneuver zones cover the full left/right half of the screen. The left stick turns/aims only. On the right stick, up/down flies forward/reverse and left/right strafes. This only shows or hides the graphics. Firing is always automatic.';
         ctrlNote.style.fontFamily = FONT;
         ctrlNote.style.fontSize = scale(11);
         ctrlNote.style.color = INK.textDim;
