@@ -24,8 +24,9 @@ The current visual direction is the **Night-Flight Console**: near-black cockpit
 3. Keep modules focused and use existing services and constants. Route audio through `AudioManager`; do not instantiate ad-hoc audio playback.
 4. Keep desktop and mobile behavior in sync where the feature applies to both. For mobile input, remember that the left stick turns/aims only and the right stick handles thrust and strafe.
 5. Run the appropriate verification, at minimum `npm run build` for application changes.
-6. Inspect `git diff`, run `git diff --check`, and create a focused commit.
-7. Report the commit hash, verification result, and any limitations.
+6. For every player-visible feature or bug fix, update the semantic application version according to the Versioning Policy before committing.
+7. Inspect `git diff`, run `git diff --check`, and create a focused commit.
+8. Report the commit hash, version change, verification result, and any limitations.
 
 ## Git policy
 
@@ -34,6 +35,16 @@ The current visual direction is the **Night-Flight Console**: near-black cockpit
 - Never push, pull, fetch, open a pull request, or otherwise contact a remote repository unless the user explicitly requests that separate operation. In particular, never run `git push` automatically.
 - Do not rewrite history, reset, checkout away, or delete user changes. Ask before any destructive Git operation.
 - Do not bundle unrelated existing changes into the commit. If unrelated changes make a clean focused commit impossible, explain the boundary and commit only the requested files when safe.
+
+## Versioning policy
+
+Semantic versioning is mandatory for player-visible application changes. Once the HUD version display is implemented, that displayed version is the release identifier shown in the lower-left HUD beside the FPS counter and must be kept in sync with the shipped behavior.
+
+- Patch (`0.1.1`): bug fixes, balancing adjustments, copy corrections, and small non-breaking polish.
+- Minor (`0.2.0`): new player-facing features, upgrades, enemies, controls, or meaningful UI additions.
+- Major (`1.0.0`): incompatible or fundamental changes to the game's public behavior or progression model.
+
+Use the canonical `version` field in `package.json` as the version source; do not invent a second independent version number. If that field and the HUD display do not exist yet, implement them together before the first versioned player-facing release. A version bump is not required for internal refactors, tests, documentation-only changes, or other changes with no player-visible effect. Do not auto-increment the version for every Git commit, and do not derive semantic meaning from a commit hash. If the release impact is ambiguous, choose the smallest reasonable increment and mention the decision in the handoff.
 
 ## Build, test, and deployment
 

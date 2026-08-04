@@ -19,6 +19,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - Mobile twin-stick controls: the left stick turns/aims only; the right stick controls forward/reverse thrust and strafing.
 - Keyboard-accessible menus and modals with spatial arrow-key navigation, W/A/S/D navigation, Enter/Space confirmation, visible selection feedback, and hover audio feedback.
 - Audio feedback for UI interaction, level-up moments, tech unlocks, shields, lasers, drones, explosions, and game over.
+- Semantic application version displayed beside the FPS counter in the lower-left HUD.
 - PWA support and Firebase hosting configuration.
 
 ## Controls
@@ -116,6 +117,8 @@ Agents may offer this command, but must only execute it after the user explicitl
 ## Persistence
 
 The game uses browser `localStorage` for permanent Tech Tree progress, Plasma, difficulty/settings, current-run autosaves, and temporary release acknowledgements. A factory reset is available from Settings and clears the relevant game data.
+
+The canonical application version is the `version` field in `package.json`. It is shown in the lower-left HUD next to the FPS counter.
 
 ## Contribution notes
 

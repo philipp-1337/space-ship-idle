@@ -6,6 +6,9 @@ import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
 import { clearRunState, suppressAutosave } from './runState.js';
 import { AudioManager } from './audio/AudioManager.js';
+import packageInfo from '../package.json';
+
+const APP_VERSION = packageInfo.version;
 import { spawnBossRewardWave, spawnSplitEnemies } from './enemyManager.js';
 import Laser from './laser.js';
 
@@ -322,7 +325,7 @@ export function createGameLoop(context) {
                     fpsEl.style.pointerEvents = 'none';
                     document.body.appendChild(fpsEl);
                 }
-                fpsEl.innerText = `FPS: ${currentFps}`;
+                fpsEl.innerText = `v${APP_VERSION} · FPS: ${currentFps}`;
             }
 
             if (currentFps < LOW_FPS_THRESHOLD) {
