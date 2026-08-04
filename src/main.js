@@ -421,6 +421,7 @@ const isShopOpenRef = { value: isShopOpen };
 const killsRef = { value: kills };
 const xpCollectedRef = { value: xpCollected };
 const levelRef = { value: level };
+window.getCurrentLevel = () => levelRef.value;
 const experienceRef = { value: experience };
 const maxXPRef = { value: maxXP };
 let autoShootTimerRef = { value: 0 };

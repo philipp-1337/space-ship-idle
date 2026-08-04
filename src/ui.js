@@ -1212,12 +1212,14 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     };
     panel.appendChild(panelTitleBar('Flight Paused', INK.phosphor, closePauseMenu));
 
-    const totalXpCollected = Number.isFinite(Number(stats.xpCollected))
-        ? Number(stats.xpCollected).toFixed(2)
-        : stats.xpCollected;
+    const formatXp = (value) => Number.isFinite(Number(value))
+        ? Number(value).toFixed(2)
+        : value;
+    const currentXp = formatXp(stats.experience);
+    const totalXpCollected = formatXp(stats.xpCollected);
     const rows = [
         ['Level', stats.level],
-        ['Current XP', `${stats.experience} / ${stats.maxXP}`],
+        ['Current XP', `${currentXp} / ${stats.maxXP}`],
         ['Enemies Defeated', stats.kills],
         ['Total XP Collected', totalXpCollected],
     ];
@@ -1505,6 +1507,10 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     plasmaLabel.style.textAlign = 'center';
     panel.appendChild(plasmaLabel);
 
+    const currentLevel = typeof window.getCurrentLevel === 'function'
+        ? window.getCurrentLevel()
+        : Infinity;
+
     const nodes = [
         { key: 'xpResonance', label: 'XP Resonance', desc: 'Amplifies the XP carried by every collected orb.', cost: 5, col: 1, row: 1 },
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
@@ -1520,7 +1526,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 only. The bonus expires after level 5.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
         { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 2, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 2s.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone' },
+        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 2s.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone', minLevel: 18 },
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 2, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 3, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
         { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
@@ -1570,9 +1576,10 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     // Connect each node to its prerequisite. Same-column branches get a clean
     // vertical stem; cross-column branches receive a horizontal bridge plus a
     // short stem into the child node.
-    const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
+    const visibleNodes = nodes.filter((node) => !node.minLevel || currentLevel >= node.minLevel);
+    const nodeByKey = new Map(visibleNodes.map((node) => [node.key, node]));
     const isUnlocked = (key) => key === 'autoShoot' ? (!!currentTechUpgrades[key] || _isMobile) : !!currentTechUpgrades[key];
-    nodes.filter((node) => node.requires).forEach((node) => {
+    visibleNodes.filter((node) => node.requires).forEach((node) => {
         const requirements = Array.isArray(node.requires) ? node.requires : [node.requires];
         requirements.forEach((requirement) => {
             const parent = nodeByKey.get(requirement);
@@ -1589,7 +1596,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         });
     });
 
-    nodes.forEach(n => {
+    visibleNodes.forEach(n => {
         // Auto-Fire is redundant on mobile (firing is already always-on via touch
         // controls — see input.js), so treat it as already unlocked there: the
         // node itself displays "Online" instead of a purchase, and its
