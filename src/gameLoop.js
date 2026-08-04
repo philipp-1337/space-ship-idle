@@ -39,6 +39,7 @@ export function createGameLoop(context) {
     let lastFpsTime = performance.now();
     let currentFps = 60;
     let lastMagnetDropTime = 0;
+    let gameplayStartedAt = null;
 
     // requestAnimationFrame feuert mit der Bildwiederholrate des Displays (60Hz
     // Desktop, aber oft 90/120Hz auf Handys). Bewegung/Timer wurden vorher pro
@@ -242,6 +243,7 @@ export function createGameLoop(context) {
         }
 
         const now = performance.now();
+        if (gameplayStartedAt === null) gameplayStartedAt = now;
         frameCount++;
         if (now - lastFpsTime >= 1000) {
             currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
@@ -266,8 +268,11 @@ export function createGameLoop(context) {
                 fpsEl.innerText = `FPS: ${currentFps}`;
             }
 
-            // Drop a magnet if FPS is too low (< 30) and cooldown (60s) has passed
-            if (currentFps < 30 && now - lastMagnetDropTime >= 60000) {
+            // Drop a magnet if FPS is too low (< 30), but only after the player
+            // has actually been flying for 60 seconds. This prevents the first
+            // low-FPS measurement (or a long pre-flight wait) from spawning a
+            // reward immediately at game start.
+            if (currentFps < 30 && now - gameplayStartedAt >= 60000 && now - lastMagnetDropTime >= 60000) {
                 tractorItems.push(new TractorItem(ship.x, ship.y - 40));
                 lastMagnetDropTime = now;
             }

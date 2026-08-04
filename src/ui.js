@@ -420,9 +420,10 @@ function consolePanelModal({ id, zIndex, accent = INK.phosphor }) {
     return { modal, panel };
 }
 
-// Shared Left/Right + Enter keyboard navigation for modal panels, so every
+// Shared Up/Down + Enter/Space keyboard navigation for modal panels, so every
 // console menu (Shop, Pause, Settings, Tech Tree, Pre-Flight Check, ...) is
-// usable without a mouse. Moves real DOM focus between a panel's buttons —
+// usable without a mouse. W/S mirror the vertical arrow keys. Moves real DOM
+// focus between a panel's buttons —
 // the existing global `button:focus-visible` outline (see DESIGN.md) is what
 // visually highlights the active item, so no new visual language is needed
 // here. Harmless (and effectively inert) on touch devices.
@@ -436,16 +437,24 @@ function enableArrowKeyNav(panel) {
         items[idx].focus();
     };
     panel.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') {
+        const items = getItems();
+        const focusedIndex = items.indexOf(document.activeElement);
+        if (focusedIndex >= 0) idx = focusedIndex;
+
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
             e.preventDefault();
             e.stopPropagation(); // don't let this also reach input.js's window-level ship-movement listener
-            focusItem(idx + 1);
-        } else if (e.key === 'ArrowLeft') {
+            focusItem(idx - 1);
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
             e.preventDefault();
             e.stopPropagation();
-            focusItem(idx - 1);
-        } else if (e.key === 'Enter') {
-            const items = getItems();
+            focusItem(idx + 1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            // Horizontal arrows no longer change the selected modal item, but
+            // must still be contained so they cannot steer the ship beneath it.
+            e.preventDefault();
+            e.stopPropagation();
+        } else if (e.key === 'Enter' || e.code === 'Space') {
             if (idx >= 0 && items[idx]) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -461,8 +470,11 @@ function enableArrowKeyNav(panel) {
 // intensification a mouse hover already gets — on top of the global focus
 // outline. Only needed for bespoke rows that aren't built via consoleButton()
 // (which already does this itself).
-function mirrorHoverOnFocus(el) {
-    el.addEventListener('focus', () => { if (el.onmouseenter) el.onmouseenter(); });
+function mirrorHoverOnFocus(el, { playSound = true } = {}) {
+    el.addEventListener('focus', () => {
+        if (el.onmouseenter) el.onmouseenter();
+        if (playSound) AudioManager.play('UI_HOVER');
+    });
     el.addEventListener('blur', () => { if (el.onmouseleave) el.onmouseleave(); });
 }
 
@@ -487,8 +499,8 @@ export function displayStartScreen(onSelect) {
     panel.appendChild(intro);
 
     const modes = [
-        { key: 'easy', label: 'Easy', desc: 'Enemies at half strength, ship starts reinforced — a gentler entry.' },
-        { key: 'normal', label: 'Normal', desc: 'Standard difficulty — the full challenge.' }
+        { key: 'normal', label: 'Normal', desc: 'Standard difficulty — the full challenge.' },
+        { key: 'easy', label: 'Easy', desc: 'Enemies at half strength, ship starts reinforced — a gentler entry.' }
     ];
 
     modes.forEach(mode => {
@@ -1236,8 +1248,7 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     };
     // Hover styling lives on the parent `node`, not this button — mirror it
     // onto keyboard focus the same way mirrorHoverOnFocus() does elsewhere.
-    header.addEventListener('focus', () => { if (node.onmouseenter) node.onmouseenter(); });
-    header.addEventListener('blur', () => { if (node.onmouseleave) node.onmouseleave(); });
+    mirrorHoverOnFocus(header, { playSound: !!node.onmouseenter });
 
     node.appendChild(header);
     return node;
