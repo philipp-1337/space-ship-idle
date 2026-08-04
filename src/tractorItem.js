@@ -1,5 +1,4 @@
-import { drawPixelSprite, makePixelSprite, makeFlashSprite } from './pixelArt.js';
-import { COLORS } from './constants.js';
+import { makePixelSprite } from './pixelArt.js';
 
 // Ein einfaches Sprite für das Tractor Pulse Item (Magnet-Symbol)
 const tractorPalette = ['#3a0a0a', '#c62828', '#ff6a3d', '#ffffff'];
@@ -22,6 +21,15 @@ const tractorSprite = makePixelSprite(
     }
 );
 
+const tractorGlowCanvas = document.createElement('canvas');
+tractorGlowCanvas.width = 36;
+tractorGlowCanvas.height = 36;
+const tractorGlowCtx = tractorGlowCanvas.getContext('2d');
+tractorGlowCtx.shadowColor = '#c62828';
+tractorGlowCtx.shadowBlur = 10;
+tractorGlowCtx.imageSmoothingEnabled = false;
+tractorGlowCtx.drawImage(tractorSprite, 10, 10, 16, 16);
+
 class TractorItem {
     constructor(x, y) {
         this.x = x;
@@ -34,16 +42,13 @@ class TractorItem {
     draw(ctx) {
         if (this.collected) return;
         
-        ctx.save();
         const floatOffset = Math.sin((performance.now() - this.creationTime) / 200) * 2;
-        ctx.translate(this.x, this.y + floatOffset);
-        
-        // Glow effect (dunkelrot)
-        ctx.shadowColor = '#c62828';
-        ctx.shadowBlur = 10 + Math.sin(performance.now() / 150) * 5;
-        
-        drawPixelSprite(ctx, tractorSprite, this.radius * 2, this.radius * 2);
-        ctx.restore();
+        const pulse = 0.9 + 0.1 * Math.sin(performance.now() / 150);
+        const drawSize = tractorGlowCanvas.width * pulse;
+        const previousSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(tractorGlowCanvas, this.x - drawSize / 2, this.y + floatOffset - drawSize / 2, drawSize, drawSize);
+        ctx.imageSmoothingEnabled = previousSmoothing;
     }
 }
 

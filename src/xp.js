@@ -1,5 +1,5 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/xp.js
-import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+import { makePixelSprite } from './pixelArt.js';
 
 const XP_SPRITE_RES = 8;
 export const xpSprite = makePixelSprite(
@@ -44,6 +44,31 @@ export const denseXpSprite = makePixelSprite(
     }
 );
 
+// shadowBlur is expensive when it is evaluated once per orb and frame. Build
+// the few visual variants once and draw them as regular bitmaps instead.
+const orbRenderCache = new Map();
+const ORB_GLOW_MARGIN = 7;
+
+function getOrbRenderSprite(radius, isBossOrb, isDense) {
+    const key = `${radius}:${isBossOrb ? 'boss' : (isDense ? 'dense' : 'normal')}`;
+    let cached = orbRenderCache.get(key);
+    if (cached) return cached;
+
+    const size = Math.ceil((radius + ORB_GLOW_MARGIN) * 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const renderCtx = canvas.getContext('2d');
+    renderCtx.shadowBlur = ORB_GLOW_MARGIN;
+    renderCtx.shadowColor = isBossOrb ? '#ffd23f' : (isDense ? '#ff6600' : '#ffd23f');
+    renderCtx.imageSmoothingEnabled = false;
+    const sprite = isBossOrb ? xpSprite : (isDense ? denseXpSprite : xpSprite);
+    renderCtx.drawImage(sprite, (size - radius * 2) / 2, (size - radius * 2) / 2, radius * 2, radius * 2);
+    cached = { canvas, size };
+    orbRenderCache.set(key, cached);
+    return cached;
+}
+
 class XP {
     constructor(x, y, value = 1, isBossOrb = false) {
         this.x = x;
@@ -54,19 +79,19 @@ class XP {
         this.collected = false;
     }
 
-    draw(ctx) {
+    draw(ctx, pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300)) {
         if (!this.collected) {
-            ctx.save();
-            // Sanftes Pulsieren des Glows, damit die Sphäre etwas lebendiger wirkt.
-            // Radius bewusst klein (war 18): XP-Orbs können sich zu Dutzenden
-            // ansammeln, und shadowBlur ist pro Aufruf teuer, besonders in Chrome.
-            const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 300);
-            ctx.shadowBlur = 7 * pulse;
-            ctx.shadowColor = this.isBossOrb ? '#ffd23f' : (this.value > 1 ? '#ff6600' : '#ffd23f');
-            ctx.translate(this.x, this.y);
-            const spriteToUse = this.isBossOrb ? xpSprite : (this.value > 1 ? denseXpSprite : xpSprite);
-            drawPixelSprite(ctx, spriteToUse, this.radius * 2 * pulse, this.radius * 2 * pulse);
-            ctx.restore();
+            // Keep the pulse, but scale a pre-rendered glow bitmap instead of
+            // invoking shadowBlur for every orb on every frame.
+            const renderSprite = getOrbRenderSprite(this.radius, this.isBossOrb, this.value > 1);
+            const drawSize = renderSprite.size * pulse;
+            const halfDrawSize = drawSize / 2;
+            // Orbs can remain just outside the viewport after camera movement;
+            // they still participate in magnet/collection logic, but need no
+            // raster work until they can actually be seen.
+            if (this.x + halfDrawSize < 0 || this.x - halfDrawSize > ctx.canvas.width ||
+                this.y + halfDrawSize < 0 || this.y - halfDrawSize > ctx.canvas.height) return;
+            ctx.drawImage(renderSprite.canvas, this.x - halfDrawSize, this.y - halfDrawSize, drawSize, drawSize);
         }
     }
 

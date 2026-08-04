@@ -1,5 +1,5 @@
 // Plasmazellen-Objekt für Idle-Game-Mechanik
-import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+import { makePixelSprite } from './pixelArt.js';
 
 const PLASMA_SPRITE_RES = 9;
 const plasmaSprite = makePixelSprite(
@@ -23,6 +23,15 @@ const plasmaSprite = makePixelSprite(
     }
 );
 
+const plasmaGlowCanvas = document.createElement('canvas');
+plasmaGlowCanvas.width = 30;
+plasmaGlowCanvas.height = 30;
+const plasmaGlowCtx = plasmaGlowCanvas.getContext('2d');
+plasmaGlowCtx.shadowBlur = 7;
+plasmaGlowCtx.shadowColor = 'cyan';
+plasmaGlowCtx.imageSmoothingEnabled = false;
+plasmaGlowCtx.drawImage(plasmaSprite, 7, 7, 16, 16);
+
 class PlasmaCell {
     constructor(x, y) {
         this.x = x;
@@ -33,14 +42,10 @@ class PlasmaCell {
 
     draw(ctx) {
         if (!this.collected) {
-            ctx.save();
-            // Radius bewusst klein gehalten — shadowBlur ist pro Aufruf teuer
-            // (besonders in Chrome), und Plasmazellen können sich ansammeln.
-            ctx.shadowBlur = 7;
-            ctx.shadowColor = 'cyan';
-            ctx.translate(this.x, this.y);
-            drawPixelSprite(ctx, plasmaSprite, this.radius * 2, this.radius * 2);
-            ctx.restore();
+            const previousSmoothing = ctx.imageSmoothingEnabled;
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(plasmaGlowCanvas, this.x - 15, this.y - 15, 30, 30);
+            ctx.imageSmoothingEnabled = previousSmoothing;
         }
     }
 

@@ -60,7 +60,9 @@ export class EffectsSystem {
 
     // === XP PARTICLE SYSTEM ===
     spawnXpParticles(x, y, color = COLORS.XP_COLOR) {
-        for (let i = 0; i < EFFECTS.XP_PARTICLE_COUNT; i++) {
+        const available = Math.max(0, EFFECTS.XP_PARTICLE_MAX_ACTIVE - this.xpParticles.length);
+        const particleCount = Math.min(EFFECTS.XP_PARTICLE_COUNT, available);
+        for (let i = 0; i < particleCount; i++) {
             this.xpParticles.push({
                 x,
                 y,
@@ -75,6 +77,8 @@ export class EffectsSystem {
     }
 
     updateAndDrawXpParticles(dt = 1) {
+        const previousAlpha = this.ctx.globalAlpha;
+        const previousFillStyle = this.ctx.fillStyle;
         for (let i = this.xpParticles.length - 1; i >= 0; i--) {
             const p = this.xpParticles[i];
 
@@ -88,19 +92,19 @@ export class EffectsSystem {
             // numerous (up to a dozen per pickup) and short-lived, and
             // shadowBlur is disproportionately expensive per call in Chrome,
             // so this was a real hot-path cost with many kills on screen.
-            this.ctx.save();
             this.ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
             this.ctx.fillStyle = p.color;
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             this.ctx.fill();
-            this.ctx.restore();
             
             // Remove dead particles
             if (p.life <= 0) {
                 this.xpParticles.splice(i, 1);
             }
         }
+        this.ctx.globalAlpha = previousAlpha;
+        this.ctx.fillStyle = previousFillStyle;
     }
 
     // Move particles when world shifts
