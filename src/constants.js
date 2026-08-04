@@ -122,6 +122,19 @@ export const DRONE = {
     FIRE_COOLDOWN_MS: 650
 };
 
+export const HOMING_MISSILE_TECH = {
+    BASE_DAMAGE: 6,
+    DAMAGE_BONUS: 4,
+    BASE_LIFE: 240,
+    LIFE_BONUS: 120,
+    BASE_LOST_TARGET_GRACE_FRAMES: 90,
+    LOST_TARGET_GRACE_BONUS: 60,
+    BASE_EXPLOSION_RADIUS: 60,
+    EXPLOSION_RADIUS_BONUS: 25,
+    BASE_TURN_SPEED: 0.045,
+    TURN_SPEED_BONUS: 0.015
+};
+
 export const COLLECTOR_PULSE = {
     BASE_DURATION_MS: 1500, // level 1 pull duration
     DURATION_STEP_MS: 400, // each further level extends the pull by this much

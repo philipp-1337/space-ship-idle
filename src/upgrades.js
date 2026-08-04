@@ -26,6 +26,10 @@ export let techUpgrades = {
     twinDrones: false, // zweite Begleit-Drohne, gegenüberliegend auf der Umlaufbahn
 
     homingMissile: false, // Lenkraketen-Upgrade
+    missilePayload: false,
+    missileEndurance: false,
+    missileWarhead: false,
+    missileGuidance: false,
     piercing: false, // Laser durchdringen Gegner
     explosiveRounds: false, // Laser verursachen Flächenschaden beim Einschlag
     rapidFire: false, // dauerhaft kürzere Feuer-Cooldowns
@@ -54,6 +58,10 @@ export function isAutoShootUnlocked() {
 export const TECH_PREREQUISITES = {
     rapidFire: 'autoShoot',
     homingMissile: 'autoShoot',
+    missilePayload: 'homingMissile',
+    missileEndurance: 'missilePayload',
+    missileWarhead: 'missileEndurance',
+    missileGuidance: 'missileWarhead',
     piercing: 'autoShoot',
     salvage: 'rapidFire',
     twinMissiles: 'homingMissile',

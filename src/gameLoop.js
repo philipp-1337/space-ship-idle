@@ -1,5 +1,5 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA } from './constants.js';
+import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
@@ -243,11 +243,29 @@ export function createGameLoop(context) {
                     }
                 }
                 if (closest) {
+                    const missileDamage = HOMING_MISSILE_TECH.BASE_DAMAGE
+                        + (techUpgrades.missilePayload ? HOMING_MISSILE_TECH.DAMAGE_BONUS : 0);
+                    const missileLife = HOMING_MISSILE_TECH.BASE_LIFE
+                        + (techUpgrades.missileEndurance ? HOMING_MISSILE_TECH.LIFE_BONUS : 0);
+                    const missileGrace = HOMING_MISSILE_TECH.BASE_LOST_TARGET_GRACE_FRAMES
+                        + (techUpgrades.missileEndurance ? HOMING_MISSILE_TECH.LOST_TARGET_GRACE_BONUS : 0);
+                    const missileRadius = HOMING_MISSILE_TECH.BASE_EXPLOSION_RADIUS
+                        + (techUpgrades.missileWarhead ? HOMING_MISSILE_TECH.EXPLOSION_RADIUS_BONUS : 0);
+                    const missileTurnSpeed = HOMING_MISSILE_TECH.BASE_TURN_SPEED
+                        + (techUpgrades.missileGuidance ? HOMING_MISSILE_TECH.TURN_SPEED_BONUS : 0);
+                    const missileOptions = {
+                        speed: 2.2,
+                        explosionRadius: missileRadius,
+                        damage: missileDamage,
+                        life: missileLife,
+                        maxLostTargetGraceFrames: missileGrace,
+                        turnSpeed: missileTurnSpeed
+                    };
                     homingMissiles.push(new HomingMissile(
                         ship.x + Math.cos(ship.angle)*28,
                         ship.y + Math.sin(ship.angle)*28,
                         closest,
-                        { speed: 2.2, explosionRadius: 60, damage: 6 }
+                        missileOptions
                     ));
                     // Twin Missiles: eine zweite Rakete pro Salve, leicht versetzt gestartet
                     if (techUpgrades.twinMissiles) {
@@ -255,7 +273,7 @@ export function createGameLoop(context) {
                             ship.x - Math.sin(ship.angle)*14 + Math.cos(ship.angle)*20,
                             ship.y + Math.cos(ship.angle)*14 + Math.sin(ship.angle)*20,
                             closest,
-                            { speed: 2.2, explosionRadius: 60, damage: 6 }
+                            missileOptions
                         ));
                     }
                     AudioManager.play('SHIP_MISSILE');
