@@ -674,21 +674,55 @@ export function createGameLoop(context) {
                 const beamLength = 2000;
                 const endX = ship.x + Math.cos(sweepRay.angle) * beamLength;
                 const endY = ship.y + Math.sin(sweepRay.angle) * beamLength;
+                const pulse = 0.84 + Math.sin(sweepRay.timer * 0.045) * 0.16;
+                const fade = Math.min(1, progress * 12) * Math.min(1, (1 - progress) * 5);
+                const rayAlpha = pulse * fade;
                 
                 ctx.save();
-                ctx.strokeStyle = '#a832a8';
-                ctx.lineWidth = 60;
-                ctx.shadowColor = '#d942d9';
-                ctx.shadowBlur = 40;
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.globalAlpha = rayAlpha * 0.28;
+                ctx.strokeStyle = '#ffd23f';
+                ctx.lineWidth = 96;
+                ctx.shadowColor = '#ffb000';
+                ctx.shadowBlur = 30;
                 ctx.beginPath();
                 ctx.moveTo(ship.x, ship.y);
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
                 
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 20;
+                ctx.globalAlpha = rayAlpha * 0.72;
+                ctx.strokeStyle = '#ffb000';
+                ctx.lineWidth = 44;
+                ctx.shadowBlur = 18;
+                ctx.stroke();
+
+                ctx.globalAlpha = rayAlpha;
+                ctx.strokeStyle = '#e8fff0';
+                ctx.lineWidth = 12;
+                ctx.shadowColor = '#ffffff';
                 ctx.shadowBlur = 10;
                 ctx.stroke();
+
+                ctx.globalAlpha = rayAlpha * 0.95;
+                ctx.strokeStyle = '#7fe8ff';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#7fe8ff';
+                ctx.shadowBlur = 6;
+                ctx.stroke();
+
+                // The emitter reads as a charged instrument, so the source
+                // point remains visible while the beam sweeps the arena.
+                ctx.globalAlpha = rayAlpha * 0.85;
+                ctx.strokeStyle = '#ffd23f';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#ffd23f';
+                ctx.shadowBlur = 14;
+                ctx.beginPath();
+                ctx.arc(ship.x, ship.y, 18 + Math.sin(sweepRay.timer * 0.06) * 3, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = rayAlpha;
+                ctx.fillStyle = '#e8fff0';
+                ctx.fillRect(ship.x - 4, ship.y - 4, 8, 8);
                 ctx.restore();
                 
                 const A = ship.x, B = ship.y;
