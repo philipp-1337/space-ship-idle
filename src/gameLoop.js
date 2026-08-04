@@ -1,6 +1,6 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
 import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH } from './constants.js';
-import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs } from './upgrades.js';
+import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
@@ -164,6 +164,7 @@ export function createGameLoop(context) {
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
         AudioManager.play('LEVEL_UP');
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
+        pauseCollectorPulse();
         isShopOpenRef.value = true;
         displayShopModal(ship, upgrades, (upgradeKey) => {
             applyUpgrade(upgradeKey, ship, PHYSICS);
@@ -179,6 +180,7 @@ export function createGameLoop(context) {
                 }
             }
             isShopOpenRef.value = false;
+            resumeCollectorPulse();
 
             // Prüfen, ob eine Gegnerwelle ausgelöst werden soll, NACHDEM der Shop geschlossen wurde
             if (levelRef.value > 1 && levelRef.value % GAME_CONFIG.ENEMY_WAVE_INTERVAL === 0) {

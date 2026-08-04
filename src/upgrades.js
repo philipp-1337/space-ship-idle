@@ -285,13 +285,33 @@ export function getDamageMultiplier() {
 // Magnet-Zug kurz und überall (nicht nur in Reichweite) sehr stark angewendet
 // wird. Jeder weitere Kauf verlängert die Zugdauer (siehe collectorPulseDurationFor). ---
 export let collectorPulseUntil = 0;
+let collectorPulsePausedRemainingMs = null;
 
 export function triggerCollectorPulse() {
-    collectorPulseUntil = performance.now() + collectorPulseDurationFor(upgrades.collectorPulse);
+    const duration = collectorPulseDurationFor(upgrades.collectorPulse);
+    if (collectorPulsePausedRemainingMs !== null) {
+        collectorPulsePausedRemainingMs = duration;
+        return;
+    }
+    collectorPulseUntil = performance.now() + duration;
 }
 
 export function isCollectorPulseActive() {
     return performance.now() < collectorPulseUntil;
+}
+
+export function pauseCollectorPulse() {
+    if (collectorPulsePausedRemainingMs !== null) return;
+    collectorPulsePausedRemainingMs = Math.max(0, collectorPulseUntil - performance.now());
+    collectorPulseUntil = 0;
+}
+
+export function resumeCollectorPulse() {
+    if (collectorPulsePausedRemainingMs === null) return;
+    if (collectorPulsePausedRemainingMs > 0) {
+        collectorPulseUntil = performance.now() + collectorPulsePausedRemainingMs;
+    }
+    collectorPulsePausedRemainingMs = null;
 }
 
 export function loadTechUpgrades() {
