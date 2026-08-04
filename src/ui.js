@@ -1212,11 +1212,14 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     };
     panel.appendChild(panelTitleBar('Flight Paused', INK.phosphor, closePauseMenu));
 
+    const totalXpCollected = Number.isFinite(Number(stats.xpCollected))
+        ? Number(stats.xpCollected).toFixed(2)
+        : stats.xpCollected;
     const rows = [
         ['Level', stats.level],
         ['Current XP', `${stats.experience} / ${stats.maxXP}`],
         ['Enemies Defeated', stats.kills],
-        ['Total XP Collected', stats.xpCollected],
+        ['Total XP Collected', totalXpCollected],
     ];
     const statsDiv = document.createElement('div');
     statsDiv.style.width = '100%';
