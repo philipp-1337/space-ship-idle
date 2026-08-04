@@ -5,6 +5,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "site": "space-ship-idle",
     "public": "dist",
     "ignore": [
       "firebase.json",
