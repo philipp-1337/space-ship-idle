@@ -1481,7 +1481,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
 
     const { modal, panel } = consolePanelModal({ id: 'tech-tree-modal', zIndex: 5000, accent: INK.scope });
     panel.classList.add('tt-panel');
-    panel.style.width = 'min(92vw, 560px)';
+    panel.style.width = _isMobile ? '92vw' : 'min(94vw, 720px)';
     panel.style.maxHeight = _isMobile ? '70vh' : '86vh';
     panel.style.overflowY = 'auto';
     const closeTechTree = () => {
@@ -1518,19 +1518,19 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'resonanceCascade', label: 'Resonance Cascade', desc: 'Further increases the XP yield of collected orbs.', cost: 9, col: 1, row: 3, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
         { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'missilePayload', label: 'Missile Payload', desc: 'Homing missiles deal +4 damage on impact and in their blast.', cost: 8, col: 4, row: 9, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target.', cost: 8, col: 4, row: 11, requires: 'missilePayload', requiresLabel: 'Missile Payload' },
-        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther.', cost: 10, col: 4, row: 13, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
-        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets.', cost: 10, col: 4, row: 15, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
+        { key: 'missilePayload', label: 'Missile Payload', desc: 'Homing missiles deal +4 damage on impact and in their blast.', cost: 8, col: 3, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target.', cost: 8, col: 3, row: 9, requires: 'missilePayload', requiresLabel: 'Missile Payload' },
+        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther.', cost: 10, col: 3, row: 11, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
+        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets.', cost: 10, col: 3, row: 13, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
         { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
         { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 only. The bonus expires after level 5.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
-        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 2, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
-        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 3, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
+        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 2s.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone', minLevel: 18 },
-        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 2, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
-        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 3, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
+        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
+        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
         { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 12 kills, discharge a damaging shockwave around the ship.', cost: 14, col: 3, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
+        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 12 kills, discharge a damaging shockwave around the ship.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 
     const grid = document.createElement('div');
@@ -1573,47 +1573,95 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         grid.appendChild(c);
     }
     
-    // Connect each node to its prerequisite. Same-column branches get a clean
-    // vertical stem; cross-column branches receive a horizontal bridge plus a
-    // short stem into the child node.
+    // Connectors are rendered only on desktop. Mobile gets a linear branch list
+    // below, which keeps the dependency hierarchy readable without shrinking a
+    // graph into an unusable touch layout.
     const visibleNodes = nodes.filter((node) => !node.minLevel || currentLevel >= node.minLevel);
     const nodeByKey = new Map(visibleNodes.map((node) => [node.key, node]));
     const isUnlocked = (key) => key === 'autoShoot' ? (!!currentTechUpgrades[key] || _isMobile) : !!currentTechUpgrades[key];
-    visibleNodes.filter((node) => node.requires).forEach((node) => {
+    const nodeDepth = (node, seen = new Set()) => {
+        if (!node || !node.requires || seen.has(node.key)) return 0;
+        seen.add(node.key);
         const requirements = Array.isArray(node.requires) ? node.requires : [node.requires];
-        requirements.forEach((requirement) => {
-            const parent = nodeByKey.get(requirement);
-            if (!parent) return;
-            const active = isUnlocked(parent.key);
-            if (parent.col === node.col) {
-                drawConnector(node.col, parent.row + 1, 'v', active);
-            } else {
-                const left = Math.min(parent.col, node.col);
-                const right = Math.max(parent.col, node.col);
-                drawConnector(`${left} / ${right + 1}`, parent.row + 1, 'h', active);
-                drawConnector(node.col, parent.row + 1, 'v', active);
-            }
-        });
-    });
-
-    visibleNodes.forEach(n => {
-        // Auto-Fire is redundant on mobile (firing is already always-on via touch
-        // controls — see input.js), so treat it as already unlocked there: the
-        // node itself displays "Online" instead of a purchase, and its
-        // prerequisite-gated children unlock for free without spending Plasma
-        // on something mobile players already effectively have.
+        return 1 + Math.max(...requirements.map((key) => nodeDepth(nodeByKey.get(key), new Set(seen))));
+    };
+    const createTreeNode = (n) => {
         const unlocked = n.key === 'autoShoot' ? (!!currentTechUpgrades[n.key] || _isMobile) : !!currentTechUpgrades[n.key];
         const requirements = Array.isArray(n.requires) ? n.requires : (n.requires ? [n.requires] : []);
         const prereqMet = requirements.every((requirement) => requirement === 'autoShoot'
             ? (!!currentTechUpgrades[requirement] || _isMobile)
             : !!currentTechUpgrades[requirement]);
-        const node = techTreeNode(n, unlocked, !prereqMet, onUpgrade);
-        node.style.gridColumn = String(n.col);
-        node.style.gridRow = String(n.row);
-        grid.appendChild(node);
-    });
+        return techTreeNode(n, unlocked, !prereqMet, onUpgrade);
+    };
 
-    panel.appendChild(grid);
+    if (_isMobile) {
+        const mobileTree = document.createElement('div');
+        mobileTree.className = 'tt-mobile-tree';
+        mobileTree.style.display = 'flex';
+        mobileTree.style.flexDirection = 'column';
+        mobileTree.style.gap = scale(16);
+        mobileTree.style.width = '100%';
+
+        const groups = [
+            { label: 'XP SYSTEMS', keys: ['xpResonance', 'resonanceCascade', 'learningProtocol'] },
+            { label: 'WEAPON SYSTEMS', keys: ['autoShoot', 'rapidFire', 'piercing', 'explosiveRounds', 'reactorNova'] },
+            { label: 'MISSILE SYSTEMS', keys: ['homingMissile', 'twinMissiles', 'missilePayload', 'missileEndurance', 'missileWarhead', 'missileGuidance'] },
+            { label: 'DRONE SYSTEMS', keys: ['drone', 'targetingMatrix', 'twinDrones', 'signalInterference'] },
+            { label: 'UTILITY SYSTEMS', keys: ['salvage'] }
+        ];
+        groups.forEach((group) => {
+            const groupNodes = group.keys.map((key) => nodeByKey.get(key)).filter(Boolean);
+            if (!groupNodes.length) return;
+
+            const heading = document.createElement('div');
+            heading.innerText = group.label;
+            heading.style.fontFamily = FONT;
+            heading.style.fontSize = scale(10);
+            heading.style.letterSpacing = '0.16em';
+            heading.style.color = INK.scope;
+            heading.style.marginBottom = scale(-8);
+            mobileTree.appendChild(heading);
+
+            const branch = document.createElement('div');
+            branch.style.display = 'flex';
+            branch.style.flexDirection = 'column';
+            branch.style.gap = scale(8);
+            branch.style.borderLeft = `2px solid ${INK.hairlineDim}`;
+            branch.style.paddingLeft = scale(10);
+            groupNodes.forEach((n, index) => {
+                const node = createTreeNode(n);
+                node.style.marginLeft = scale(nodeDepth(n) * 10);
+                if (index > 0 && n.requires) node.style.position = 'relative';
+                branch.appendChild(node);
+            });
+            mobileTree.appendChild(branch);
+        });
+        panel.appendChild(mobileTree);
+    } else {
+        visibleNodes.filter((node) => node.requires).forEach((node) => {
+            const requirements = Array.isArray(node.requires) ? node.requires : [node.requires];
+            requirements.forEach((requirement) => {
+                const parent = nodeByKey.get(requirement);
+                if (!parent) return;
+                const active = isUnlocked(parent.key);
+                if (parent.col === node.col) {
+                    drawConnector(node.col, parent.row + 1, 'v', active);
+                } else {
+                    const left = Math.min(parent.col, node.col);
+                    const right = Math.max(parent.col, node.col);
+                    drawConnector(`${left} / ${right + 1}`, parent.row + 1, 'h', active);
+                    drawConnector(node.col, parent.row + 1, 'v', active);
+                }
+            });
+        });
+        visibleNodes.forEach((n) => {
+            const node = createTreeNode(n);
+            node.style.gridColumn = String(n.col);
+            node.style.gridRow = String(n.row);
+            grid.appendChild(node);
+        });
+        panel.appendChild(grid);
+    }
 
     const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     closeBtn.style.marginTop = scale(14);
