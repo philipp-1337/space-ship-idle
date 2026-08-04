@@ -37,7 +37,6 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - Left thumb: turn and aim the ship without applying thrust
 - Right thumb, up/down: forward / reverse thrust
 - Optional Advanced Controls: right thumb, left/right: strafe
-- Mobile Aim Assist is enabled by default and can be disabled in Settings
 - Firing is automatic on touch devices
 
 After the mobile control redesign, existing mobile players see a one-time acknowledgement notice. The temporary notice is versioned in `src/ui.js` and can be removed later as a self-contained cleanup.
