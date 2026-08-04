@@ -1160,7 +1160,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     if (!isMobile) {
         panel.appendChild(label('Desktop Shortcuts', INK.textDim));
         const shortcuts = document.createElement('div');
-        shortcuts.innerText = 'T / 3  Tech Tree\nP / 1  Pause\nO / 2  Settings';
+        shortcuts.innerText = 'P / 1  Pause\nO / 2  Settings\nT / 3  Tech Tree';
         shortcuts.style.whiteSpace = 'pre-line';
         shortcuts.style.fontFamily = FONT;
         shortcuts.style.fontSize = scale(12);
