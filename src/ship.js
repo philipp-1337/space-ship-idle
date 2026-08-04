@@ -160,10 +160,14 @@ class Ship {
             this.shieldFlashUntil = now + 200;
             return 'blocked';
         }
+        const previousHp = this.hp;
         this.hp = Math.max(0, this.hp - amount);
         this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
         this.hitFlashUntil = now + 150;
         AudioManager.play('SHIP_HIT');
+        if (previousHp > 1 && this.hp === 1) {
+            AudioManager.play('SHIELD_DOWN');
+        }
         return this.hp <= 0 ? 'dead' : 'hit';
     }
 
@@ -188,7 +192,9 @@ class Ship {
                 const now = performance.now();
                 if (!this.nextRegenAt) this.nextRegenAt = now + interval;
                 if (now >= this.nextRegenAt) {
+                    const previousHp = this.hp;
                     this.hp = Math.min(this.maxHp, this.hp + 1);
+                    if (this.hp > previousHp) AudioManager.play('SHIELD_UP');
                     this.nextRegenAt = now + interval;
                 }
             } else {

@@ -122,6 +122,7 @@ export function createGameLoop(context) {
         isGameOverRef.value = true;
         clearInterval(context.enemySpawnIntervalId);
         clearRunState(); // Tod löscht den Spielstand — nur Plasma/Tech-Tree bleiben (siehe upgrades.js)
+        AudioManager.play('GAME_OVER');
         displayGameOverScreen(levelRef.value);
     }
 
@@ -129,7 +130,7 @@ export function createGameLoop(context) {
         levelRef.value++;
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
-        AudioManager.play('MILESTONE');
+        AudioManager.play('LEVEL_UP');
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
         isShopOpenRef.value = true;
         displayShopModal(ship, upgrades, (upgradeKey) => {
@@ -301,7 +302,10 @@ export function createGameLoop(context) {
                 d.update(ship, dt);
                 d.draw(ctx);
                 const droneShot = d.tryShoot(enemyGrid, upgrades.laser);
-                if (droneShot) lasers.push(droneShot);
+                if (droneShot) {
+                    lasers.push(droneShot);
+                    AudioManager.play('DRONE_LASER');
+                }
             });
         }
 

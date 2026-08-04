@@ -6,8 +6,16 @@ export const SOUNDS = {
     UI_UPGRADE: '/assets/audio/sfx/ui_upgrade_v2.wav',
     UI_ERROR: '/assets/audio/sfx/ui_error_v2.wav',
 
+    // Progression & state feedback
+    LEVEL_UP: '/assets/audio/sfx/level_up.wav',
+    TECH_UNLOCK: '/assets/audio/sfx/tech_unlock.wav',
+    SHIELD_DOWN: '/assets/audio/sfx/shield_down.wav',
+    SHIELD_UP: '/assets/audio/sfx/shield_up.wav',
+    GAME_OVER: '/assets/audio/sfx/game_over.wav',
+
     // Action
     SHIP_LASER: '/assets/audio/sfx/ship_laser_v2.wav',
+    DRONE_LASER: '/assets/audio/sfx/drone_laser.wav',
     ENEMY_LASER: '/assets/audio/sfx/enemy_laser_v2.wav',
     ENEMY_HIT: '/assets/audio/sfx/enemy_hit.wav',
     ENEMY_EXPLODE: '/assets/audio/sfx/enemy_explode.wav',

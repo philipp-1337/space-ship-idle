@@ -2,6 +2,7 @@
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
 import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, isTouchDevice } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 export let upgrades = {
     magnet: 0,
@@ -289,6 +290,7 @@ export function handleTechUpgrade(key, cost) {
         savePlasmaCount();
         saveTechUpgrades();
         updatePlasmaUI(upgrades.plasmaCount);
+        AudioManager.play('TECH_UNLOCK');
         // Modal neu anzeigen, um Status zu aktualisieren
         const modal = document.getElementById('tech-tree-modal');
         if (modal) modal.remove();
