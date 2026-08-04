@@ -325,6 +325,18 @@ const effectsSystem = new EffectsSystem(canvas);
 displayPauseButton(() => pauseGame());
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        const techDetail = document.getElementById('tech-node-detail-modal');
+        if (techDetail) {
+            techDetail.remove();
+            return;
+        }
+        for (const menuId of ['pause-menu', 'settings-menu', 'tech-tree-modal']) {
+            const closeButton = document.querySelector(`#${menuId} .modal-close-button`);
+            if (closeButton) {
+                closeButton.click();
+                return;
+            }
+        }
         if (!isPaused && !isGameOver && !isShopOpen) {
             pauseGame();
         } else if (isPaused && !isGameOver && !isShopOpen) {

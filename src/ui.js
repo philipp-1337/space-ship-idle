@@ -366,7 +366,7 @@ function consoleButton({ text, color, glowColor, filled = false, fontSize = 16, 
     return btn;
 }
 
-function panelTitleBar(text, color) {
+function panelTitleBar(text, color, onClose) {
     const bar = document.createElement('div');
     bar.style.width = '100%';
     bar.style.display = 'flex';
@@ -387,12 +387,25 @@ function panelTitleBar(text, color) {
     h2.style.color = color;
     h2.style.textShadow = `0 0 6px ${color}55`;
 
-    const lamp = document.createElement('div');
-    lamp.style.width = scale(8);
-    lamp.style.height = scale(8);
-    lamp.style.borderRadius = '50%';
-    lamp.style.background = color;
-    lamp.style.boxShadow = `0 0 ${scaleNum(6)}px ${scaleNum(1)}px ${color}`;
+    const lamp = onClose
+        ? consoleButton({ text: '×', color, glowColor: `${color}88`, fontSize: 20 })
+        : document.createElement('div');
+    if (onClose) {
+        lamp.classList.add('modal-close-button');
+        lamp.setAttribute('aria-label', `Close ${text}`);
+        lamp.style.width = scale(32);
+        lamp.style.height = scale(32);
+        lamp.style.padding = '0';
+        lamp.style.flexShrink = '0';
+        lamp.style.lineHeight = '1';
+        lamp.onclick = onClose;
+    } else {
+        lamp.style.width = scale(8);
+        lamp.style.height = scale(8);
+        lamp.style.borderRadius = '50%';
+        lamp.style.background = color;
+        lamp.style.boxShadow = `0 0 ${scaleNum(6)}px ${scaleNum(1)}px ${color}`;
+    }
 
     bar.appendChild(h2);
     bar.appendChild(lamp);
@@ -999,7 +1012,12 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     panel.style.overflowY = 'auto';
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
-    panel.appendChild(panelTitleBar('Settings', INK.phosphor));
+    const closeSettings = () => {
+        modal.remove();
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
+        if (typeof window.resumeGame === 'function') window.resumeGame();
+    };
+    panel.appendChild(panelTitleBar('Settings', INK.phosphor, closeSettings));
 
     const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls, nextControlScheme = mobileControlScheme) => {
         modal.remove();
@@ -1174,11 +1192,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     panel.appendChild(resetBtn);
 
     const closeBtn = consoleButton({ text: 'Close', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
-    closeBtn.onclick = () => {
-        modal.remove();
-        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
-        if (typeof window.resumeGame === 'function') window.resumeGame();
-    };
+    closeBtn.onclick = closeSettings;
     panel.appendChild(closeBtn);
 
     document.body.appendChild(modal);
@@ -1191,7 +1205,12 @@ export function displayPauseMenu(stats, onResume, onRestart) {
 
     const { modal, panel } = consolePanelModal({ id: 'pause-menu', zIndex: 4000, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 420px)';
-    panel.appendChild(panelTitleBar('Flight Paused', INK.phosphor));
+    const closePauseMenu = () => {
+        menuCleanup();
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
+        onResume();
+    };
+    panel.appendChild(panelTitleBar('Flight Paused', INK.phosphor, closePauseMenu));
 
     const rows = [
         ['Level', stats.level],
@@ -1460,13 +1479,18 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     panel.style.width = 'min(92vw, 560px)';
     panel.style.maxHeight = _isMobile ? '70vh' : '86vh';
     panel.style.overflowY = 'auto';
+    const closeTechTree = () => {
+        modal.remove();
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
+        if (typeof window.resumeGame === 'function') window.resumeGame();
+    };
     // html/body run with touch-action:none globally (keeps the touch joystick from
     // triggering page scroll/pull-to-refresh) — that also blocks finger-scrolling
     // inside this panel unless explicitly re-enabled here, which left the Close
     // button unreachable below the fold on phones with no way to scroll to it.
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
-    panel.appendChild(panelTitleBar('Tech Tree', INK.scope));
+    panel.appendChild(panelTitleBar('Tech Tree', INK.scope, closeTechTree));
 
     const plasmaLabel = document.createElement('div');
     plasmaLabel.innerText = `Available Plasma: ${upgrades.plasmaCount || 0}`;
@@ -1580,11 +1604,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     closeBtn.style.marginTop = scale(14);
     closeBtn.style.padding = `${scale(8)} ${scale(20)}`;
-    closeBtn.onclick = () => {
-        modal.remove();
-        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
-        if (typeof window.resumeGame === 'function') window.resumeGame();
-    };
+    closeBtn.onclick = closeTechTree;
     panel.appendChild(closeBtn);
 
     document.body.appendChild(modal);
