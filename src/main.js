@@ -115,7 +115,9 @@ function updateShipMovement(dt = 1) {
             // Normalisiere den Winkel auf -PI bis PI, damit es nicht "außenrum" dreht
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
-            ship.angle += diff * (1 - Math.pow(1 - PHYSICS.MOBILE_JOYSTICK_SENSITIVITY, dt));
+            const turnInput = Math.pow(Math.min(1, dist), PHYSICS.MOBILE_JOYSTICK_RESPONSE_CURVE);
+            const turnStep = PHYSICS.MOBILE_JOYSTICK_TURN_SPEED * turnInput * dt;
+            ship.angle += Math.max(-turnStep, Math.min(turnStep, diff));
             turnDiff = diff;
 
         } else if (!maneuverThrust && !strafeValue) {
@@ -521,10 +523,11 @@ window.onTechTreeChanged = function() {
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 };
 
-function applySettings(mode, controlsVisible) {
+function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
     easyModeRef.value = mode === 'easy';
     if (easyModeRef.value) grantEasyModeArmorBonus();
     if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(controlsVisible);
+    if (typeof inputManager.setMobileAdvancedControls === 'function') inputManager.setMobileAdvancedControls(mobileAdvancedControls);
 
     gameLoop();
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
@@ -534,6 +537,7 @@ function applySettings(mode, controlsVisible) {
         showSettingsMenu({
             easyMode: easyModeRef.value,
             controlsVisible: inputManager.controlsVisible !== false,
+            mobileAdvancedControls: inputManager.mobileAdvancedControls === true,
             isMobile: inputManager.isMobile,
             onDifficultyChange: (nextMode) => {
                 easyModeRef.value = nextMode === 'easy';
@@ -547,6 +551,12 @@ function applySettings(mode, controlsVisible) {
                 const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
                 settings.controlsVisible = visible;
                 localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
+            },
+            onToggleAdvancedControls: (enabled) => {
+                if (typeof inputManager.setMobileAdvancedControls === 'function') inputManager.setMobileAdvancedControls(enabled);
+                const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
+                settings.mobileAdvancedControls = enabled;
+                localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
             }
         });
     });
@@ -554,11 +564,11 @@ function applySettings(mode, controlsVisible) {
 
 const savedSettings = JSON.parse(localStorage.getItem('spaceShipIdleSettings'));
 if (savedSettings && savedSettings.mode) {
-    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false);
+    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false, savedSettings.mobileAdvancedControls === true);
     showMobileMovementUpdateNotice();
 } else {
     displayStartScreen((mode) => {
-        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true }));
+        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false }));
         applySettings(mode, true);
     });
     showMobileMovementUpdateNotice();

@@ -16,6 +16,7 @@ export class InputManager {
         this.joystickMove = null;
         this.strafeValue = 0; // -1..1, mobile right-stick horizontal axis
         this.maneuverThrustValue = 0; // -1..1, mobile right-stick vertical axis
+        this.mobileAdvancedControls = false;
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         this.setupKeyboardListeners();
@@ -263,11 +264,14 @@ export class InputManager {
     setJoystickVector(dx, dy) {
         const deadzone = TOUCH_CONTROLS.JOYSTICK_DEADZONE;
 
-        if (Math.abs(dx) > deadzone || Math.abs(dy) > deadzone) {
-            this.joystickMove = { x: dx, y: dy };
-        } else {
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance <= deadzone) {
             this.joystickMove = { x: 0, y: 0 };
+            return;
         }
+        const maxDist = TOUCH_CONTROLS.JOYSTICK_SIZE / 2 - TOUCH_CONTROLS.JOYSTICK_STICK_SIZE / 2;
+        const magnitude = Math.min(1, (distance - deadzone) / Math.max(1, maxDist - deadzone));
+        this.joystickMove = { x: (dx / distance) * magnitude, y: (dy / distance) * magnitude };
     }
 
     // Right maneuver stick: horizontal movement strafes, vertical movement
@@ -360,8 +364,9 @@ export class InputManager {
             const scale = distance > maxDist ? maxDist / distance : 1;
             const clampedX = dx * scale;
             const clampedY = dy * scale;
-            this.strafeKnob.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
-            this.setRightManeuverVector(clampedX, clampedY, maxDist);
+            const effectiveX = this.mobileAdvancedControls ? clampedX : 0;
+            this.strafeKnob.style.transform = `translate(${effectiveX}px, ${clampedY}px)`;
+            this.setRightManeuverVector(effectiveX, clampedY, maxDist);
         };
         const resetKnob = () => {
             this.strafeKnob.style.transform = 'translate(0px, 0px)';
@@ -410,9 +415,21 @@ export class InputManager {
 
     setRightManeuverVector(dx, dy, maxDist) {
         const deadzone = TOUCH_CONTROLS.STRAFE_DEADZONE;
-        this.strafeValue = Math.abs(dx) > deadzone ? Math.max(-1, Math.min(1, dx / maxDist)) : 0;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance <= deadzone) {
+            this.strafeValue = 0;
+            this.maneuverThrustValue = 0;
+            return;
+        }
+        const magnitude = Math.min(1, (distance - deadzone) / Math.max(1, maxDist - deadzone));
+        this.strafeValue = this.mobileAdvancedControls ? (dx / distance) * magnitude : 0;
         // Screen Y is inverted: dragging up means positive forward thrust.
-        this.maneuverThrustValue = Math.abs(dy) > deadzone ? Math.max(-1, Math.min(1, -dy / maxDist)) : 0;
+        this.maneuverThrustValue = (-dy / distance) * magnitude;
+    }
+
+    setMobileAdvancedControls(enabled) {
+        this.mobileAdvancedControls = !!enabled;
+        if (!this.mobileAdvancedControls) this.strafeValue = 0;
     }
 
     // Hides/shows only the joystick/maneuver-stick/auto-fire graphics; the

@@ -34,7 +34,8 @@ export const PHYSICS = {
     STRAFE_THRUST_FACTOR: 0.8, // lateral (Q/E, mobile strafe stick) thrust relative to forward acceleration
     SPEED_UPGRADE_INCREASE: 1.2,
     MARGIN_FACTOR: 0.2, // 20% of canvas for world boundaries
-    MOBILE_JOYSTICK_SENSITIVITY: 0.08
+    MOBILE_JOYSTICK_TURN_SPEED: 0.055,
+    MOBILE_JOYSTICK_RESPONSE_CURVE: 1.6
 };
 
 export const MAGNET = {
@@ -168,13 +169,14 @@ export const TOUCH_CONTROLS = {
     // graphics don't need to be big anymore.
     JOYSTICK_SIZE: 60,
     JOYSTICK_STICK_SIZE: 25,
-    JOYSTICK_DEADZONE: 8,
+    JOYSTICK_DEADZONE: 5,
     // Shared left/right inset from the screen edge for both maneuver sticks.
     EDGE_MARGIN: 36,
-    // The right stick combines relative thrust (vertical) and strafe (horizontal).
+    // The right stick controls thrust by default; horizontal strafe is enabled
+    // through the Advanced mobile control setting.
     RIGHT_STICK_SIZE: 72,
     RIGHT_STICK_KNOB_SIZE: 28,
-    STRAFE_DEADZONE: 8,
+    STRAFE_DEADZONE: 5,
     CONTAINER_HEIGHT: '40vh',
     // Unscaled px kept clear at the top of the full-height touch zones, so the
     // Level/Pause/Settings (left) and Plasma/Tech-Tree (right) HUD chrome

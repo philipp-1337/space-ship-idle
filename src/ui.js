@@ -38,7 +38,7 @@ const INK = {
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 // Temporary release notice for the mobile control redesign.
-const MOBILE_MOVEMENT_NOTICE_VERSION = 'right-maneuver-stick-v1';
+const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v2';
 const MOBILE_MOVEMENT_NOTICE_KEY = 'spaceShipIdleMobileMovementNotice';
 
 // HUD row offset (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
@@ -613,7 +613,7 @@ export function displayStartScreen(onSelect) {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
             <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Left Thumb:</span> Turn / aim (Virtual Joystick)</div>
-            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Up/Down = forward/reverse · Left/Right = strafe. Auto-Fire is ON.</div>
+            <div><span style="color:${INK.phosphor}">Right Thumb:</span> Up/Down = forward/reverse. Advanced Settings can enable strafe. Auto-Fire is ON.</div>
         `;
     } else {
         controls.innerHTML = `
@@ -695,7 +695,7 @@ export function showMobileMovementUpdateNotice() {
     notice.style.clipPath = chamferClip(scaleNum(6));
     notice.innerHTML = `
         <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">Left stick:</span> turn and aim only.</div>
-        <div><span style="color:${INK.scope}">Right stick:</span> up/down flies forward or reverse; left/right strafes.</div>
+        <div><span style="color:${INK.scope}">Right stick:</span> up/down flies forward or reverse. Strafe is available in Advanced Settings.</div>
     `;
     panel.appendChild(notice);
 
@@ -987,7 +987,7 @@ export function displaySettingsButton(onClick) {
     document.body.appendChild(btn);
 }
 
-export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDifficultyChange, onToggleControls }) {
+export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls }) {
     if (document.getElementById('settings-menu')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
 
@@ -995,9 +995,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
     panel.style.width = 'min(92vw, 420px)';
     panel.appendChild(panelTitleBar('Settings', INK.phosphor));
 
-    const rerender = (nextEasyMode, nextControlsVisible) => {
+    const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls) => {
         modal.remove();
-        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, isMobile, onDifficultyChange, onToggleControls });
+        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, mobileAdvancedControls: nextAdvancedControls, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls });
     };
 
     panel.appendChild(label('Difficulty', INK.textDim));
@@ -1074,12 +1074,33 @@ export function showSettingsMenu({ easyMode, controlsVisible, isMobile, onDiffic
         panel.appendChild(toggleBtn);
 
         const ctrlNote = document.createElement('div');
-        ctrlNote.innerText = 'The turn and maneuver zones cover the full left/right half of the screen. The left stick turns/aims only. On the right stick, up/down flies forward/reverse and left/right strafes. This only shows or hides the graphics. Firing is always automatic.';
+        ctrlNote.innerText = 'The left and right halves of the screen are touch zones. The left stick aims; the right stick controls forward/reverse thrust. Firing is always automatic.';
         ctrlNote.style.fontFamily = FONT;
         ctrlNote.style.fontSize = scale(11);
         ctrlNote.style.color = INK.textDim;
         ctrlNote.style.margin = `0 0 ${scale(20)} 0`;
         panel.appendChild(ctrlNote);
+
+        panel.appendChild(label('Mobile Maneuvering', INK.textDim));
+        const advancedBtn = consoleButton({ text: mobileAdvancedControls ? 'Advanced' : 'Simple', color: INK.scope, glowColor: INK.scopeDim, filled: mobileAdvancedControls, fontSize: 13 });
+        advancedBtn.style.width = '100%';
+        advancedBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
+        advancedBtn.onclick = () => {
+            const next = !mobileAdvancedControls;
+            if (onToggleAdvancedControls) onToggleAdvancedControls(next);
+            rerender(easyMode, controlsVisible, next);
+        };
+        panel.appendChild(advancedBtn);
+
+        const maneuverNote = document.createElement('div');
+        maneuverNote.innerText = mobileAdvancedControls
+            ? 'Advanced: the right stick also strafes left and right.'
+            : 'Simple: left stick aims; right stick flies forward or reverse. Strafe is disabled.';
+        maneuverNote.style.fontFamily = FONT;
+        maneuverNote.style.fontSize = scale(11);
+        maneuverNote.style.color = INK.textDim;
+        maneuverNote.style.margin = `0 0 ${scale(20)} 0`;
+        panel.appendChild(maneuverNote);
     }
 
     panel.appendChild(label('Factory Reset', INK.danger));
