@@ -40,6 +40,10 @@ export function createGameLoop(context) {
     let currentFps = 60;
     let lastMagnetDropTime = 0;
     let gameplayStartedAt = null;
+    let lowFpsSince = null;
+    const LOW_FPS_THRESHOLD = 30;
+    const LOW_FPS_SUSTAINED_MS = 3000;
+    const MIN_XP_ORBS_FOR_PERFORMANCE_MAGNET = 20;
 
     // requestAnimationFrame feuert mit der Bildwiederholrate des Displays (60Hz
     // Desktop, aber oft 90/120Hz auf Handys). Bewegung/Timer wurden vorher pro
@@ -236,8 +240,19 @@ export function createGameLoop(context) {
 
     function gameLoop(timestamp) {
         const dt = computeDeltaFactor(timestamp);
-        if (isGameOverRef.value || isPausedRef.value) return;
+        if (isGameOverRef.value) return;
+        if (isPausedRef.value) {
+            frameCount = 0;
+            lastFpsTime = performance.now();
+            lowFpsSince = null;
+            return;
+        }
         if (isShopOpenRef.value) {
+            // Modal time must not count as low-FPS gameplay time. Otherwise
+            // resuming after a level-up can produce a false performance drop.
+            frameCount = 0;
+            lastFpsTime = performance.now();
+            lowFpsSince = null;
             requestAnimationFrame(gameLoop);
             return;
         }
@@ -268,13 +283,10 @@ export function createGameLoop(context) {
                 fpsEl.innerText = `FPS: ${currentFps}`;
             }
 
-            // Drop a magnet if FPS is too low (< 30), but only after the player
-            // has actually been flying for 60 seconds. This prevents the first
-            // low-FPS measurement (or a long pre-flight wait) from spawning a
-            // reward immediately at game start.
-            if (currentFps < 30 && now - gameplayStartedAt >= 60000 && now - lastMagnetDropTime >= 60000) {
-                tractorItems.push(new TractorItem(ship.x, ship.y - 40));
-                lastMagnetDropTime = now;
+            if (currentFps < LOW_FPS_THRESHOLD) {
+                if (lowFpsSince === null) lowFpsSince = now;
+            } else {
+                lowFpsSince = null;
             }
         }
 
@@ -503,6 +515,24 @@ export function createGameLoop(context) {
         if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
         handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt);
         handleTractorCollection(ship, tractorItems, effectsSystem, ctx);
+
+        // A performance magnet is a recovery tool for an overloaded XP field,
+        // not a generic low-FPS reward. Decide only after XP collection and
+        // level-up handling, so a newly opened shop can never get one in the
+        // same frame. Require sustained pressure and avoid stacking pickups.
+        const performanceMagnetReady = lowFpsSince !== null
+            && now - lowFpsSince >= LOW_FPS_SUSTAINED_MS
+            && now - gameplayStartedAt >= 60000
+            && now - lastMagnetDropTime >= 60000
+            && xpPoints.length >= MIN_XP_ORBS_FOR_PERFORMANCE_MAGNET
+            && tractorItems.length === 0
+            && !isShopOpenRef.value
+            && !isGameOverRef.value;
+        if (performanceMagnetReady) {
+            tractorItems.push(new TractorItem(ship.x, ship.y - 40));
+            lastMagnetDropTime = now;
+            lowFpsSince = null;
+        }
 
         for (let idx = enemyLasers.length - 1; idx >= 0; idx--) {
             const l = enemyLasers[idx];
