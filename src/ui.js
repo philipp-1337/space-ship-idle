@@ -1100,7 +1100,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
 
         const schemeNote = document.createElement('div');
         schemeNote.innerText = mobileControlScheme === 'one-handed'
-            ? 'Left stick: left/right turns, up/down flies forward or reverse. Right stick is optional and adds thrust plus strafe.'
+            ? 'Left stick: move in a direction and turn toward it; this stick only flies forward. Right stick is optional and adds forward/reverse thrust plus strafe.'
             : 'Left stick aims. Right stick flies forward or reverse; Advanced adds left/right strafe.';
         schemeNote.style.fontFamily = FONT;
         schemeNote.style.fontSize = scale(11);

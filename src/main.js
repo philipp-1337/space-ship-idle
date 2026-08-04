@@ -99,9 +99,7 @@ function updateShipMovement(dt = 1) {
     const oneHanded = inputManager.isMobile && inputManager.mobileControlScheme === 'one-handed';
     const strafeValue = rightManeuver.x;
     const maneuverThrust = rightManeuver.y;
-    const leftTurnInput = oneHanded && joystickMove ? joystickMove.x : 0;
-    const leftThrustInput = oneHanded && joystickMove ? -joystickMove.y : 0;
-    const thrustValue = oneHanded && Math.abs(maneuverThrust) < 0.001 ? leftThrustInput : maneuverThrust;
+    const thrustValue = maneuverThrust;
 
     // --- Mobile absolute Steuerung (Joystick) ---
     if ((joystickMove && (typeof joystickMove.x === 'number') && (typeof joystickMove.y === 'number')) || strafeValue || maneuverThrust) {
@@ -109,11 +107,21 @@ function updateShipMovement(dt = 1) {
         let dx = joystickMove ? joystickMove.x : 0, dy = joystickMove ? joystickMove.y : 0;
         const dist = Math.sqrt(dx * dx + dy * dy);
         let turnDiff = 0;
-        if (oneHanded) {
-            const turnInput = Math.sign(leftTurnInput) * Math.pow(Math.abs(leftTurnInput), PHYSICS.MOBILE_JOYSTICK_RESPONSE_CURVE);
-            const turnStep = PHYSICS.MOBILE_JOYSTICK_TURN_SPEED * turnInput * dt;
-            ship.angle += turnStep;
-            turnDiff = turnInput;
+        if (oneHanded && dist > 0) {
+            // Legacy one-handed scheme: the left stick is a movement vector.
+            // It always accelerates forward in the selected direction and
+            // smoothly rotates the ship to face that direction.
+            const nx = dx / dist, ny = dy / dist;
+            const accel = dist * ship.acceleration * dt;
+            ship.vx += nx * accel;
+            ship.vy += ny * accel;
+            const targetAngle = Math.atan2(ny, nx);
+            let diff = targetAngle - ship.angle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            ship.angle += diff * (1 - Math.pow(1 - PHYSICS.MOBILE_ONE_HANDED_JOYSTICK_SENSITIVITY, dt));
+            turnDiff = diff;
+            ship.thrustState = 'forward';
         } else if (dist > 0) {
             const nx = dx / dist, ny = dy / dist;
             // The left stick only selects the ship's facing. Thrust comes from
