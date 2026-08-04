@@ -60,7 +60,7 @@ export const TECH_PREREQUISITES = {
     explosiveRounds: 'piercing',
     twinDrones: 'drone',
     signalInterference: 'drone',
-    targetingMatrix: 'autoShoot',
+    targetingMatrix: ['autoShoot', 'drone'],
     reactorNova: 'explosiveRounds',
     resonanceCascade: 'xpResonance',
     learningProtocol: 'resonanceCascade'
@@ -315,7 +315,8 @@ export function savePlasmaCount() {
 }
 export function handleTechUpgrade(key, cost) {
     const prereq = TECH_PREREQUISITES[key];
-    const prereqMet = !prereq || (prereq === 'autoShoot' ? isAutoShootUnlocked() : techUpgrades[prereq]);
+    const prerequisites = Array.isArray(prereq) ? prereq : (prereq ? [prereq] : []);
+    const prereqMet = prerequisites.every((requirement) => requirement === 'autoShoot' ? isAutoShootUnlocked() : techUpgrades[requirement]);
     if (!prereqMet) return; // Voraussetzung im Tech-Baum nicht erfüllt
     if (upgrades.plasmaCount >= cost && !techUpgrades[key]) {
         upgrades.plasmaCount -= cost;

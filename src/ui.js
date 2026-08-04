@@ -1468,7 +1468,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
         { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Provides an additional early-run XP boost while your flight systems calibrate.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
-        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Auto-fire and drones prioritize the most dangerous nearby target.', cost: 8, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 2, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'signalInterference', label: 'Signal Interference', desc: 'Emits a timed electromagnetic pulse that disrupts hostile systems.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone' },
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 2, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
@@ -1523,17 +1523,20 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
     const isUnlocked = (key) => key === 'autoShoot' ? (!!currentTechUpgrades[key] || _isMobile) : !!currentTechUpgrades[key];
     nodes.filter((node) => node.requires).forEach((node) => {
-        const parent = nodeByKey.get(node.requires);
-        if (!parent) return;
-        const active = isUnlocked(parent.key);
-        if (parent.col === node.col) {
-            drawConnector(node.col, parent.row + 1, 'v', active);
-        } else {
-            const left = Math.min(parent.col, node.col);
-            const right = Math.max(parent.col, node.col);
-            drawConnector(`${left} / ${right + 1}`, parent.row + 1, 'h', active);
-            drawConnector(node.col, parent.row + 1, 'v', active);
-        }
+        const requirements = Array.isArray(node.requires) ? node.requires : [node.requires];
+        requirements.forEach((requirement) => {
+            const parent = nodeByKey.get(requirement);
+            if (!parent) return;
+            const active = isUnlocked(parent.key);
+            if (parent.col === node.col) {
+                drawConnector(node.col, parent.row + 1, 'v', active);
+            } else {
+                const left = Math.min(parent.col, node.col);
+                const right = Math.max(parent.col, node.col);
+                drawConnector(`${left} / ${right + 1}`, parent.row + 1, 'h', active);
+                drawConnector(node.col, parent.row + 1, 'v', active);
+            }
+        });
     });
 
     nodes.forEach(n => {
@@ -1543,7 +1546,10 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         // prerequisite-gated children unlock for free without spending Plasma
         // on something mobile players already effectively have.
         const unlocked = n.key === 'autoShoot' ? (!!currentTechUpgrades[n.key] || _isMobile) : !!currentTechUpgrades[n.key];
-        const prereqMet = !n.requires || (n.requires === 'autoShoot' ? (!!currentTechUpgrades[n.requires] || _isMobile) : !!currentTechUpgrades[n.requires]);
+        const requirements = Array.isArray(n.requires) ? n.requires : (n.requires ? [n.requires] : []);
+        const prereqMet = requirements.every((requirement) => requirement === 'autoShoot'
+            ? (!!currentTechUpgrades[requirement] || _isMobile)
+            : !!currentTechUpgrades[requirement]);
         const node = techTreeNode(n, unlocked, !prereqMet, onUpgrade);
         node.style.gridColumn = String(n.col);
         node.style.gridRow = String(n.row);

@@ -212,16 +212,6 @@ export function createGameLoop(context) {
     function autoShootLogic() {
         if (techUpgrades.autoShoot && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value) {
             if (!autoShootTimerRef.value || performance.now() - autoShootTimerRef.value > GAME_CONFIG.AUTO_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades)) {
-                if (techUpgrades.targetingMatrix) {
-                    const target = enemies
-                        .filter((enemy) => enemy.alive && !enemy.exploding)
-                        .sort((a, b) => {
-                            const threat = (enemy) => enemy.canShoot ? 0 : (enemy.isElite ? 1 : 2);
-                            const distance = (enemy) => Math.hypot(enemy.x - ship.x, enemy.y - ship.y);
-                            return threat(a) - threat(b) || distance(a) - distance(b);
-                        })[0];
-                    if (target) ship.angle = Math.atan2(target.y - ship.y, target.x - ship.x);
-                }
                 const shots = ship.shoot();
                 if (Array.isArray(shots)) {
                     shots.forEach(l => lasers.push(l));
