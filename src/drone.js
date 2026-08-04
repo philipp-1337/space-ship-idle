@@ -71,18 +71,22 @@ export default class Drone {
 
     // Sucht das nächste Ziel in Reichweite und gibt bei Treffer-Cooldown einen
     // neuen Laser zurück (Aufrufer fügt ihn dem lasers-Array hinzu), sonst null.
-    tryShoot(enemyGrid, upgradeLevel) {
+    tryShoot(enemyGrid, upgradeLevel, prioritizeThreats = false) {
         const now = performance.now();
         if (now - this.lastShotAt < DRONE.FIRE_COOLDOWN_MS) return null;
 
         let closest = null, minDist = DRONE.FIRE_RANGE;
+        let closestThreat = Infinity;
         const candidates = enemyGrid.queryRadius(this.x, this.y, DRONE.FIRE_RANGE);
         for (const e of candidates) {
             if (!e.alive || e.exploding) continue;
             const dx = e.x - this.x, dy = e.y - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minDist) {
+            const threat = e.canShoot ? 0 : (e.isElite ? 1 : 2);
+            if ((prioritizeThreats && (threat < closestThreat || (threat === closestThreat && dist < minDist))) ||
+                (!prioritizeThreats && dist < minDist)) {
                 minDist = dist;
+                closestThreat = threat;
                 closest = e;
             }
         }

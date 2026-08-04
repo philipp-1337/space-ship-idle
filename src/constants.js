@@ -61,6 +61,18 @@ export const OVERDRIVE_CORE = {
     MAX_LEVEL: 3
 };
 
+export const XP_BOOST = {
+    XP_PER_LEVEL: 0.05,
+    MAX_LEVEL: 5
+};
+
+export const XP_TECH = {
+    RESONANCE_MULT: 0.10,
+    CASCADE_MULT: 0.10,
+    LEARNING_MULT: 0.20,
+    LEARNING_LEVEL_CAP: 5
+};
+
 export const RAPID_FIRE = {
     COOLDOWN_MULT: 0.75 // permanent, stacks multiplicatively with Overdrive
 };
@@ -77,6 +89,18 @@ export const CHAIN_LIGHTNING = {
     DAMAGE_MULT: 0.5, // arc damage relative to the triggering laser's damage
     RANGE: 140, // px, how far the arc can jump to find a second target
     FLASH_LIFE: 10 // frames the visual arc line stays visible
+};
+
+export const SIGNAL_INTERFERENCE = {
+    COOLDOWN_MS: 15000,
+    DISRUPTION_MS: 2000
+};
+
+export const REACTOR_NOVA = {
+    KILLS_PER_TRIGGER: 12,
+    RADIUS: 100,
+    DAMAGE: 8,
+    VISUAL_LIFE: 18
 };
 
 export const EXPLOSIVE_ROUNDS = {

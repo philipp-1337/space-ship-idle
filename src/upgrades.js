@@ -1,6 +1,6 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, isTouchDevice } from './constants.js';
+import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, isTouchDevice } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -14,6 +14,7 @@ export let upgrades = {
     collectorPulse: 0, // leveled XP upgrade — see applyUpgrade()
     chainLightning: 0, // leveled XP upgrade — see applyUpgrade()
     overdriveCore: 0, // leveled XP upgrade — see applyUpgrade()
+    xpBoost: 0, // incremental XP gain from collected orbs
     plasmaCount: 0 // plasmaCount als Eigenschaft von upgrades hinzufügen
 };
 export let magnetRadius = 0;
@@ -29,7 +30,13 @@ export let techUpgrades = {
     explosiveRounds: false, // Laser verursachen Flächenschaden beim Einschlag
     rapidFire: false, // dauerhaft kürzere Feuer-Cooldowns
     salvage: false, // erhöhte Plasma-Drop-Chance
-    twinMissiles: false // zwei Lenkraketen pro Salve
+    twinMissiles: false, // zwei Lenkraketen pro Salve
+    signalInterference: false,
+    targetingMatrix: false,
+    reactorNova: false,
+    xpResonance: false,
+    resonanceCascade: false,
+    learningProtocol: false
 };
 
 // Mobile firing is always-on (see input.js: keys.shooting is forced true,
@@ -51,7 +58,12 @@ export const TECH_PREREQUISITES = {
     salvage: 'rapidFire',
     twinMissiles: 'homingMissile',
     explosiveRounds: 'piercing',
-    twinDrones: 'drone'
+    twinDrones: 'drone',
+    signalInterference: 'drone',
+    targetingMatrix: 'autoShoot',
+    reactorNova: 'explosiveRounds',
+    resonanceCascade: 'xpResonance',
+    learningProtocol: 'resonanceCascade'
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {
@@ -92,6 +104,17 @@ export function applyUpgrade(key, ship, PHYSICS) {
     if (key === 'overdriveCore') {
         upgrades.overdriveCore++;
     }
+    if (key === 'xpBoost') {
+        upgrades.xpBoost = Math.min(XP_BOOST.MAX_LEVEL, upgrades.xpBoost + 1);
+    }
+}
+
+export function getXpMultiplier(level = 1) {
+    let multiplier = 1 + upgrades.xpBoost * XP_BOOST.XP_PER_LEVEL;
+    if (techUpgrades.xpResonance) multiplier += XP_TECH.RESONANCE_MULT;
+    if (techUpgrades.resonanceCascade) multiplier += XP_TECH.CASCADE_MULT;
+    if (techUpgrades.learningProtocol && level <= XP_TECH.LEARNING_LEVEL_CAP) multiplier += XP_TECH.LEARNING_MULT;
+    return multiplier;
 }
 
 function repairModuleIntervalFor(level) {
@@ -130,7 +153,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
         return { label: 'Max Speed', from: ship.maxSpeed.toFixed(1), to: (ship.maxSpeed + PHYSICS.SPEED_UPGRADE_INCREASE).toFixed(1) };
     }
     if (key === 'armor') {
-        return { label: 'Shield', from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
+        return { label: 'Hull Integrity', from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
     }
     if (key === 'repairModule') {
         const level = currentUpgrades.repairModule;
@@ -185,6 +208,16 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
             to: (overdriveDurationFor(next) / 1000).toFixed(1),
             unit: 's',
             capped: next >= OVERDRIVE_CORE.MAX_LEVEL
+        };
+    }
+    if (key === 'xpBoost') {
+        const level = currentUpgrades.xpBoost || 0;
+        return {
+            label: 'XP Gain',
+            from: Math.round(level * XP_BOOST.XP_PER_LEVEL * 100),
+            to: Math.round((level + 1) * XP_BOOST.XP_PER_LEVEL * 100),
+            unit: '%',
+            capped: level + 1 >= XP_BOOST.MAX_LEVEL
         };
     }
     return null;

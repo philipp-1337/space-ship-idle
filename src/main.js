@@ -420,7 +420,8 @@ function saveRun() {
             deflectorShield: upgrades.deflectorShield,
             collectorPulse: upgrades.collectorPulse,
             chainLightning: upgrades.chainLightning,
-            overdriveCore: upgrades.overdriveCore
+            overdriveCore: upgrades.overdriveCore,
+            xpBoost: upgrades.xpBoost
         },
         hp: ship.hp,
         easyMode: easyModeRef.value
@@ -442,7 +443,7 @@ function restoreRunState() {
     easyArmorGranted = true;
 
     const savedUpgrades = saved.upgrades || {};
-    ['magnet', 'laser', 'speed', 'armor', 'repairModule', 'deflectorShield', 'chainLightning', 'overdriveCore'].forEach((key) => {
+    ['magnet', 'laser', 'speed', 'armor', 'repairModule', 'deflectorShield', 'chainLightning', 'overdriveCore', 'xpBoost'].forEach((key) => {
         const count = savedUpgrades[key] || 0;
         for (let i = 0; i < count; i++) applyUpgrade(key, ship, PHYSICS);
     });

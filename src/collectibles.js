@@ -1,6 +1,6 @@
 // collectibles.js
 // Verwaltung von XP- und Plasma-Handling (Sammeln, Magnet, UI)
-import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse } from './upgrades.js';
+import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse, getXpMultiplier } from './upgrades.js';
 import { COLORS, COLLECTOR_PULSE } from './constants.js';
 import { updateExperienceBar } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -124,6 +124,8 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
             if (xp.isBossOrb) {
                 // Ein Boss-Orb füllt die Leiste immer exakt auf.
                 xpGained = Math.max(1, experienceObj.maxXPRef.value - experienceObj.experienceRef.value);
+            } else {
+                xpGained *= getXpMultiplier(experienceObj.levelRef ? experienceObj.levelRef.value : 1);
             }
             experienceObj.experienceRef.value += xpGained;
             experienceObj.xpCollectedRef.value += xpGained;

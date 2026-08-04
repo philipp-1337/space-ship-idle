@@ -1,7 +1,7 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/ui.js
 // Night-Flight Console — cockpit instrument HUD (see index.html body comment
 // for the direction contract).
-import { MOBILE, OVERDRIVE_CORE } from './constants.js';
+import { MOBILE, OVERDRIVE_CORE, XP_BOOST } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
 import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades } from './upgrades.js';
@@ -730,11 +730,12 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
         { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.', rarity: 'common' },
         { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.`, rarity: 'common' },
         { key: 'speed', label: 'Ship Speed', desc: "Increases your ship's maximum speed.", rarity: 'common' },
-        { key: 'armor', label: 'Shield Capacity', desc: 'Adds a shield point and fully recharges your shield.', rarity: 'common' },
+        { key: 'armor', label: 'Hull Integrity', desc: 'Adds one point of hull integrity and fully repairs the hull.', rarity: 'common' },
         { key: 'chainLightning', label: 'Chain Lightning', desc: 'Lasers have a chance to arc to a second nearby enemy for reduced damage. Each purchase increases the arc chance.', rarity: 'common', maxLevel: 5 },
-        { key: 'repairModule', label: 'Repair Module', desc: 'Regenerates 1 shield point over time while below max. Each purchase shortens the regen interval.', rarity: 'rare', maxLevel: 5 },
+        { key: 'repairModule', label: 'Nanite Repair', desc: 'Regenerates 1 point of hull integrity over time while damaged. Each purchase shortens the repair interval.', rarity: 'rare', maxLevel: 5 },
         { key: 'overdriveCore', label: 'Overdrive Core', desc: 'Overdrive now triggers on every upgrade pick, not just Laser Damage, and lasts longer with each purchase.', rarity: 'rare', maxLevel: OVERDRIVE_CORE.MAX_LEVEL },
-        { key: 'deflectorShield', label: 'Deflector Shield', desc: 'Adds a rechargeable shield charge that blocks the next hit completely. Each purchase shortens the recharge time.', rarity: 'legendary', maxLevel: 4 }
+        { key: 'deflectorShield', label: 'Deflector Charge', desc: 'Adds a rechargeable energy charge that blocks the next hit completely. Each purchase shortens the recharge time.', rarity: 'legendary', maxLevel: 4 },
+        { key: 'xpBoost', label: 'XP Amplifier', desc: 'Increases XP gained from every collected XP orb. Each purchase adds another 5%.', rarity: 'rare', maxLevel: XP_BOOST.MAX_LEVEL }
     ];
     // Capped upgrades drop out of the pool once their level ceiling is reached —
     // picking them again would do nothing further. Repair Module also stays out
@@ -1343,15 +1344,21 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     panel.appendChild(plasmaLabel);
 
     const nodes = [
+        { key: 'xpResonance', label: 'XP Resonance', desc: 'Amplifies the XP carried by every collected orb.', cost: 5, col: 1, row: 1 },
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
         { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own laser at nearby enemies.', cost: 12, col: 4, row: 1 },
-        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 1, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'resonanceCascade', label: 'Resonance Cascade', desc: 'Further increases the XP yield of collected orbs.', cost: 9, col: 1, row: 3, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
+        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
-        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 5, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
-        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 2, row: 5, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 3, row: 5, requires: 'piercing', requiresLabel: 'Piercing Rounds' }
+        { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Provides an additional early-run XP boost while your flight systems calibrate.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
+        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Auto-fire and drones prioritize the most dangerous nearby target.', cost: 8, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 3, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'signalInterference', label: 'Signal Interference', desc: 'Emits a timed electromagnetic pulse that disrupts hostile systems.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone' },
+        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 2, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
+        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 3, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
+        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 12 kills, discharge a damaging shockwave around the ship.', cost: 14, col: 3, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 
     const grid = document.createElement('div');
@@ -1368,7 +1375,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     const drawConnector = (col, row, type, active) => {
         const c = document.createElement('div');
         c.className = 'tt-connector';
-        c.style.gridColumn = String(col);
+        c.style.gridColumn = typeof col === 'string' ? col : String(col);
         c.style.gridRow = String(row);
         c.style.borderColor = active ? INK.scope : INK.hairlineDim;
         if (type === 'v') {
@@ -1394,51 +1401,23 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         grid.appendChild(c);
     }
     
-    // AutoShoot -> level 2 (also "unlocked" on mobile — see nodes.forEach below)
-    const autoShootUnlocked = !!currentTechUpgrades['autoShoot'] || _isMobile;
-    const c1 = document.createElement('div');
-    c1.className = 'tt-connector';
-    c1.style.gridColumn = '1 / 4';
-    c1.style.gridRow = '2';
-    c1.style.borderTop = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
-    c1.style.borderLeft = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
-    c1.style.borderRight = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
-    c1.style.width = `calc(66.66% + ${scale(8)})`;
-    c1.style.height = scale(16);
-    c1.style.justifySelf = 'center';
-    grid.appendChild(c1);
-
-    const cv1 = document.createElement('div');
-    cv1.className = 'tt-connector';
-    cv1.style.gridColumn = '2';
-    cv1.style.gridRow = '2';
-    cv1.style.borderLeft = `2px solid ${autoShootUnlocked ? INK.scope : INK.hairlineDim}`;
-    cv1.style.height = scale(16);
-    cv1.style.justifySelf = 'center';
-    grid.appendChild(cv1);
-
-    // Drone -> Twin Drones (eigene, unabhängige Spalte 4 — kein gemeinsamer
-    // Ast mit Auto-Fires Baum, da Drone kein Kind von Auto-Fire ist)
-    const cvDrone = document.createElement('div');
-    cvDrone.className = 'tt-connector';
-    cvDrone.style.gridColumn = '4';
-    cvDrone.style.gridRow = '2';
-    cvDrone.style.borderLeft = `2px solid ${currentTechUpgrades['drone'] ? INK.scope : INK.hairlineDim}`;
-    cvDrone.style.height = scale(16);
-    cvDrone.style.justifySelf = 'center';
-    grid.appendChild(cvDrone);
-
-    // level 2 -> level 3
-    [1, 2, 3].forEach(col => {
-        const key = col === 1 ? 'rapidFire' : (col === 2 ? 'homingMissile' : 'piercing');
-        const cv = document.createElement('div');
-        cv.className = 'tt-connector';
-        cv.style.gridColumn = String(col);
-        cv.style.gridRow = '4';
-        cv.style.borderLeft = `2px solid ${currentTechUpgrades[key] ? INK.scope : INK.hairlineDim}`;
-        cv.style.height = scale(16);
-        cv.style.justifySelf = 'center';
-        grid.appendChild(cv);
+    // Connect each node to its prerequisite. Same-column branches get a clean
+    // vertical stem; cross-column branches receive a horizontal bridge plus a
+    // short stem into the child node.
+    const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
+    const isUnlocked = (key) => key === 'autoShoot' ? (!!currentTechUpgrades[key] || _isMobile) : !!currentTechUpgrades[key];
+    nodes.filter((node) => node.requires).forEach((node) => {
+        const parent = nodeByKey.get(node.requires);
+        if (!parent) return;
+        const active = isUnlocked(parent.key);
+        if (parent.col === node.col) {
+            drawConnector(node.col, parent.row + 1, 'v', active);
+        } else {
+            const left = Math.min(parent.col, node.col);
+            const right = Math.max(parent.col, node.col);
+            drawConnector(`${left} / ${right + 1}`, parent.row + 1, 'h', active);
+            drawConnector(node.col, parent.row + 1, 'v', active);
+        }
     });
 
     nodes.forEach(n => {

@@ -1,5 +1,5 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING } from './constants.js';
+import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
@@ -31,6 +31,9 @@ export function createGameLoop(context) {
     let drones = []; // lazy erzeugt/erweitert, sobald techUpgrades.drone/twinDrones freigeschaltet werden
     let chainFlashes = []; // kurzlebige Blitz-Linien fürs Chain-Lightning-Upgrade
     let explosiveVisuals = []; // kurzlebige Explosions-Kreise für Explosive Rounds
+    let empCooldownUntil = 0;
+    let reactorNovaKillCounter = 0;
+    let reactorNovaTriggering = false;
     let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500 };
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
@@ -118,6 +121,27 @@ export function createGameLoop(context) {
             }
             
             killsRef.value++;
+            if (techUpgrades.reactorNova && !reactorNovaTriggering) {
+                reactorNovaKillCounter++;
+                if (reactorNovaKillCounter >= REACTOR_NOVA.KILLS_PER_TRIGGER) {
+                    reactorNovaKillCounter = 0;
+                    reactorNovaTriggering = true;
+                    explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: REACTOR_NOVA.RADIUS, color: '#ffb000' });
+                    effectsSystem.triggerScreenShake(7, 12);
+                    const nearby = enemies.filter((other) => {
+                        if (!other.alive || other.exploding) return false;
+                        const dx = other.x - ship.x;
+                        const dy = other.y - ship.y;
+                        return Math.sqrt(dx * dx + dy * dy) < REACTOR_NOVA.RADIUS;
+                    });
+                    nearby.forEach((other) => {
+                        other.hp = Math.max(0, other.hp - REACTOR_NOVA.DAMAGE);
+                        if (other.hp <= 0) other.destroy();
+                        awardKillIfNeeded(other);
+                    });
+                    reactorNovaTriggering = false;
+                }
+            }
             enemy.alreadyAwardedXP = true; // XP für diesen Gegner wurde vergeben
         }
     }
@@ -185,6 +209,16 @@ export function createGameLoop(context) {
     function autoShootLogic() {
         if (techUpgrades.autoShoot && !ship.isExploding && !isPausedRef.value && !isGameOverRef.value && !isShopOpenRef.value) {
             if (!autoShootTimerRef.value || performance.now() - autoShootTimerRef.value > GAME_CONFIG.AUTO_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades)) {
+                if (techUpgrades.targetingMatrix) {
+                    const target = enemies
+                        .filter((enemy) => enemy.alive && !enemy.exploding)
+                        .sort((a, b) => {
+                            const threat = (enemy) => enemy.canShoot ? 0 : (enemy.isElite ? 1 : 2);
+                            const distance = (enemy) => Math.hypot(enemy.x - ship.x, enemy.y - ship.y);
+                            return threat(a) - threat(b) || distance(a) - distance(b);
+                        })[0];
+                    if (target) ship.angle = Math.atan2(target.y - ship.y, target.x - ship.x);
+                }
                 const shots = ship.shoot();
                 if (Array.isArray(shots)) {
                     shots.forEach(l => lasers.push(l));
@@ -259,6 +293,14 @@ export function createGameLoop(context) {
 
         const now = performance.now();
         if (gameplayStartedAt === null) gameplayStartedAt = now;
+        if (techUpgrades.signalInterference && now >= empCooldownUntil && enemies.some((enemy) => enemy.alive && enemy.canShoot)) {
+            enemyLasers.length = 0;
+            enemies.forEach((enemy) => {
+                if (enemy.alive && enemy.canShoot) enemy.shootCooldown = Math.max(enemy.shootCooldown, SIGNAL_INTERFERENCE.DISRUPTION_MS / (1000 / 60));
+            });
+            empCooldownUntil = now + SIGNAL_INTERFERENCE.COOLDOWN_MS;
+            explosiveVisuals.push({ x: ship.x, y: ship.y, life: 14, maxLife: 14, radius: 130, color: '#7fe8ff' });
+        }
         frameCount++;
         if (now - lastFpsTime >= 1000) {
             currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
@@ -318,7 +360,7 @@ export function createGameLoop(context) {
             drones.forEach(d => {
                 d.update(ship, dt);
                 d.draw(ctx);
-                const droneShot = d.tryShoot(enemyGrid, upgrades.laser);
+                const droneShot = d.tryShoot(enemyGrid, upgrades.laser, techUpgrades.targetingMatrix);
                 if (droneShot) {
                     lasers.push(droneShot);
                     AudioManager.play('DRONE_LASER');
@@ -495,7 +537,7 @@ export function createGameLoop(context) {
             ctx.save();
             const progress = 1 - (exp.life / exp.maxLife);
             ctx.globalAlpha = Math.max(0, exp.life / exp.maxLife) * 0.5;
-            ctx.fillStyle = '#ff9800';
+            ctx.fillStyle = exp.color || '#ff9800';
             ctx.beginPath();
             ctx.arc(exp.x, exp.y, exp.radius * progress, 0, Math.PI * 2);
             ctx.fill();
@@ -505,7 +547,7 @@ export function createGameLoop(context) {
         // XP und Plasma nach den Gegnern zeichnen, damit sie darüber liegen
         handleXpCollection(
             ship, xpPoints, effectsSystem, ctx,
-            { experienceRef, xpCollectedRef, maxXPRef },
+            { experienceRef, xpCollectedRef, maxXPRef, levelRef },
             () => {
                 levelUp();
                 if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
