@@ -164,7 +164,7 @@ export const ENEMY_TYPES = [
         name: 'pentagon',
         minLevel: 10,
         shape: 'pentagon',
-        baseHp: 18, // Erhöht
+        baseHp: 14, // Reduced because the pentagon also splits into two squares
         baseSpeed: 0.5,
         color: 'darkgreen',
         baseXpValue: 5
@@ -173,7 +173,7 @@ export const ENEMY_TYPES = [
         name: 'shooter',
         minLevel: 18,
         shape: 'circle',
-        baseHp: 25, // Erhöht
+        baseHp: 19, // Reduced because shooters add ranged pressure
         baseSpeed: 0.45,
         color: 'purple',
         canShoot: true,
