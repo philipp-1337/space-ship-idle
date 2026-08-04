@@ -1139,6 +1139,19 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
 
     }
 
+    if (!isMobile) {
+        panel.appendChild(label('Desktop Shortcuts', INK.textDim));
+        const shortcuts = document.createElement('div');
+        shortcuts.innerText = 'T / 3  Tech Tree\nP / 1  Pause\nO / 2  Settings';
+        shortcuts.style.whiteSpace = 'pre-line';
+        shortcuts.style.fontFamily = FONT;
+        shortcuts.style.fontSize = scale(12);
+        shortcuts.style.lineHeight = '1.6';
+        shortcuts.style.color = INK.text;
+        shortcuts.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
+        panel.appendChild(shortcuts);
+    }
+
     panel.appendChild(label('Factory Reset', INK.danger));
     const resetBtn = consoleButton({ text: 'Reset Game', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 13 });
     resetBtn.style.width = '100%';

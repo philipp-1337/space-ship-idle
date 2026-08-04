@@ -585,6 +585,20 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mo
             },
         });
     });
+
+    inputManager.setDesktopShortcutHandler((shortcut) => {
+        if (document.getElementById('settings-menu') || document.getElementById('tech-tree-modal') || isShopOpen || isGameOver) return;
+        if (shortcut === 'pause') {
+            if (isPaused) resumeGame();
+            else pauseGame();
+        } else if (isPaused) {
+            return;
+        } else if (shortcut === 'settings') {
+            document.getElementById('settings-btn')?.click();
+        } else if (shortcut === 'techTree') {
+            showTechTreeModal(techUpgrades, handleTechUpgrade);
+        }
+    });
 }
 
 const savedSettings = JSON.parse(localStorage.getItem('spaceShipIdleSettings'));

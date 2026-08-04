@@ -18,6 +18,7 @@ export class InputManager {
         this.maneuverThrustValue = 0; // -1..1, mobile right-stick vertical axis
         this.mobileAdvancedControls = false;
         this.mobileControlScheme = 'twin-stick';
+        this.desktopShortcutHandler = null;
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         this.setupKeyboardListeners();
@@ -30,6 +31,21 @@ export class InputManager {
 
     setupKeyboardListeners() {
         window.addEventListener('keydown', (event) => {
+            if (!this.isMobile && this.desktopShortcutHandler) {
+                const shortcut = {
+                    t: 'techTree',
+                    '3': 'techTree',
+                    p: 'pause',
+                    '1': 'pause',
+                    o: 'settings',
+                    '2': 'settings'
+                }[event.key.toLowerCase()];
+                if (shortcut) {
+                    event.preventDefault();
+                    this.desktopShortcutHandler(shortcut);
+                    return;
+                }
+            }
             if (event.code === 'Space') {
                 if (!this.keys.shooting) {
                     this.keys.shooting = true;
@@ -56,6 +72,10 @@ export class InputManager {
             if (["q", "Q"].includes(event.key)) this.keys.strafeLeft = false;
             if (["e", "E"].includes(event.key)) this.keys.strafeRight = false;
         });
+    }
+
+    setDesktopShortcutHandler(handler) {
+        this.desktopShortcutHandler = typeof handler === 'function' ? handler : null;
     }
 
     setupMouseListeners() {

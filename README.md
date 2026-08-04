@@ -30,6 +30,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - `A` / `D`: turn left / right
 - `Q` / `E`: strafe left / right
 - `Space`: fire
+- `T` / `3`: open Tech Tree · `P` / `1`: pause · `O` / `2`: open Settings
 - Menus: arrow keys or `W`/`A`/`S`/`D` to navigate; `Enter` or `Space` to confirm
 
 ### Mobile
