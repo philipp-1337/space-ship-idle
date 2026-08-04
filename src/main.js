@@ -110,7 +110,35 @@ function updateShipMovement(dt = 1) {
             // The left stick only selects the ship's facing. Thrust comes from
             // the right maneuver stick, so reverse flight remains available
             // without the two controls fighting each other.
-            const targetAngle = Math.atan2(ny, nx);
+            let targetAngle = Math.atan2(ny, nx);
+            if (inputManager.isMobile && inputManager.mobileAimAssist) {
+                let bestAngleDiff = 0;
+                let bestDistance = Infinity;
+                let bestAngleScore = Infinity;
+                for (const enemy of enemies) {
+                    if (!enemy.alive || enemy.exploding) continue;
+                    const enemyDx = enemy.x - ship.x;
+                    const enemyDy = enemy.y - ship.y;
+                    const distance = Math.hypot(enemyDx, enemyDy);
+                    if (distance > PHYSICS.MOBILE_AIM_ASSIST_RANGE) continue;
+                    let angleDiff = Math.atan2(enemyDy, enemyDx) - targetAngle;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    const absoluteAngleDiff = Math.abs(angleDiff);
+                    if (absoluteAngleDiff > PHYSICS.MOBILE_AIM_ASSIST_CONE) continue;
+                    if (absoluteAngleDiff < bestAngleScore || (absoluteAngleDiff === bestAngleScore && distance < bestDistance)) {
+                        bestAngleScore = absoluteAngleDiff;
+                        bestAngleDiff = angleDiff;
+                        bestDistance = distance;
+                    }
+                }
+                if (bestDistance < Infinity) {
+                    const rangeFalloff = 1 - bestDistance / PHYSICS.MOBILE_AIM_ASSIST_RANGE;
+                    const coneFalloff = 1 - bestAngleScore / PHYSICS.MOBILE_AIM_ASSIST_CONE;
+                    const assistStrength = PHYSICS.MOBILE_AIM_ASSIST_STRENGTH * rangeFalloff * coneFalloff;
+                    targetAngle += bestAngleDiff * assistStrength;
+                }
+            }
             let diff = targetAngle - ship.angle;
             // Normalisiere den Winkel auf -PI bis PI, damit es nicht "außenrum" dreht
             while (diff < -Math.PI) diff += Math.PI * 2;
@@ -523,11 +551,12 @@ window.onTechTreeChanged = function() {
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 };
 
-function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
+function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mobileAimAssist = true) {
     easyModeRef.value = mode === 'easy';
     if (easyModeRef.value) grantEasyModeArmorBonus();
     if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(controlsVisible);
     if (typeof inputManager.setMobileAdvancedControls === 'function') inputManager.setMobileAdvancedControls(mobileAdvancedControls);
+    if (typeof inputManager.setMobileAimAssist === 'function') inputManager.setMobileAimAssist(mobileAimAssist);
 
     gameLoop();
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
@@ -538,6 +567,7 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
             easyMode: easyModeRef.value,
             controlsVisible: inputManager.controlsVisible !== false,
             mobileAdvancedControls: inputManager.mobileAdvancedControls === true,
+            mobileAimAssist: inputManager.mobileAimAssist !== false,
             isMobile: inputManager.isMobile,
             onDifficultyChange: (nextMode) => {
                 easyModeRef.value = nextMode === 'easy';
@@ -557,6 +587,12 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
                 const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
                 settings.mobileAdvancedControls = enabled;
                 localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
+            },
+            onToggleAimAssist: (enabled) => {
+                if (typeof inputManager.setMobileAimAssist === 'function') inputManager.setMobileAimAssist(enabled);
+                const settings = JSON.parse(localStorage.getItem('spaceShipIdleSettings') || '{}');
+                settings.mobileAimAssist = enabled;
+                localStorage.setItem('spaceShipIdleSettings', JSON.stringify(settings));
             }
         });
     });
@@ -564,11 +600,11 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false) {
 
 const savedSettings = JSON.parse(localStorage.getItem('spaceShipIdleSettings'));
 if (savedSettings && savedSettings.mode) {
-    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false, savedSettings.mobileAdvancedControls === true);
+    applySettings(savedSettings.mode, savedSettings.controlsVisible !== false, savedSettings.mobileAdvancedControls === true, savedSettings.mobileAimAssist !== false);
     showMobileMovementUpdateNotice();
 } else {
     displayStartScreen((mode) => {
-        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false }));
+        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false, mobileAimAssist: true }));
         applySettings(mode, true);
     });
     showMobileMovementUpdateNotice();

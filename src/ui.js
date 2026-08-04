@@ -987,7 +987,7 @@ export function displaySettingsButton(onClick) {
     document.body.appendChild(btn);
 }
 
-export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls }) {
+export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, mobileAimAssist, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onToggleAimAssist }) {
     if (document.getElementById('settings-menu')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
 
@@ -995,9 +995,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     panel.style.width = 'min(92vw, 420px)';
     panel.appendChild(panelTitleBar('Settings', INK.phosphor));
 
-    const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls) => {
+    const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls, nextAimAssist = mobileAimAssist) => {
         modal.remove();
-        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, mobileAdvancedControls: nextAdvancedControls, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls });
+        showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, mobileAdvancedControls: nextAdvancedControls, mobileAimAssist: nextAimAssist, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onToggleAimAssist });
     };
 
     panel.appendChild(label('Difficulty', INK.textDim));
@@ -1101,6 +1101,25 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         maneuverNote.style.color = INK.textDim;
         maneuverNote.style.margin = `0 0 ${scale(20)} 0`;
         panel.appendChild(maneuverNote);
+
+        panel.appendChild(label('Aim Assist', INK.textDim));
+        const aimAssistBtn = consoleButton({ text: mobileAimAssist !== false ? 'On' : 'Off', color: INK.scope, glowColor: INK.scopeDim, filled: mobileAimAssist !== false, fontSize: 13 });
+        aimAssistBtn.style.width = '100%';
+        aimAssistBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
+        aimAssistBtn.onclick = () => {
+            const next = mobileAimAssist === false;
+            if (onToggleAimAssist) onToggleAimAssist(next);
+            rerender(easyMode, controlsVisible, mobileAdvancedControls, next);
+        };
+        panel.appendChild(aimAssistBtn);
+
+        const aimAssistNote = document.createElement('div');
+        aimAssistNote.innerText = 'Soft assist only: nearby enemies in front of the ship gently attract your aim.';
+        aimAssistNote.style.fontFamily = FONT;
+        aimAssistNote.style.fontSize = scale(11);
+        aimAssistNote.style.color = INK.textDim;
+        aimAssistNote.style.margin = `0 0 ${scale(20)} 0`;
+        panel.appendChild(aimAssistNote);
     }
 
     panel.appendChild(label('Factory Reset', INK.danger));

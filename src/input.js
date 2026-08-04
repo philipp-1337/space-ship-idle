@@ -17,6 +17,7 @@ export class InputManager {
         this.strafeValue = 0; // -1..1, mobile right-stick horizontal axis
         this.maneuverThrustValue = 0; // -1..1, mobile right-stick vertical axis
         this.mobileAdvancedControls = false;
+        this.mobileAimAssist = true;
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         this.setupKeyboardListeners();
@@ -430,6 +431,10 @@ export class InputManager {
     setMobileAdvancedControls(enabled) {
         this.mobileAdvancedControls = !!enabled;
         if (!this.mobileAdvancedControls) this.strafeValue = 0;
+    }
+
+    setMobileAimAssist(enabled) {
+        this.mobileAimAssist = !!enabled;
     }
 
     // Hides/shows only the joystick/maneuver-stick/auto-fire graphics; the
