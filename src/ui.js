@@ -1417,6 +1417,8 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     node.style.boxSizing = 'border-box';
     node.style.clipPath = chamferClip(scaleNum(8));
     node.style.overflow = 'hidden';
+    node.style.position = 'relative';
+    node.style.zIndex = '1';
     node.style.transition = 'background 0.08s, border-color 0.08s, opacity 0.08s';
 
     const applyIdle = () => {
@@ -1542,6 +1544,8 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     grid.style.alignItems = 'start';
     grid.style.width = '100%';
     grid.style.marginBottom = scale(4);
+    grid.style.position = 'relative';
+    grid.style.isolation = 'isolate';
 
     // Draw Connectors
     const drawConnector = (col, row, type, active) => {
@@ -1549,14 +1553,19 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         c.className = 'tt-connector';
         c.style.gridColumn = typeof col === 'string' ? col : String(col);
         c.style.gridRow = String(row);
-        c.style.borderColor = active ? INK.scope : INK.hairlineDim;
+        c.style.zIndex = '0';
+        c.style.pointerEvents = 'none';
+        c.style.opacity = active ? '0.95' : '0.55';
+        c.style.borderColor = active ? INK.phosphor : INK.hairlineDim;
+        c.style.borderStyle = active ? 'solid' : 'dashed';
+        c.style.filter = active ? `drop-shadow(0 0 ${scaleNum(4)}px ${INK.phosphorDim})` : 'none';
         if (type === 'v') {
-            c.style.borderLeft = '2px solid';
+            c.style.borderLeft = `${scaleNum(active ? 3 : 2)}px ${c.style.borderStyle}`;
             c.style.width = '0';
             c.style.height = '100%';
             c.style.justifySelf = 'center';
         } else if (type === 'h') {
-            c.style.borderTop = '2px solid';
+            c.style.borderTop = `${scaleNum(active ? 3 : 2)}px ${c.style.borderStyle}`;
             c.style.height = '0';
             c.style.width = '100%';
             c.style.alignSelf = 'center';
