@@ -334,16 +334,16 @@ export function createGameLoop(context) {
             frameCount = 0;
             lastFpsTime = now;
             
-            if (typeof window !== 'undefined' && !inputManager.isMobile) {
+            if (typeof window !== 'undefined') {
                 let fpsEl = document.getElementById('fps-display');
                 if (!fpsEl) {
                     fpsEl = document.createElement('div');
                     fpsEl.id = 'fps-display';
                     fpsEl.style.position = 'fixed';
-                    fpsEl.style.bottom = '10px';
-                    fpsEl.style.left = '10px';
+                    fpsEl.style.bottom = inputManager.isMobile ? '42vh' : '10px';
+                    fpsEl.style.left = inputManager.isMobile ? '12px' : '10px';
                     fpsEl.style.fontFamily = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
-                    fpsEl.style.fontSize = '10px';
+                    fpsEl.style.fontSize = inputManager.isMobile ? '9px' : '10px';
                     fpsEl.style.color = 'rgba(120,255,170,0.5)';
                     fpsEl.style.zIndex = '9999';
                     fpsEl.style.pointerEvents = 'none';
