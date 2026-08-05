@@ -138,7 +138,7 @@ export function createFieldEventSystem() {
     function addMarker(ship, canvas, now) {
         const position = spawnOutsideView(ship, canvas, FIELD_EVENTS.MARKER_OFFSCREEN_DISTANCE);
         markers.push({ ...position, expiresAt: now + FIELD_EVENTS.MARKER_LIFETIME_MS });
-        AudioManager.play('MILESTONE');
+        AudioManager.play('SIGNAL_CONTACT');
     }
 
     function addObstacle(ship, canvas, now) {

@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.4.1', date: '2026-08-05', changes: ['Added a dedicated scanner ping when a salvage signal enters the flight area.'] },
     { version: '0.4.0', date: '2026-08-05', changes: ['Added rare salvage signals with Plasma, XP, hull recovery, or Overdrive rewards, plus sparse asteroids and drifting debris to reshape flight paths.'] },
     { version: '0.3.18', date: '2026-08-05', changes: ['Reduced Reactor Nova frequency and heavy-target damage again so it reads as a recovery pulse instead of a screen reset.'] },
     { version: '0.3.17', date: '2026-08-05', changes: ['Soft-capped late laser damage growth after upgrade level 20 and retuned Aegis shielding for the new endgame damage curve.'] },
