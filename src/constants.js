@@ -121,7 +121,7 @@ export const REACTOR_NOVA = {
     RADIUS_FACTOR: 0.72,
     MIN_RADIUS: 280,
     DAMAGE: 8,
-    VISUAL_LIFE: 18
+    VISUAL_LIFE: 48
 };
 
 export const EXPLOSIVE_ROUNDS = {

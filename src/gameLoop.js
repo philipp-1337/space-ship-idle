@@ -175,7 +175,12 @@ export function createGameLoop(context) {
                         return Math.sqrt(dx * dx + dy * dy) < reactorNovaRadius;
                     });
                     nearby.forEach((other) => {
-                        other.takeDamage(REACTOR_NOVA.DAMAGE);
+                        const isLightOrMedium = !other.isElite && !other.isAegis && other.type.name !== 'shooter';
+                        if (isLightOrMedium) {
+                            other.hp = 0;
+                        } else {
+                            other.takeDamage(REACTOR_NOVA.DAMAGE);
+                        }
                         if (other.hp <= 0) other.destroy();
                         awardKillIfNeeded(other);
                     });
@@ -616,7 +621,8 @@ export function createGameLoop(context) {
             ctx.save();
             const progress = 1 - (exp.life / exp.maxLife);
             const fade = Math.max(0, exp.life / exp.maxLife);
-            const radius = exp.radius * progress;
+            const expansionProgress = exp.kind === 'nova' ? Math.pow(progress, 1.4) : progress;
+            const radius = exp.radius * expansionProgress;
             ctx.translate(exp.x, exp.y);
             ctx.globalCompositeOperation = 'lighter';
             ctx.strokeStyle = exp.color || '#ff9800';
