@@ -117,10 +117,11 @@ export const SIGNAL_INTERFERENCE = {
 };
 
 export const REACTOR_NOVA = {
-    KILLS_PER_TRIGGER: 12,
+    KILLS_PER_TRIGGER: 24,
+    COOLDOWN_MS: 10000,
     RADIUS_FACTOR: 0.72,
     MIN_RADIUS: 280,
-    DAMAGE: 8,
+    DAMAGE: 6,
     VISUAL_LIFE: 48
 };
 

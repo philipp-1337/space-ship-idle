@@ -37,6 +37,7 @@ export function createGameLoop(context) {
     let empCooldownUntil = 0;
     let empDisruptionUntil = 0;
     let reactorNovaKillCounter = 0;
+    let reactorNovaCooldownUntil = 0;
     let reactorNovaTriggering = false;
     let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500, origin: null };
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
@@ -160,11 +161,12 @@ export function createGameLoop(context) {
             }
             
             killsRef.value++;
-            if (techUpgrades.reactorNova && !reactorNovaTriggering) {
+            if (techUpgrades.reactorNova && !reactorNovaTriggering && performance.now() >= reactorNovaCooldownUntil) {
                 reactorNovaKillCounter++;
                 if (reactorNovaKillCounter >= REACTOR_NOVA.KILLS_PER_TRIGGER) {
                     reactorNovaKillCounter = 0;
                     reactorNovaTriggering = true;
+                    reactorNovaCooldownUntil = performance.now() + REACTOR_NOVA.COOLDOWN_MS;
                     const reactorNovaRadius = Math.max(REACTOR_NOVA.MIN_RADIUS, Math.hypot(canvas.width, canvas.height) * REACTOR_NOVA.RADIUS_FACTOR);
                     explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: reactorNovaRadius, color: '#ffb000', kind: 'nova' });
                     effectsSystem.triggerScreenShake(12, 18);
@@ -175,8 +177,9 @@ export function createGameLoop(context) {
                         return Math.sqrt(dx * dx + dy * dy) < reactorNovaRadius;
                     });
                     nearby.forEach((other) => {
-                        const isLightOrMedium = !other.isElite && !other.isAegis && other.type.name !== 'shooter';
-                        if (isLightOrMedium) {
+                        const isLightTarget = !other.isElite && !other.isAegis
+                            && (other.type.name === 'triangle' || other.type.name === 'square');
+                        if (isLightTarget) {
                             other.hp = 0;
                         } else {
                             other.takeDamage(REACTOR_NOVA.DAMAGE);

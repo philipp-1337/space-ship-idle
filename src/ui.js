@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.3.15', date: '2026-08-05', changes: ['Tuned Reactor Nova to charge over 24 kills, respect a 10s cooldown, deal 6 damage, and instantly destroy only light targets.'] },
     { version: '0.3.14', date: '2026-08-05', changes: ['Slowed Reactor Nova’s shockwave animation and made it destroy light/medium enemies while only damaging heavy targets.'] },
     { version: '0.3.13', date: '2026-08-05', changes: ['Added cyan Aegis enemies to late-game surges; their shielding makes them take multiple hits without inflating regular enemy HP.'] },
     { version: '0.3.12', date: '2026-08-05', changes: ['Expanded Reactor Nova into a wide, screen-scale shockwave.', 'Added controlled late-game surge events from level 25 onward without increasing regular enemy HP.'] },
@@ -1670,7 +1671,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
         { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 12 kills, destroy light and medium enemies in a wide shockwave; heavy targets take damage but survive.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
+        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 24 kills, discharge a wide shockwave. Light targets are destroyed; heavier targets take 6 damage. Nova cannot trigger more than once every 10s.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 
     const grid = document.createElement('div');
