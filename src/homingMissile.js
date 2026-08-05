@@ -332,7 +332,11 @@ export default class HomingMissile {
 
                     if (e.hp <= 0) { 
                         if (wasAliveBeforeHit && !e.alreadyAwardedXP && rewardContext) {
-                            rewardContext.xpPoints.push(new rewardContext.XP(e.x, e.y));
+                            if (rewardContext.spawnXpOrb) {
+                                rewardContext.spawnXpOrb(e.x, e.y);
+                            } else {
+                                rewardContext.xpPoints.push(new rewardContext.XP(e.x, e.y));
+                            }
                             const dropChance = rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE * ((rewardContext.techUpgrades && rewardContext.techUpgrades.salvage) ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
                             if (e.isElite || Math.random() < dropChance) {
                                 let px = e.x;

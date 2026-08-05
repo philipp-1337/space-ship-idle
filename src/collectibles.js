@@ -1,7 +1,7 @@
 // collectibles.js
 // Verwaltung von XP- und Plasma-Handling (Sammeln, Magnet, UI)
 import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse, getXpMultiplier } from './upgrades.js';
-import { COLORS, COLLECTOR_PULSE } from './constants.js';
+import { COLORS, COLLECTOR_PULSE, EFFECTS } from './constants.js';
 import { updateExperienceBar } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -16,7 +16,7 @@ export function handleXpCollection(ship, xpPoints, effectsSystem, ctx, experienc
     // pop() keeps the cleanup O(1) per removed orb.
     // 200 visible orbs are safe on the measured render path. Keep the merge
     // only as a late safety net for pathological enemy-wave bursts.
-    const OVERFLOW_LIMIT = 200;
+    const OVERFLOW_LIMIT = EFFECTS.XP_ORB_MAX_ACTIVE;
     const OVERFLOW_CELL_SIZE = 64;
     if (xpPoints.length > OVERFLOW_LIMIT) {
         const overflowCount = xpPoints.length - OVERFLOW_LIMIT;

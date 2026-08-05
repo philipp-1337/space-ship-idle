@@ -72,6 +72,39 @@ export function createGameLoop(context) {
         return dt;
     }
 
+    // Keep every fresh kill visible at its actual position. When the visual
+    // orb budget is full, transfer the value of the farthest old regular orb
+    // into the new orb instead of merging the new drop into an arbitrary old
+    // orb. Boss orbs are never used as overflow sources.
+    function spawnXpOrb(x, y, value = 1, isBossOrb = false) {
+        const newOrb = new XP(x, y, value, isBossOrb);
+        if (isBossOrb || xpPoints.length < EFFECTS.XP_ORB_MAX_ACTIVE) {
+            xpPoints.push(newOrb);
+            return;
+        }
+
+        let farthestIndex = -1;
+        let farthestDistanceSquared = -1;
+        for (let index = 0; index < xpPoints.length; index++) {
+            const orb = xpPoints[index];
+            if (orb.isBossOrb || orb.collected) continue;
+            const dx = orb.x - ship.x;
+            const dy = orb.y - ship.y;
+            const distanceSquared = dx * dx + dy * dy;
+            if (distanceSquared > farthestDistanceSquared) {
+                farthestDistanceSquared = distanceSquared;
+                farthestIndex = index;
+            }
+        }
+
+        if (farthestIndex >= 0) {
+            newOrb.value += xpPoints[farthestIndex].value;
+            newOrb.radius = newOrb.value > 15 ? 12 : (newOrb.value > 1 ? 8 : 7);
+            xpPoints.splice(farthestIndex, 1);
+        }
+        xpPoints.push(newOrb);
+    }
+
     // Gemeinsame Belohnungslogik für einen getöteten Gegner — genutzt vom
     // direkten Lasertreffer UND vom Explosive-Rounds-Flächenschaden, damit
     // beide Pfade konsistent XP/Plasma/Kill vergeben.
@@ -80,7 +113,7 @@ export function createGameLoop(context) {
             // Spawn boss XP or regular XP
             if (enemy.isElite) {
                 // A Boss orb always guarantees a level up upon collection.
-                xpPoints.push(new XP(enemy.x, enemy.y, 0, true));
+                spawnXpOrb(enemy.x, enemy.y, 0, true);
                 
                 // Insta Death Ray Sweep + Popcorn Wave Reward
                 spawnBossRewardWave(canvas, enemy.x, enemy.y, easyModeRef ? easyModeRef.value : false);
@@ -94,7 +127,7 @@ export function createGameLoop(context) {
                 effectsSystem.triggerScreenShake(20, 30);
                 AudioManager.play('SHIP_LASER');
             } else {
-                xpPoints.push(new XP(enemy.x, enemy.y, enemy.xpValue));
+                spawnXpOrb(enemy.x, enemy.y, enemy.xpValue);
                 // Split mechanics for regular enemies
                 if (!enemy.isElite) {
                     spawnSplitEnemies(enemy, easyModeRef ? easyModeRef.value : false);
@@ -730,6 +763,7 @@ export function createGameLoop(context) {
                         m.detonate(enemyGrid, effectsSystem, {
                             xpPoints,
                             XP,
+                            spawnXpOrb,
                             killsRef,
                             GAME_CONFIG,
                             plasmaCells,
