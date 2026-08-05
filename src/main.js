@@ -8,7 +8,7 @@ import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen,
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
-import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI } from './upgrades.js'; // plasmaCount entfernt
+import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
@@ -351,12 +351,18 @@ function pauseGame() {
     isPausedRef.value = true; // Damit der gameLoop pausiert
     saveRun();
     removePauseButton();
+    const laserDamage = GAME_CONFIG.BASE_LASER_DAMAGE * Math.pow(1.10, upgrades.laser) * getDamageMultiplier();
     displayPauseMenu({
         level,
         experience,
         maxXP,
         kills,
-        xpCollected
+        xpCollected,
+        laserDamage,
+        fireIntervalMs: GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades),
+        hull: `${Math.max(0, Math.ceil(ship.hp))} / ${Math.ceil(ship.maxHp)}`,
+        missiles: techUpgrades.homingMissile ? 'Online' : 'Offline',
+        drones: techUpgrades.drone ? (techUpgrades.twinDrones ? '2 Online' : '1 Online') : 'Offline'
     }, resumeGame, restartGame);
     // Der gameLoop wird anhalten, da isPausedRef.value jetzt true ist.
 }

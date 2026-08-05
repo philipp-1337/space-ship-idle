@@ -35,6 +35,7 @@ export function createGameLoop(context) {
     let chainFlashes = []; // kurzlebige Blitz-Linien fürs Chain-Lightning-Upgrade
     let explosiveVisuals = []; // kurzlebige Explosions-Kreise für Explosive Rounds
     let empCooldownUntil = 0;
+    let empDisruptionUntil = 0;
     let reactorNovaKillCounter = 0;
     let reactorNovaTriggering = false;
     let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500, origin: null };
@@ -309,15 +310,18 @@ export function createGameLoop(context) {
         if (gameplayStartedAt === null) gameplayStartedAt = now;
         if (techUpgrades.signalInterference && now >= empCooldownUntil && enemies.some((enemy) => enemy.alive && enemy.canShoot)) {
             enemyLasers.length = 0;
+            empDisruptionUntil = now + SIGNAL_INTERFERENCE.DISRUPTION_MS;
             enemies.forEach((enemy) => {
-                if (enemy.alive && enemy.canShoot) enemy.shootCooldown = Math.max(enemy.shootCooldown, SIGNAL_INTERFERENCE.DISRUPTION_MS / (1000 / 60));
+                if (enemy.alive && enemy.canShoot) {
+                    enemy.shootCooldown = SIGNAL_INTERFERENCE.DISRUPTION_MS / (1000 / 60) + Math.random() * 90;
+                }
             });
             empCooldownUntil = now + SIGNAL_INTERFERENCE.COOLDOWN_MS;
             explosiveVisuals.push({
                 x: ship.x,
                 y: ship.y,
-                life: 20,
-                maxLife: 20,
+                life: SIGNAL_INTERFERENCE.VISUAL_LIFE,
+                maxLife: SIGNAL_INTERFERENCE.VISUAL_LIFE,
                 radius: Math.hypot(canvas.width, canvas.height) * 0.78,
                 color: '#7fe8ff',
                 kind: 'signal'
@@ -423,6 +427,12 @@ export function createGameLoop(context) {
         enemyGrid.clear();
         for (let eIdx = enemies.length - 1; eIdx >= 0; eIdx--) {
             const enemy = enemies[eIdx];
+            if (techUpgrades.signalInterference && enemy.canShoot && performance.now() < empDisruptionUntil) {
+                enemy.shootCooldown = Math.max(
+                    enemy.shootCooldown,
+                    (empDisruptionUntil - performance.now()) / (1000 / 60) + Math.random() * 2
+                );
+            }
             enemy.update(ship.x, ship.y, dt);
             enemy.draw(ctx);
             if (!ship.isExploding && enemy.checkCollision(ship)) {
@@ -738,46 +748,47 @@ export function createGameLoop(context) {
                 sweepRay.active = false;
             } else {
                 const progress = sweepRay.timer / sweepRay.duration;
-                // 1.5 rotations over the duration
-                sweepRay.angle = sweepRay.startAngle + progress * Math.PI * 2 * 1.5;
+                // One controlled rotation over the duration keeps the reward
+                // readable without turning the whole screen into a strobe.
+                sweepRay.angle = sweepRay.startAngle + progress * Math.PI * 2;
                 
                 const originX = sweepRay.origin?.x ?? ship.x;
                 const originY = sweepRay.origin?.y ?? ship.y;
                 const beamLength = 2000;
                 const endX = originX + Math.cos(sweepRay.angle) * beamLength;
                 const endY = originY + Math.sin(sweepRay.angle) * beamLength;
-                const pulse = 0.84 + Math.sin(sweepRay.timer * 0.045) * 0.16;
+                const pulse = 0.90 + Math.sin(sweepRay.timer * 0.035) * 0.10;
                 const fade = Math.min(1, progress * 12) * Math.min(1, (1 - progress) * 5);
                 const rayAlpha = pulse * fade;
                 
                 ctx.save();
                 ctx.globalCompositeOperation = 'lighter';
-                ctx.globalAlpha = rayAlpha * 0.28;
+                ctx.globalAlpha = rayAlpha * 0.20;
                 ctx.strokeStyle = '#ffd23f';
-                ctx.lineWidth = 96;
+                ctx.lineWidth = 72;
                 ctx.shadowColor = '#ffb000';
-                ctx.shadowBlur = 30;
+                ctx.shadowBlur = 20;
                 ctx.beginPath();
                 ctx.moveTo(originX, originY);
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
                 
-                ctx.globalAlpha = rayAlpha * 0.72;
+                ctx.globalAlpha = rayAlpha * 0.62;
                 ctx.strokeStyle = '#ffb000';
-                ctx.lineWidth = 44;
-                ctx.shadowBlur = 18;
+                ctx.lineWidth = 32;
+                ctx.shadowBlur = 12;
                 ctx.stroke();
 
                 ctx.globalAlpha = rayAlpha;
                 ctx.strokeStyle = '#e8fff0';
-                ctx.lineWidth = 12;
+                ctx.lineWidth = 8;
                 ctx.shadowColor = '#ffffff';
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 7;
                 ctx.stroke();
 
                 ctx.globalAlpha = rayAlpha * 0.95;
                 ctx.strokeStyle = '#7fe8ff';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.shadowColor = '#7fe8ff';
                 ctx.shadowBlur = 6;
                 ctx.stroke();
@@ -790,7 +801,7 @@ export function createGameLoop(context) {
                 ctx.shadowColor = '#ffd23f';
                 ctx.shadowBlur = 14;
                 ctx.beginPath();
-                ctx.arc(originX, originY, 18 + Math.sin(sweepRay.timer * 0.06) * 3, 0, Math.PI * 2);
+                ctx.arc(originX, originY, 15 + Math.sin(sweepRay.timer * 0.06) * 2, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.globalAlpha = rayAlpha;
                 ctx.fillStyle = '#e8fff0';

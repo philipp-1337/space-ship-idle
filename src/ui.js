@@ -1205,6 +1205,10 @@ export function displayPauseMenu(stats, onResume, onRestart) {
 
     const { modal, panel } = consolePanelModal({ id: 'pause-menu', zIndex: 4000, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 420px)';
+    panel.style.maxHeight = _isMobile ? '70vh' : '86vh';
+    panel.style.overflowY = 'auto';
+    panel.style.touchAction = 'pan-y';
+    panel.style.webkitOverflowScrolling = 'touch';
     const closePauseMenu = () => {
         menuCleanup();
         if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
@@ -1222,6 +1226,11 @@ export function displayPauseMenu(stats, onResume, onRestart) {
         ['Current XP', `${currentXp} / ${stats.maxXP}`],
         ['Enemies Defeated', stats.kills],
         ['Total XP Collected', totalXpCollected],
+        ['Hull Integrity', stats.hull],
+        ['Laser Damage', Number.isFinite(Number(stats.laserDamage)) ? Number(stats.laserDamage).toFixed(2) : stats.laserDamage],
+        ['Fire Interval', `${Math.round(stats.fireIntervalMs)} ms`],
+        ['Homing Missiles', stats.missiles],
+        ['Drones', stats.drones],
     ];
     const statsDiv = document.createElement('div');
     statsDiv.style.width = '100%';

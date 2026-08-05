@@ -95,7 +95,8 @@ export const CHAIN_LIGHTNING = {
 
 export const SIGNAL_INTERFERENCE = {
     COOLDOWN_MS: 15000,
-    DISRUPTION_MS: 2000
+    DISRUPTION_MS: 4500,
+    VISUAL_LIFE: 60
 };
 
 export const REACTOR_NOVA = {

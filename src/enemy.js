@@ -223,7 +223,9 @@ class Enemy {
         this.explosionParticlesSpawned = false;
         this.particles = [];
         this.canShoot = !!type.canShoot;
-        this.shootCooldown = 0;
+        // Shooter volleys should not synchronize when several enemies spawn
+        // during the same wave.
+        this.shootCooldown = type.canShoot ? Math.random() * 150 : 0;
         // Speed-Skalierung bleibt wie zuvor oder kann angepasst werden
         this.speed = type.baseSpeed * (1 + Math.floor((level-1)/4) * 0.03);
 
