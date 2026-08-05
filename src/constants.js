@@ -22,6 +22,11 @@ export const GAME_CONFIG = {
     ENEMY_WAVE_SIZE: 24     // Number of enemies in a wave
 };
 
+export const ENEMY_BALANCE = {
+    HP_LEVEL_GROWTH: 0.8,
+    HP_LEVEL_MULTIPLIER: 1.01
+};
+
 export const PHYSICS = {
     SHIP_ACCELERATION: 0.15,
     SHIP_MAX_SPEED: 4,

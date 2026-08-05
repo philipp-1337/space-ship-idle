@@ -1,6 +1,7 @@
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { spawnEnemyLaser } from './enemyManager.js';
+import { ENEMY_BALANCE } from './constants.js';
 
 // Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
 // Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
@@ -205,9 +206,10 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.size = 30;
-        // Hybride Skalierung: Flacher HP-Zuwachs (+1.2) PLUS eine minimale (2%) exponentielle Steigerung.
-        // Verhindert totale Bullet-Sponges, aber macht späte Level trotzdem spürbar zäher.
-        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * 1.2) * Math.pow(1.02, level - 1) * (easyMode ? 0.5 : 1)));
+        // Flache, sanfte Skalierung: Gegner werden mit dem Level zäher,
+        // behalten aber eine kurze, aktive Time-to-Kill statt zu Bullet Sponges
+        // zu werden — besonders in Runs mit starkem Laser-Upgrade.
+        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * ENEMY_BALANCE.HP_LEVEL_GROWTH) * Math.pow(ENEMY_BALANCE.HP_LEVEL_MULTIPLIER, level - 1) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;
