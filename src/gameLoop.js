@@ -340,7 +340,7 @@ export function createGameLoop(context) {
                     fpsEl = document.createElement('div');
                     fpsEl.id = 'fps-display';
                     fpsEl.style.position = 'fixed';
-                    fpsEl.style.bottom = inputManager.isMobile ? '42vh' : '10px';
+                    fpsEl.style.bottom = '10px';
                     fpsEl.style.left = inputManager.isMobile ? '12px' : '10px';
                     fpsEl.style.fontFamily = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
                     fpsEl.style.fontSize = inputManager.isMobile ? '9px' : '10px';

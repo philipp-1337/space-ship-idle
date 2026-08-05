@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.3.10', date: '2026-08-05', changes: ['Fixed horizontal scrolling in the mobile tech tree modal.', 'Moved mobile FPS and version display to the bottom left.'] },
     { version: '0.3.9', date: '2026-08-05', changes: ['Rebalanced regular enemy HP and split enemy budgets so late-game targets are less bullet-spongy.'] },
     { version: '0.3.8', date: '2026-08-05', changes: ['Added this scrollable in-game changelog and release history.'] },
     { version: '0.3.7', date: '2026-08-05', changes: ['The version and FPS display is now also visible on mobile above the touch controls.'] },
@@ -1772,7 +1773,9 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
             branch.style.paddingLeft = scale(10);
             groupNodes.forEach((n, index) => {
                 const node = createTreeNode(n);
-                node.style.marginLeft = scale(nodeDepth(n) * 10);
+                const margin = nodeDepth(n) * 10;
+                node.style.marginLeft = scale(margin);
+                node.style.width = `calc(100% - ${scale(margin)})`;
                 if (index > 0 && n.requires) node.style.position = 'relative';
                 branch.appendChild(node);
             });
