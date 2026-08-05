@@ -7,6 +7,7 @@ import { clearRunState, suppressAutosave } from './runState.js';
 import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
+import packageInfo from '../package.json';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const _uiScale = _isMobile ? (MOBILE.UI_SCALE_FACTOR || 1.5) : 1; // Fallback, falls nicht in constants definiert
@@ -39,6 +40,33 @@ const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 // Temporary release notice for the mobile control redesign.
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
+
+const CHANGELOG_ENTRIES = [
+    { version: '0.3.8', date: '2026-08-05', changes: ['Added this scrollable in-game changelog and release history.'] },
+    { version: '0.3.7', date: '2026-08-05', changes: ['The version and FPS display is now also visible on mobile above the touch controls.'] },
+    { version: '0.3.6', date: '2026-08-05', changes: ['Flattened late-game enemy HP scaling so higher-level enemies are less likely to become bullet sponges.'] },
+    { version: '0.3.5', date: '2026-08-05', changes: ['Added combat stats to the pause menu.', 'Extended Signal Interference, slowed its EMP pulse, staggered enemy recovery, and softened the Death Ray.'] },
+    { version: '0.3.4', date: '2026-08-04', changes: ['Reduced the base HP of the late-game Pentagon and Shooter enemy roles.'] },
+    { version: '0.3.3', date: '2026-08-04', changes: ['Made Reactor Nova and Signal Interference visually distinct.', 'Moved the Death Ray origin to the defeated boss.'] },
+    { version: '0.3.2', date: '2026-08-04', changes: ['Collector Pulse now pauses during the level-up shop and resumes with its remaining duration.'] },
+    { version: '0.3.1', date: '2026-08-04', changes: ['Made Tech Tree dependency connectors more visible with active and locked path states.'] },
+    { version: '0.3.0', date: '2026-08-04', changes: ['Restructured the Tech Tree into desktop branches and a mobile-friendly grouped list.'] },
+    { version: '0.2.4', date: '2026-08-04', changes: ['Signal Interference is hidden until enemy shooters appear at level 18.', 'Rounded Current XP to two decimal places.'] },
+    { version: '0.2.3', date: '2026-08-04', changes: ['Clarified Learning Protocol and Signal Interference descriptions in the Tech Tree.'] },
+    { version: '0.2.2', date: '2026-08-04', changes: ['Rounded Total XP Collected to two decimal places in the pause menu.'] },
+    { version: '0.2.1', date: '2026-08-04', changes: ['Polished the elite Death Ray with a clearer core, emitter, and fade.'] },
+    { version: '0.2.0', date: '2026-08-04', changes: ['Added a progressive Homing Missile branch for payload, endurance, warhead radius, and guidance upgrades.'] },
+    { version: '0.1.9', date: '2026-08-04', changes: ['Added close buttons and Escape support for Pause, Settings, and Tech Tree menus.'] },
+    { version: '0.1.8', date: '2026-08-04', changes: ['Added desktop shortcuts: T/3 for Tech Tree, P/1 for Pause, and O/2 for Settings.'] },
+    { version: '0.1.7', date: '2026-08-04', changes: ['Added clearer mobile control guidance, a scrollable Settings menu, and an updated mobile notice.'] },
+    { version: '0.1.6', date: '2026-08-04', changes: ['Restored the legacy one-handed movement behavior without reverse flight on the left stick.'] },
+    { version: '0.1.5', date: '2026-08-04', changes: ['Changed Targeting Matrix to support drone targeting only.'] },
+    { version: '0.1.4', date: '2026-08-04', changes: ['Added Twin-Stick and One-Handed mobile control schemes.'] },
+    { version: '0.1.3', date: '2026-08-04', changes: ['Removed the mobile soft aim assist after playtesting showed it was unclear.'] },
+    { version: '0.1.2', date: '2026-08-04', changes: ['Added mobile soft aim assist.'] },
+    { version: '0.1.1', date: '2026-08-04', changes: ['Improved mobile touch flight controls and tuning.'] },
+    { version: '0.1.0', date: '2026-08-04', changes: ['Introduced the semantic game version shown in the HUD.'] }
+];
 const MOBILE_MOVEMENT_NOTICE_KEY = 'spaceShipIdleMobileMovementNotice';
 
 // HUD row offset (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
@@ -1002,6 +1030,94 @@ export function displaySettingsButton(onClick) {
     document.body.appendChild(btn);
 }
 
+export function showChangelogModal() {
+    if (document.getElementById('changelog-modal')) return;
+
+    const { modal, panel } = consolePanelModal({ id: 'changelog-modal', zIndex: 4700, accent: INK.scope });
+    panel.style.width = _isMobile ? '92vw' : 'min(92vw, 520px)';
+    panel.style.maxHeight = _isMobile ? '70vh' : '86vh';
+    panel.style.overflowY = 'auto';
+    panel.style.touchAction = 'pan-y';
+    panel.style.webkitOverflowScrolling = 'touch';
+
+    const closeChangelog = () => modal.remove();
+    panel.appendChild(panelTitleBar('Changelog', INK.scope, closeChangelog));
+
+    const intro = document.createElement('div');
+    intro.innerText = `Release history · Current build v${packageInfo.version}`;
+    intro.style.width = '100%';
+    intro.style.fontFamily = FONT;
+    intro.style.fontSize = scale(11);
+    intro.style.letterSpacing = '0.08em';
+    intro.style.textTransform = 'uppercase';
+    intro.style.color = INK.textDim;
+    intro.style.marginBottom = scale(18);
+    panel.appendChild(intro);
+
+    const history = document.createElement('div');
+    history.style.width = '100%';
+    history.style.display = 'flex';
+    history.style.flexDirection = 'column';
+    history.style.gap = scale(14);
+
+    CHANGELOG_ENTRIES.forEach((entry, index) => {
+        const release = document.createElement('section');
+        release.style.width = '100%';
+        release.style.paddingBottom = scale(12);
+        release.style.borderBottom = index === CHANGELOG_ENTRIES.length - 1
+            ? 'none'
+            : `1px solid ${INK.hairlineDim}`;
+
+        const heading = document.createElement('div');
+        heading.style.display = 'flex';
+        heading.style.alignItems = 'baseline';
+        heading.style.justifyContent = 'space-between';
+        heading.style.gap = scale(12);
+        heading.style.marginBottom = scale(6);
+
+        const version = document.createElement('span');
+        version.innerText = `v${entry.version}`;
+        version.style.fontFamily = FONT;
+        version.style.fontSize = scale(14);
+        version.style.fontWeight = '600';
+        version.style.letterSpacing = '0.05em';
+        version.style.color = entry.version === packageInfo.version ? INK.phosphor : INK.scope;
+
+        const date = document.createElement('span');
+        date.innerText = entry.date;
+        date.style.fontFamily = FONT;
+        date.style.fontSize = scale(10);
+        date.style.color = INK.textDim;
+
+        heading.appendChild(version);
+        heading.appendChild(date);
+        release.appendChild(heading);
+
+        entry.changes.forEach((change) => {
+            const item = document.createElement('div');
+            item.innerText = `— ${change}`;
+            item.style.fontFamily = FONT;
+            item.style.fontSize = scale(12);
+            item.style.lineHeight = '1.45';
+            item.style.color = INK.text;
+            item.style.marginTop = scale(4);
+            release.appendChild(item);
+        });
+
+        history.appendChild(release);
+    });
+    panel.appendChild(history);
+
+    const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    closeBtn.style.marginTop = scale(14);
+    closeBtn.style.padding = `${scale(8)} ${scale(20)}`;
+    closeBtn.onclick = closeChangelog;
+    panel.appendChild(closeBtn);
+
+    document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
+}
+
 export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, mobileControlScheme = 'twin-stick', isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onChangeControlScheme }) {
     if (document.getElementById('settings-menu')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
@@ -1169,6 +1285,13 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         shortcuts.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
         panel.appendChild(shortcuts);
     }
+
+    panel.appendChild(label('Release Notes', INK.textDim));
+    const changelogBtn = consoleButton({ text: 'Open Changelog', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    changelogBtn.style.width = '100%';
+    changelogBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
+    changelogBtn.onclick = showChangelogModal;
+    panel.appendChild(changelogBtn);
 
     panel.appendChild(label('Factory Reset', INK.danger));
     const resetBtn = consoleButton({ text: 'Reset Game', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 13 });

@@ -46,6 +46,8 @@ Semantic versioning is mandatory for player-visible application changes. Once th
 
 Use the canonical `version` field in `package.json` as the version source; do not invent a second independent version number. If that field and the HUD display do not exist yet, implement them together before the first versioned player-facing release. A version bump is not required for internal refactors, tests, documentation-only changes, or other changes with no player-visible effect. Do not auto-increment the version for every Git commit, and do not derive semantic meaning from a commit hash. If the release impact is ambiguous, choose the smallest reasonable increment and mention the decision in the handoff.
 
+Every versioned release must also add a concise, player-facing entry to the in-game changelog in `src/ui.js`. Keep the changelog updated in the same commit as the version bump; a SemVer change without a corresponding changelog entry is incomplete.
+
 ## Build, test, and deployment
 
 Available scripts are defined in `package.json`:
