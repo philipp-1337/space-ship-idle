@@ -4,12 +4,13 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
 import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
+import { createFieldEventSystem } from './fieldEvents.js';
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
 import { registerSW } from 'virtual:pwa-register';
@@ -65,6 +66,7 @@ const ship = new Ship(window.logicalWidth / 2, window.logicalHeight / 2);
 const lasers = [];
 const xpPoints = [];
 const plasmaCells = [];
+const fieldEvents = createFieldEventSystem();
 const tractorItems = [];
 let experience = 0;
 let level = 1;
@@ -203,6 +205,7 @@ function updateShipMovement(dt = 1) {
             enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
             plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
             tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
+            fieldEvents.shift(offsetX, offsetY);
             effectsSystem.moveXpParticles(offsetX, offsetY); // Korrekt über EffectsSystem
         }
         ship.x = nextX;
@@ -313,6 +316,7 @@ function updateShipMovement(dt = 1) {
         enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
         plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
         tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
+        fieldEvents.shift(offsetX, offsetY);
     }
     ship.x = nextX;
     ship.y = nextY;
@@ -518,9 +522,9 @@ function syncRefsToVars() {
 window.syncRefsToVars = syncRefsToVars;
 
 const gameLoop = createGameLoop({
-    ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
+    ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
-    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge, showWaveHint, showOverdriveHint, showBossHint,
+    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint,
     displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,

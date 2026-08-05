@@ -20,10 +20,10 @@ const LASER_HIT_QUERY_RADIUS = 35;
 
 export function createGameLoop(context) {
     const {
-        ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
+        ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge,
-        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint,
+        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef, easyModeRef
@@ -427,6 +427,10 @@ export function createGameLoop(context) {
             context.updateShipMovement(dt);
         }
         ship.update(dt);
+        fieldEvents.updateAndDraw({
+            ship, canvas, ctx, now, dt, spawnXpOrb, PlasmaCell, plasmaCells,
+            showOverdriveHint, showSalvageHint
+        });
         ship.draw(ctx);
 
         // Begleit-Drohne(n) (Tech-Tree-Waffe): kreisen ums Schiff und feuern

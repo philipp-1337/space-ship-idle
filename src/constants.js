@@ -33,6 +33,22 @@ export const GAME_CONFIG = {
     MAX_ACTIVE_ENEMIES: 90
 };
 
+// Sparse points of interest keep the flight space legible: the player gets a
+// reason to leave the current skirmish without turning every run into an
+// obstacle course. Timers use real milliseconds because the game loop's dt is
+// normalized to 60fps.
+export const FIELD_EVENTS = {
+    FIRST_MARKER_DELAY_MS: 30000,
+    MARKER_INTERVAL_MS: 75000,
+    MARKER_LIFETIME_MS: 26000,
+    MARKER_OFFSCREEN_DISTANCE: 150,
+    MARKER_CONTACT_RADIUS: 34,
+    FIRST_OBSTACLE_DELAY_MS: 45000,
+    OBSTACLE_INTERVAL_MS: 90000,
+    OBSTACLE_LIFETIME_MS: 42000,
+    MAX_ACTIVE_OBSTACLES: 2
+};
+
 export function calculateLaserDamage(baseDamage, upgradeLevel) {
     const earlyLevels = Math.min(Math.max(0, upgradeLevel), GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
     const lateLevels = Math.max(0, upgradeLevel - GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
