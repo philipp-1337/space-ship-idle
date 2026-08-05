@@ -1,6 +1,6 @@
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 import { getDamageMultiplier } from './upgrades.js';
-import { GAME_CONFIG } from './constants.js';
+import { GAME_CONFIG, calculateLaserDamage } from './constants.js';
 
 // Kleine, gestreckte Pixel-Art-Bolzen mit heißem Kern, in drei Farbstufen je
 // nach Laser-Upgrade-Level (spiegelt den bestehenden COLORS.LASER_UPGRADED-Cutoff
@@ -64,7 +64,7 @@ class Laser {
         // Annahme: window.BASE_LASER_DAMAGE ist in main.js gesetzt
         const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
         // Reduzierte kompoundierte Steigerung: z.B. 5% pro Level
-        this.damage = baseDamage * Math.pow(1.10, this.upgradeLevel) * getDamageMultiplier();
+        this.damage = calculateLaserDamage(baseDamage, this.upgradeLevel) * getDamageMultiplier();
     }
 
     update(canvasWidth, canvasHeight, dt = 1) {

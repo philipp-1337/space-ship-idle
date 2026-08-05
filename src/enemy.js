@@ -224,7 +224,7 @@ export const SURGE_AEGIS_TYPE = {
     baseSpeed: 0.5,
     color: '#55e8ff',
     baseXpValue: 12,
-    damageTakenMultiplier: 0.55
+    damageTakenMultiplier: 0.75
 };
 
 class Enemy {

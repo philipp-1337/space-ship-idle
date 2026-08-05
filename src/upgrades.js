@@ -1,6 +1,6 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, isTouchDevice } from './constants.js';
+import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, isTouchDevice, calculateLaserDamage } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -154,7 +154,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
     }
     if (key === 'laser') {
         const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
-        const damageFor = (level) => (baseDamage * Math.pow(1.10, level)).toFixed(2);
+        const damageFor = (level) => calculateLaserDamage(baseDamage, level).toFixed(2);
         return { label: 'Damage', from: damageFor(currentUpgrades.laser), to: damageFor(currentUpgrades.laser + 1) };
     }
     if (key === 'speed') {

@@ -7,7 +7,7 @@ import TractorItem from './tractorItem.js';
 import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
-import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE } from './constants.js';
+import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
 import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
 import { createGameLoop } from './gameLoop.js';
@@ -351,7 +351,7 @@ function pauseGame() {
     isPausedRef.value = true; // Damit der gameLoop pausiert
     saveRun();
     removePauseButton();
-    const laserDamage = GAME_CONFIG.BASE_LASER_DAMAGE * Math.pow(1.10, upgrades.laser) * getDamageMultiplier();
+    const laserDamage = calculateLaserDamage(GAME_CONFIG.BASE_LASER_DAMAGE, upgrades.laser) * getDamageMultiplier();
     displayPauseMenu({
         level,
         experience,

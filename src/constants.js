@@ -10,6 +10,9 @@ export function isTouchDevice() {
 export const GAME_CONFIG = {
     BASE_LASER_DAMAGE: 0.8,
     MAX_LASER_PROJECTILE_SPEED: 26.4,
+    LASER_DAMAGE_SOFT_CAP_LEVEL: 20,
+    LASER_DAMAGE_EARLY_MULTIPLIER: 1.10,
+    LASER_DAMAGE_LATE_MULTIPLIER: 1.07,
     ENEMY_SPAWN_INTERVAL: 1500, // Erhöht die Spawn-Frequenz der Gegner
     LASER_SHOOT_COOLDOWN: 280,
     AUTO_SHOOT_COOLDOWN: 320,
@@ -29,6 +32,14 @@ export const GAME_CONFIG = {
     LATE_GAME_SURGE_MAX_SIZE: 20,
     MAX_ACTIVE_ENEMIES: 90
 };
+
+export function calculateLaserDamage(baseDamage, upgradeLevel) {
+    const earlyLevels = Math.min(Math.max(0, upgradeLevel), GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
+    const lateLevels = Math.max(0, upgradeLevel - GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
+    return baseDamage
+        * Math.pow(GAME_CONFIG.LASER_DAMAGE_EARLY_MULTIPLIER, earlyLevels)
+        * Math.pow(GAME_CONFIG.LASER_DAMAGE_LATE_MULTIPLIER, lateLevels);
+}
 
 export const ENEMY_BALANCE = {
     // Regular enemy HP is budgeted around the player's growing weapon output.

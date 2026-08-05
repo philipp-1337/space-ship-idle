@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.3.17', date: '2026-08-05', changes: ['Soft-capped late laser damage growth after upgrade level 20 and retuned Aegis shielding for the new endgame damage curve.'] },
     { version: '0.3.16', date: '2026-08-05', changes: ['Capped laser projectile speed at the established mid-game handling level.'] },
     { version: '0.3.15', date: '2026-08-05', changes: ['Tuned Reactor Nova to charge over 24 kills, respect a 10s cooldown, deal 6 damage, and instantly destroy only light targets.'] },
     { version: '0.3.14', date: '2026-08-05', changes: ['Slowed Reactor Nova’s shockwave animation and made it destroy light/medium enemies while only damaging heavy targets.'] },
