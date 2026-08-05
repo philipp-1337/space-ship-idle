@@ -8,6 +8,14 @@ export let enemies = [];
 export let enemyLasers = [];
 export let enemySpawnIntervalId = null;
 
+function activeEnemyCount() {
+    return enemies.reduce((count, enemy) => count + (enemy.alive && !enemy.exploding ? 1 : 0), 0);
+}
+
+function canSpawnEnemy() {
+    return activeEnemyCount() < GAME_CONFIG.MAX_ACTIVE_ENEMIES;
+}
+
 export function spawnEnemyLaser(x, y, angle) {
     enemyLasers.push({
         x,
@@ -37,6 +45,7 @@ function getRandomSpawnPosition(canvas) {
 }
 
 export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
+    if (!canSpawnEnemy()) return;
     // Keep level-1 "popcorn" enemies as a light swarm accent instead of
     // letting their population grow without bound. The main enemy still
     // scales with the current level; popcorn ramps in from level 5 and caps
@@ -48,7 +57,7 @@ export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
     enemies.push(new Enemy(regularPos.x, regularPos.y, level, easyMode));
     
     // Spawn additional easy swarm enemies
-    for (let i = 0; i < extraSpawns; i++) {
+    for (let i = 0; i < extraSpawns && canSpawnEnemy(); i++) {
         const extraPos = getRandomSpawnPosition(canvas);
         enemies.push(new Enemy(extraPos.x, extraPos.y, 1, easyMode));
     }
@@ -78,10 +87,35 @@ export function spawnEnemyWave(canvas, level, easyMode = false) {
     const radius = Math.max(window.logicalWidth, window.logicalHeight) / 2 + 100;
     
     for (let i = 0; i < numEnemies; i++) {
+        if (!canSpawnEnemy()) break;
         const angle = (Math.PI * 2 / numEnemies) * i;
         const x = centerX + Math.cos(angle) * radius;
         const y = centerY + Math.sin(angle) * radius;
         enemies.push(new Enemy(x, y, level, easyMode));
+    }
+}
+
+// Late-game surges add short, readable pressure through composition and
+// density. They are deliberately capped and do not increase enemy HP.
+export function spawnLateGameSurge(canvas, level, easyMode = false) {
+    const availableTypes = ENEMY_TYPES.filter(type => level >= type.minLevel && type.shape !== 'triangle');
+    const surgeSize = Math.min(
+        GAME_CONFIG.LATE_GAME_SURGE_MAX_SIZE,
+        GAME_CONFIG.LATE_GAME_SURGE_BASE_SIZE + Math.floor((level - GAME_CONFIG.LATE_GAME_START_LEVEL) / GAME_CONFIG.LATE_GAME_SURGE_LEVEL_STEP)
+    );
+    const centerX = window.logicalWidth / 2;
+    const centerY = window.logicalHeight / 2;
+    const radius = Math.max(window.logicalWidth, window.logicalHeight) / 2 + 140;
+
+    for (let i = 0; i < surgeSize; i++) {
+        if (!canSpawnEnemy()) break;
+        const angle = (Math.PI * 2 / surgeSize) * i + Math.random() * 0.18;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        const forcedType = availableTypes.length
+            ? availableTypes[Math.floor(Math.random() * availableTypes.length)]
+            : null;
+        enemies.push(new Enemy(x, y, level, easyMode, forcedType));
     }
 }
 

@@ -9,7 +9,7 @@ import { AudioManager } from './audio/AudioManager.js';
 import packageInfo from '../package.json';
 
 const APP_VERSION = packageInfo.version;
-import { spawnBossRewardWave, spawnSplitEnemies } from './enemyManager.js';
+import { spawnBossRewardWave, spawnSplitEnemies, spawnLateGameSurge } from './enemyManager.js';
 import Laser from './laser.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
@@ -22,7 +22,7 @@ export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
-        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss,
+        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge,
         displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -48,6 +48,7 @@ export function createGameLoop(context) {
     let lastMagnetDropTime = 0;
     let gameplayStartedAt = null;
     let lowFpsSince = null;
+    let nextLateGameSurgeAt = null;
     const LOW_FPS_THRESHOLD = 30;
     const LOW_FPS_SUSTAINED_MS = 3000;
     const MIN_XP_ORBS_FOR_PERFORMANCE_MAGNET = 20;
@@ -164,13 +165,14 @@ export function createGameLoop(context) {
                 if (reactorNovaKillCounter >= REACTOR_NOVA.KILLS_PER_TRIGGER) {
                     reactorNovaKillCounter = 0;
                     reactorNovaTriggering = true;
-                    explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: REACTOR_NOVA.RADIUS, color: '#ffb000', kind: 'nova' });
+                    const reactorNovaRadius = Math.max(REACTOR_NOVA.MIN_RADIUS, Math.hypot(canvas.width, canvas.height) * REACTOR_NOVA.RADIUS_FACTOR);
+                    explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: reactorNovaRadius, color: '#ffb000', kind: 'nova' });
                     effectsSystem.triggerScreenShake(12, 18);
                     const nearby = enemies.filter((other) => {
                         if (!other.alive || other.exploding) return false;
                         const dx = other.x - ship.x;
                         const dy = other.y - ship.y;
-                        return Math.sqrt(dx * dx + dy * dy) < REACTOR_NOVA.RADIUS;
+                        return Math.sqrt(dx * dx + dy * dy) < reactorNovaRadius;
                     });
                     nearby.forEach((other) => {
                         other.hp = Math.max(0, other.hp - REACTOR_NOVA.DAMAGE);
@@ -341,6 +343,17 @@ export function createGameLoop(context) {
 
         const now = performance.now();
         if (gameplayStartedAt === null) gameplayStartedAt = now;
+        if (levelRef.value >= GAME_CONFIG.LATE_GAME_START_LEVEL) {
+            if (nextLateGameSurgeAt === null) {
+                nextLateGameSurgeAt = now + GAME_CONFIG.LATE_GAME_SURGE_INITIAL_DELAY_MS;
+            } else if (now >= nextLateGameSurgeAt) {
+                spawnLateGameSurge(canvas, levelRef.value, easyModeRef ? easyModeRef.value : false);
+                nextLateGameSurgeAt = now + GAME_CONFIG.LATE_GAME_SURGE_INTERVAL_MS;
+                if (typeof showWaveHint === 'function') showWaveHint();
+                effectsSystem.triggerScreenShake(6, 12);
+                AudioManager.play('ENEMY_BOSS');
+            }
+        }
         if (techUpgrades.signalInterference && now >= empCooldownUntil && enemies.some((enemy) => enemy.alive && enemy.canShoot)) {
             enemyLasers.length = 0;
             empDisruptionUntil = now + SIGNAL_INTERFERENCE.DISRUPTION_MS;

@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.3.12', date: '2026-08-05', changes: ['Expanded Reactor Nova into a wide, screen-scale shockwave.', 'Added controlled late-game surge events from level 25 onward without increasing regular enemy HP.'] },
     { version: '0.3.11', date: '2026-08-05', changes: ['Fresh enemy kills always keep a visible XP orb nearby, even when the active orb budget is full.'] },
     { version: '0.3.10', date: '2026-08-05', changes: ['Fixed horizontal scrolling in the mobile tech tree modal.', 'Moved mobile FPS and version display to the bottom left.'] },
     { version: '0.3.9', date: '2026-08-05', changes: ['Rebalanced regular enemy HP and split enemy budgets so late-game targets are less bullet-spongy.'] },
@@ -1663,11 +1664,11 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 only. The bonus expires after level 5.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
         { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 3, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 2s.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone', minLevel: 18 },
+        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone', minLevel: 18 },
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
         { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 12 kills, discharge a damaging shockwave around the ship.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
+        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 12 kills, discharge a wide reactor shockwave that damages enemies across most of the combat field.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 
     const grid = document.createElement('div');
