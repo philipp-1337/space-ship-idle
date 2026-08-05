@@ -9,6 +9,7 @@ export function isTouchDevice() {
 
 export const GAME_CONFIG = {
     BASE_LASER_DAMAGE: 0.8,
+    MAX_LASER_PROJECTILE_SPEED: 26.4,
     ENEMY_SPAWN_INTERVAL: 1500, // Erhöht die Spawn-Frequenz der Gegner
     LASER_SHOOT_COOLDOWN: 280,
     AUTO_SHOOT_COOLDOWN: 320,

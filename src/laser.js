@@ -1,5 +1,6 @@
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 import { getDamageMultiplier } from './upgrades.js';
+import { GAME_CONFIG } from './constants.js';
 
 // Kleine, gestreckte Pixel-Art-Bolzen mit heißem Kern, in drei Farbstufen je
 // nach Laser-Upgrade-Level (spiegelt den bestehenden COLORS.LASER_UPGRADED-Cutoff
@@ -49,7 +50,7 @@ class Laser {
         this.width = 12 + Math.min(upgradeLevel, 8);
         this.height = 5;
         // Startgeschwindigkeit niedriger, Upgrade-Skalierung langsam
-        this.speed = 6 + upgradeLevel * 1.2;
+        this.speed = Math.min(6 + upgradeLevel * 1.2, GAME_CONFIG.MAX_LASER_PROJECTILE_SPEED);
         this.angle = angle;
         this.isActive = true;
         this.upgradeLevel = upgradeLevel;
