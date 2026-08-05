@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.4.2', date: '2026-08-05', changes: ['Made salvage signals rarer and more distant, added a collection ping and visible reward drops, improved obstacle persistence and drift, removed boss popcorn spawns, and strengthened keyboard selection in Pause and Settings.'] },
     { version: '0.4.1', date: '2026-08-05', changes: ['Added a dedicated scanner ping when a salvage signal enters the flight area.'] },
     { version: '0.4.0', date: '2026-08-05', changes: ['Added rare salvage signals with Plasma, XP, hull recovery, or Overdrive rewards, plus sparse asteroids and drifting debris to reshape flight paths.'] },
     { version: '0.3.18', date: '2026-08-05', changes: ['Reduced Reactor Nova frequency and heavy-target damage again so it reads as a recovery pulse instead of a screen reset.'] },
@@ -386,20 +387,31 @@ function consoleButton({ text, color, glowColor, filled = false, fontSize = 16, 
     btn.style.padding = `${scale(12)} ${scale(26)}`;
     btn.style.transition = 'background 0.1s, box-shadow 0.15s, color 0.1s';
 
+    let keyboardSelected = false;
     const setState = (engaged) => {
         if (engaged) {
             btn.style.background = color;
             btn.style.color = INK.void;
-            btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${glowColor}`;
+            btn.style.boxShadow = keyboardSelected
+                ? `0 0 ${scaleNum(22)}px ${scaleNum(4)}px ${glowColor}`
+                : `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${glowColor}`;
         } else {
-            btn.style.background = INK.panel;
+            btn.style.background = keyboardSelected ? `${color}22` : INK.panel;
             btn.style.color = color;
-            btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${glowColor}`;
+            btn.style.boxShadow = keyboardSelected
+                ? `0 0 ${scaleNum(22)}px ${scaleNum(4)}px ${glowColor}`
+                : `0 0 ${scaleNum(6)}px 0 ${glowColor}`;
         }
+        btn.style.outline = keyboardSelected ? `2px solid ${color}` : '';
+        btn.style.outlineOffset = keyboardSelected ? scale(3) : '';
     };
     setState(filled);
-    btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(18)}px ${scaleNum(3)}px ${glowColor}`; };
+    btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(keyboardSelected ? 22 : 18)}px ${scaleNum(keyboardSelected ? 4 : 3)}px ${glowColor}`; };
     btn.onmouseleave = () => { setState(filled); };
+    btn.addEventListener('keyboardselectionchange', (event) => {
+        keyboardSelected = !!event.detail.selected;
+        setState(filled);
+    });
     mirrorHoverOnFocus(btn); // keyboard focus (Arrow-key nav) gets the same glow bump as hover
     btn.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
     btn.addEventListener('click', () => AudioManager.play(sound));
@@ -491,7 +503,9 @@ function enableArrowKeyNav(panel) {
     let idx = -1;
     const setSelected = (item) => {
         getItems().forEach((candidate) => {
-            candidate.dataset.keyboardSelected = candidate === item ? 'true' : 'false';
+            const selected = candidate === item;
+            candidate.dataset.keyboardSelected = selected ? 'true' : 'false';
+            candidate.dispatchEvent(new CustomEvent('keyboardselectionchange', { detail: { selected } }));
         });
     };
     const centerOf = (item) => {

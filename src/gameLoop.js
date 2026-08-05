@@ -9,7 +9,7 @@ import { AudioManager } from './audio/AudioManager.js';
 import packageInfo from '../package.json';
 
 const APP_VERSION = packageInfo.version;
-import { spawnBossRewardWave, spawnSplitEnemies, spawnLateGameSurge } from './enemyManager.js';
+import { spawnSplitEnemies, spawnLateGameSurge } from './enemyManager.js';
 import Laser from './laser.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
@@ -116,9 +116,6 @@ export function createGameLoop(context) {
             if (enemy.isElite) {
                 // A Boss orb always guarantees a level up upon collection.
                 spawnXpOrb(enemy.x, enemy.y, 0, true);
-                
-                // Insta Death Ray Sweep + Popcorn Wave Reward
-                spawnBossRewardWave(canvas, enemy.x, enemy.y, easyModeRef ? easyModeRef.value : false);
                 
                 sweepRay.active = true;
                 sweepRay.origin = enemy;
@@ -904,5 +901,15 @@ export function createGameLoop(context) {
         autoHomingMissileLogic();
         requestAnimationFrame(gameLoop);
     }
+    gameLoop.shiftWorld = (offsetX, offsetY) => {
+        homingMissiles.forEach((missile) => {
+            missile.x += offsetX;
+            missile.y += offsetY;
+            missile.trailParticles.forEach((particle) => {
+                particle.x += offsetX;
+                particle.y += offsetY;
+            });
+        });
+    };
     return gameLoop;
 }

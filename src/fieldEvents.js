@@ -144,12 +144,14 @@ export function createFieldEventSystem() {
     function addObstacle(ship, canvas, now) {
         const position = spawnOutsideView(ship, canvas, 55);
         const asteroid = Math.random() < 0.55;
+        const driftAngle = Math.random() * Math.PI * 2;
+        const driftSpeed = asteroid ? 0.65 + Math.random() * 0.35 : 0.9 + Math.random() * 0.55;
         obstacles.push({
             ...position,
             kind: asteroid ? 'asteroid' : 'debris',
             radius: asteroid ? 30 + Math.random() * 10 : 22 + Math.random() * 8,
-            vx: asteroid ? 0 : (Math.random() - 0.5) * 0.45,
-            vy: asteroid ? 0 : (Math.random() - 0.5) * 0.45,
+            vx: Math.cos(driftAngle) * driftSpeed,
+            vy: Math.sin(driftAngle) * driftSpeed,
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 0.025,
             expiresAt: now + FIELD_EVENTS.OBSTACLE_LIFETIME_MS
@@ -158,12 +160,24 @@ export function createFieldEventSystem() {
 
     function rewardMarker(marker, ship, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint) {
         const reward = Math.floor(Math.random() * 4);
+        const outwardAngle = Math.atan2(marker.y - ship.y, marker.x - ship.x);
+        const rewardPosition = (index, count, distance = 58) => {
+            const spread = count > 1 ? (index / (count - 1) - 0.5) * 0.7 : 0;
+            return {
+                x: marker.x + Math.cos(outwardAngle + spread) * distance,
+                y: marker.y + Math.sin(outwardAngle + spread) * distance
+            };
+        };
         if (reward === 0) {
-            for (let i = 0; i < 3; i++) plasmaCells.push(new PlasmaCell(marker.x + (i - 1) * 14, marker.y));
-            AudioManager.play('RES_COLLECT_PLASMA');
+            for (let i = 0; i < 3; i++) {
+                const position = rewardPosition(i, 3);
+                plasmaCells.push(new PlasmaCell(position.x, position.y));
+            }
         } else if (reward === 1) {
-            for (let i = 0; i < 5; i++) spawnXpOrb(marker.x + (i - 2) * 12, marker.y + ((i % 2) * 12 - 6), 2);
-            AudioManager.play('RES_COLLECT_XP');
+            for (let i = 0; i < 5; i++) {
+                const position = rewardPosition(i, 5, 62 + (i % 2) * 8);
+                spawnXpOrb(position.x, position.y, 2);
+            }
         } else if (reward === 2) {
             const before = ship.hp;
             ship.hp = Math.min(ship.maxHp, ship.hp + 1);
@@ -172,8 +186,8 @@ export function createFieldEventSystem() {
         } else {
             activateOverdrive();
             showOverdriveHint(getOverdriveDurationMs());
-            AudioManager.play('MILESTONE');
         }
+        AudioManager.play('SIGNAL_COLLECT');
     }
 
     function resolveObstacleCollision(obstacle, ship) {
@@ -211,7 +225,9 @@ export function createFieldEventSystem() {
                 obstacle.x += obstacle.vx * dt;
                 obstacle.y += obstacle.vy * dt;
                 obstacle.rotation += obstacle.rotationSpeed * dt;
-                if (now >= obstacle.expiresAt) { obstacles.splice(i, 1); continue; }
+                const visible = obstacle.x + obstacle.radius >= 0 && obstacle.x - obstacle.radius <= canvas.width
+                    && obstacle.y + obstacle.radius >= 0 && obstacle.y - obstacle.radius <= canvas.height;
+                if (now >= obstacle.expiresAt && !visible) { obstacles.splice(i, 1); continue; }
                 resolveObstacleCollision(obstacle, ship);
                 drawObstacle(ctx, obstacle, now);
             }

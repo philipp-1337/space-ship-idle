@@ -29,5 +29,6 @@ export const SOUNDS = {
     RES_COLLECT_PLASMA: '/assets/audio/sfx/res_collect_plasma.wav',
     RES_COLLECT_TRACTOR: '/assets/audio/sfx/res_collect_tractor.wav',
     SIGNAL_CONTACT: '/assets/audio/sfx/signal_contact.wav',
+    SIGNAL_COLLECT: '/assets/audio/sfx/signal_collect.wav',
     MILESTONE: '/assets/audio/sfx/milestone_reached.wav',
 };

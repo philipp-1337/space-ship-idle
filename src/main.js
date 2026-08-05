@@ -206,6 +206,7 @@ function updateShipMovement(dt = 1) {
             plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
             tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
             fieldEvents.shift(offsetX, offsetY);
+            gameLoop?.shiftWorld?.(offsetX, offsetY);
             effectsSystem.moveXpParticles(offsetX, offsetY); // Korrekt über EffectsSystem
         }
         ship.x = nextX;
@@ -317,6 +318,7 @@ function updateShipMovement(dt = 1) {
         plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
         tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
         fieldEvents.shift(offsetX, offsetY);
+        gameLoop?.shiftWorld?.(offsetX, offsetY);
     }
     ship.x = nextX;
     ship.y = nextY;
