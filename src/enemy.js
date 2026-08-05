@@ -94,6 +94,26 @@ const circleSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
     }
 );
 
+const aegisSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#0b6178', '#0b2f3a', '#55e8ff', '#d9fbff'], '#03151b',
+    (ctx) => {
+        const s = 15;
+        enemyPath(ctx, [[0, -s / 2], [s / 2, 0], [0, s / 2], [-s / 2, 0]], '#0b6178');
+        enemyPath(ctx, [[0, -s / 2], [s / 2, 0], [0, 0], [-s / 2, 0]], '#0b2f3a');
+        ctx.strokeStyle = '#55e8ff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(enemyMx(-5), enemyMy(0));
+        ctx.lineTo(enemyMx(0), enemyMy(-5));
+        ctx.lineTo(enemyMx(5), enemyMy(0));
+        ctx.lineTo(enemyMx(0), enemyMy(5));
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fillStyle = '#d9fbff';
+        ctx.fillRect(enemyMx(-1.5), enemyMy(-1.5), enemyMx(3) - enemyMx(0), enemyMy(3) - enemyMy(0));
+    }
+);
+
 // Boss-Sprite: gepanzerter, bestachelter Sechseck-Rumpf mit glühendem
 // Reaktorkern in Warnrot/Schwarz statt einer der zufälligen Standard-Formen —
 // jeder Boss sieht dadurch gleich und sofort als eigene Bedrohungsklasse
@@ -139,6 +159,7 @@ const ENEMY_SPRITES = {
     square: { normal: squareSprite, hit: makeFlashSprite(squareSprite, '#ffffff') },
     pentagon: { normal: pentagonSprite, hit: makeFlashSprite(pentagonSprite, '#ffffff') },
     circle: { normal: circleSprite, hit: makeFlashSprite(circleSprite, '#ffffff') },
+    aegis: { normal: aegisSprite, hit: makeFlashSprite(aegisSprite, '#ffffff') },
     boss: { normal: bossSprite, hit: makeFlashSprite(bossSprite, '#ffffff') },
 };
 
@@ -195,6 +216,17 @@ export const BOSS_TYPE = {
     canShoot: true
 };
 
+export const SURGE_AEGIS_TYPE = {
+    name: 'aegis',
+    minLevel: 25,
+    shape: 'aegis',
+    baseHp: 12,
+    baseSpeed: 0.5,
+    color: '#55e8ff',
+    baseXpValue: 12,
+    damageTakenMultiplier: 0.55
+};
+
 class Enemy {
     constructor(x, y, level = 1, easyMode = false, forcedType = null) {
         // Typ nach Level bestimmen (oder fest vorgegeben, z.B. BOSS_TYPE)
@@ -214,6 +246,8 @@ class Enemy {
         const hpMultiplier = isBoss ? ENEMY_BALANCE.BOSS_HP_LEVEL_MULTIPLIER : ENEMY_BALANCE.HP_LEVEL_MULTIPLIER;
         this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * hpGrowth) * Math.pow(hpMultiplier, level - 1) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
+        this.damageTakenMultiplier = type.damageTakenMultiplier || 1;
+        this.isAegis = type.name === 'aegis';
         this.color = type.color;
         this.alive = true;
         this.canShoot = type.canShoot || false;
@@ -357,6 +391,19 @@ class Enemy {
                 ctx.stroke();
                 ctx.restore();
             }
+            if (this.isAegis) {
+                const pulse = 0.65 + 0.35 * Math.sin(Date.now() / 180);
+                ctx.save();
+                ctx.globalAlpha = 0.65 * pulse;
+                ctx.strokeStyle = '#55e8ff';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 12 * pulse;
+                ctx.shadowColor = '#55e8ff';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2 + 8 + pulse * 2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
 
             const sprites = ENEMY_SPRITES[this.type.shape];
             const sprite = (this.isHit && this.hitTimer > 0) ? sprites.hit : sprites.normal;
@@ -368,7 +415,7 @@ class Enemy {
                 const barY = -this.size / 2 - (this.isElite ? 14 : 8);
                 ctx.fillStyle = 'black';
                 ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
-                ctx.fillStyle = this.isElite ? '#ff3b30' : 'lime';
+                ctx.fillStyle = this.isElite ? '#ff3b30' : (this.isAegis ? '#55e8ff' : 'lime');
                 ctx.fillRect(-barWidth / 2, barY, barWidth * (this.hp / this.maxHp), barHeight);
                 if (this.isElite) {
                     ctx.fillStyle = '#ff3b30';
@@ -376,6 +423,12 @@ class Enemy {
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'bottom';
                     ctx.fillText('BOSS', 0, barY - 3);
+                } else if (this.isAegis) {
+                    ctx.fillStyle = '#55e8ff';
+                    ctx.font = '700 8px "IBM Plex Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('AEGIS', 0, barY - 3);
                 }
             }
             ctx.restore();
@@ -403,8 +456,7 @@ class Enemy {
         const hit = Math.sqrt(dx*dx + dy*dy) < enemyLaserHitbox;
         if (this.alive && hit) {
             if (!this.isHit) { // Verhindere, dass mehrere Laser im selben Frame den Flash neu auslösen
-                this.hp -= laser.damage; // Schaden des Lasers verwenden
-                this.hp = Math.max(0, this.hp); // Verhindere negative HP
+                this.takeDamage(laser.damage);
                 if (this.hp <= 0) {
                     this.destroy();
                 } else {
@@ -416,6 +468,11 @@ class Enemy {
             return true; // Treffer registriert
         }
         return false;
+    }
+
+    takeDamage(amount) {
+        this.hp = Math.max(0, this.hp - amount * this.damageTakenMultiplier);
+        return this.hp <= 0;
     }
 
     destroy() {

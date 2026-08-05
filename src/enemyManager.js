@@ -1,6 +1,6 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
-import Enemy, { BOSS_TYPE, ENEMY_TYPES } from './enemy.js';
+import Enemy, { BOSS_TYPE, ENEMY_TYPES, SURGE_AEGIS_TYPE } from './enemy.js';
 import { GAME_CONFIG } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -112,9 +112,9 @@ export function spawnLateGameSurge(canvas, level, easyMode = false) {
         const angle = (Math.PI * 2 / surgeSize) * i + Math.random() * 0.18;
         const x = centerX + Math.cos(angle) * radius;
         const y = centerY + Math.sin(angle) * radius;
-        const forcedType = availableTypes.length
-            ? availableTypes[Math.floor(Math.random() * availableTypes.length)]
-            : null;
+        const forcedType = Math.random() < 0.28
+            ? SURGE_AEGIS_TYPE
+            : (availableTypes.length ? availableTypes[Math.floor(Math.random() * availableTypes.length)] : null);
         enemies.push(new Enemy(x, y, level, easyMode, forcedType));
     }
 }

@@ -175,7 +175,7 @@ export function createGameLoop(context) {
                         return Math.sqrt(dx * dx + dy * dy) < reactorNovaRadius;
                     });
                     nearby.forEach((other) => {
-                        other.hp = Math.max(0, other.hp - REACTOR_NOVA.DAMAGE);
+                        other.takeDamage(REACTOR_NOVA.DAMAGE);
                         if (other.hp <= 0) other.destroy();
                         awardKillIfNeeded(other);
                     });
@@ -539,7 +539,7 @@ export function createGameLoop(context) {
                             if (other === enemy || !other.alive || other.exploding) continue;
                             const sdx = other.x - enemy.x, sdy = other.y - enemy.y;
                             if (Math.sqrt(sdx*sdx + sdy*sdy) < EXPLOSIVE_ROUNDS.SPLASH_RADIUS) {
-                                other.hp = Math.max(0, other.hp - splashDamage);
+                                other.takeDamage(splashDamage);
                                 if (other.hp <= 0) {
                                     other.destroy();
                                 } else if (!other.isHit) {
@@ -567,7 +567,7 @@ export function createGameLoop(context) {
                             }
                             if (arcTarget) {
                                 const arcDamage = laser.damage * CHAIN_LIGHTNING.DAMAGE_MULT;
-                                arcTarget.hp = Math.max(0, arcTarget.hp - arcDamage);
+                                arcTarget.takeDamage(arcDamage);
                                 if (arcTarget.hp <= 0) {
                                     arcTarget.destroy();
                                 } else if (!arcTarget.isHit) {

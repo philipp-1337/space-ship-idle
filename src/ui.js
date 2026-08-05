@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.3.13', date: '2026-08-05', changes: ['Added cyan Aegis enemies to late-game surges; their shielding makes them take multiple hits without inflating regular enemy HP.'] },
     { version: '0.3.12', date: '2026-08-05', changes: ['Expanded Reactor Nova into a wide, screen-scale shockwave.', 'Added controlled late-game surge events from level 25 onward without increasing regular enemy HP.'] },
     { version: '0.3.11', date: '2026-08-05', changes: ['Fresh enemy kills always keep a visible XP orb nearby, even when the active orb budget is full.'] },
     { version: '0.3.10', date: '2026-08-05', changes: ['Fixed horizontal scrolling in the mobile tech tree modal.', 'Moved mobile FPS and version display to the bottom left.'] },

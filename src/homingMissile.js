@@ -327,8 +327,7 @@ export default class HomingMissile {
 
                 if (distanceToExplosion < this.explosionRadius + (e.size/2)) {
                     const wasAliveBeforeHit = e.hp > 0;
-                    e.hp -= this.damage;
-                    e.hp = Math.max(0, e.hp); 
+                    e.takeDamage(this.damage);
 
                     if (e.hp <= 0) { 
                         if (wasAliveBeforeHit && !e.alreadyAwardedXP && rewardContext) {
