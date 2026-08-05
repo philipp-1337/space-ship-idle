@@ -147,7 +147,7 @@ export const ENEMY_TYPES = [
         name: 'triangle',
         minLevel: 1,
         shape: 'triangle',
-        baseHp: 4, // Erhöht
+        baseHp: 3,
         baseSpeed: 0.7,
         color: 'darkred',
         baseXpValue: 1
@@ -156,7 +156,7 @@ export const ENEMY_TYPES = [
         name: 'square',
         minLevel: 5,
         shape: 'square',
-        baseHp: 10, // Erhöht
+        baseHp: 6,
         baseSpeed: 0.6,
         color: 'darkblue',
         baseXpValue: 3
@@ -165,7 +165,7 @@ export const ENEMY_TYPES = [
         name: 'pentagon',
         minLevel: 10,
         shape: 'pentagon',
-        baseHp: 14, // Reduced because the pentagon also splits into two squares
+        baseHp: 9, // The split creates two additional targets.
         baseSpeed: 0.5,
         color: 'darkgreen',
         baseXpValue: 5
@@ -174,7 +174,7 @@ export const ENEMY_TYPES = [
         name: 'shooter',
         minLevel: 18,
         shape: 'circle',
-        baseHp: 19, // Reduced because shooters add ranged pressure
+        baseHp: 12, // Shooters also add ranged pressure.
         baseSpeed: 0.45,
         color: 'purple',
         canShoot: true,
@@ -184,7 +184,7 @@ export const ENEMY_TYPES = [
 
 // Eigenes Stat-Profil für den Boss statt einer zufällig aus ENEMY_TYPES
 // gewählten Form — sonst würde ein Boss je nach Zufallstreffer mal ein
-// schwaches Dreieck (baseHp 4), mal ein zähes Shooter-Sechseck (baseHp 25)
+// schwaches Dreieck, mal ein zäher Shooter
 // sein, obwohl er optisch immer gleich (bossSprite) aussieht.
 export const BOSS_TYPE = {
     name: 'boss',
@@ -206,10 +206,13 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.size = 30;
-        // Flache, sanfte Skalierung: Gegner werden mit dem Level zäher,
-        // behalten aber eine kurze, aktive Time-to-Kill statt zu Bullet Sponges
-        // zu werden — besonders in Runs mit starkem Laser-Upgrade.
-        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * ENEMY_BALANCE.HP_LEVEL_GROWTH) * Math.pow(ENEMY_BALANCE.HP_LEVEL_MULTIPLIER, level - 1) * (easyMode ? 0.5 : 1)));
+        // Regular enemy HP follows a small, bounded combat budget. New enemy
+        // behaviors and composition should create difficulty; raw HP should
+        // preserve a short time-to-kill even in late levels.
+        const isBoss = type.name === 'boss';
+        const hpGrowth = isBoss ? ENEMY_BALANCE.BOSS_HP_LEVEL_GROWTH : ENEMY_BALANCE.HP_LEVEL_GROWTH;
+        const hpMultiplier = isBoss ? ENEMY_BALANCE.BOSS_HP_LEVEL_MULTIPLIER : ENEMY_BALANCE.HP_LEVEL_MULTIPLIER;
+        this.hp = Math.max(1, Math.round((type.baseHp + (level - 1) * hpGrowth) * Math.pow(hpMultiplier, level - 1) * (easyMode ? 0.5 : 1)));
         this.maxHp = this.hp;
         this.color = type.color;
         this.alive = true;

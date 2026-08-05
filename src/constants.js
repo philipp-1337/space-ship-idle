@@ -23,8 +23,13 @@ export const GAME_CONFIG = {
 };
 
 export const ENEMY_BALANCE = {
-    HP_LEVEL_GROWTH: 0.8,
-    HP_LEVEL_MULTIPLIER: 1.01
+    // Regular enemy HP is budgeted around the player's growing weapon output.
+    // Composition, split behavior, and ranged pressure provide the later-game
+    // challenge; level should not turn regular enemies into damage sponges.
+    HP_LEVEL_GROWTH: 0.25,
+    HP_LEVEL_MULTIPLIER: 1.005,
+    BOSS_HP_LEVEL_GROWTH: 0.8,
+    BOSS_HP_LEVEL_MULTIPLIER: 1.01
 };
 
 export const PHYSICS = {

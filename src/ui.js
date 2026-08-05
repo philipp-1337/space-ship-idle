@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.3.9', date: '2026-08-05', changes: ['Rebalanced regular enemy HP and split enemy budgets so late-game targets are less bullet-spongy.'] },
     { version: '0.3.8', date: '2026-08-05', changes: ['Added this scrollable in-game changelog and release history.'] },
     { version: '0.3.7', date: '2026-08-05', changes: ['The version and FPS display is now also visible on mobile above the touch controls.'] },
     { version: '0.3.6', date: '2026-08-05', changes: ['Flattened late-game enemy HP scaling so higher-level enemies are less likely to become bullet sponges.'] },
