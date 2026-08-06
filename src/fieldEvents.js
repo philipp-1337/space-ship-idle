@@ -110,6 +110,53 @@ function drawSalvageMarker(ctx, marker, now) {
     ctx.restore();
 }
 
+function drawRewardVisual(ctx, visual) {
+    const progress = 1 - visual.life / visual.maxLife;
+    const fade = (1 - progress) * (0.8 + Math.sin(progress * Math.PI) * 0.2);
+    const palette = {
+        plasma: '#7fe8ff',
+        xp: '#ffd23f',
+        hull: '#39ff6a',
+        milestone: '#ffd23f',
+        overdrive: '#ffd23f'
+    };
+    const color = palette[visual.kind];
+    const radius = 18 + progress * 52;
+    ctx.save();
+    ctx.translate(visual.x, visual.y);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = visual.kind === 'hull' ? 3 : 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    if (visual.kind === 'hull') {
+        ctx.globalAlpha = fade * 0.9;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-10, 0); ctx.lineTo(10, 0);
+        ctx.moveTo(0, -10); ctx.lineTo(0, 10);
+        ctx.stroke();
+    } else {
+        const rays = visual.kind === 'milestone' ? 12 : (visual.kind === 'overdrive' ? 8 : 6);
+        const rayStart = radius * 0.42;
+        const rayEnd = radius * (visual.kind === 'overdrive' ? 1.18 : 0.9);
+        ctx.globalAlpha = fade * 0.85;
+        ctx.lineWidth = 2;
+        for (let index = 0; index < rays; index++) {
+            const angle = index * Math.PI * 2 / rays + progress * 0.55;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(angle) * rayStart, Math.sin(angle) * rayStart);
+            ctx.lineTo(Math.cos(angle) * rayEnd, Math.sin(angle) * rayEnd);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
 function drawObstacle(ctx, obstacle, now) {
     const color = obstacle.kind === 'asteroid' ? ASTEROID_COLOR : DEBRIS_COLOR;
     const sprite = obstacle.kind === 'asteroid' ? asteroidSprite : debrisSprite;
@@ -134,13 +181,21 @@ function drawObstacle(ctx, obstacle, now) {
 export function createFieldEventSystem() {
     const markers = [];
     const obstacles = [];
+    const rewardVisuals = [];
     let nextMarkerAt = null;
     let nextObstacleAt = null;
 
     function addMarker(ship, canvas, now, level, easyMode) {
         const distance = FIELD_EVENTS.MARKER_OFFSCREEN_DISTANCE + Math.random() * FIELD_EVENTS.MARKER_DISTANCE_VARIANCE;
         const position = spawnOutsideView(ship, canvas, distance);
-        markers.push({ ...position, expiresAt: now + FIELD_EVENTS.MARKER_LIFETIME_MS });
+        const initialDistance = Math.hypot(position.x - ship.x, position.y - ship.y);
+        markers.push({
+            ...position,
+            expiresAt: now + FIELD_EVENTS.MARKER_LIFETIME_MS,
+            initialDistance,
+            closestDistance: initialDistance,
+            followed: false
+        });
         // Two sparse route contacts make the long flight a deliberate risk,
         // rather than leaving the player alone until the final pickup.
         [0.34, 0.68].forEach((progress) => {
@@ -195,18 +250,28 @@ export function createFieldEventSystem() {
                 const position = rewardPosition(i, 3);
                 plasmaCells.push(new PlasmaCell(position.x, position.y));
             }
+            rewardVisuals.push({ x: marker.x, y: marker.y, kind: 'plasma', life: 34, maxLife: 34 });
         } else if (reward === 1) {
             for (let i = 0; i < 5; i++) {
                 const position = rewardPosition(i, 5, 62 + (i % 2) * 8);
                 spawnXpOrb(position.x, position.y, 2);
             }
+            rewardVisuals.push({ x: marker.x, y: marker.y, kind: 'xp', life: 34, maxLife: 34 });
         } else if (reward === 2) {
             const before = ship.hp;
             ship.hp = Math.min(ship.maxHp, ship.hp + 1);
             AudioManager.play(ship.hp > before ? 'SHIELD_UP_V2' : 'MILESTONE');
+            rewardVisuals.push({
+                x: ship.x,
+                y: ship.y,
+                kind: ship.hp > before ? 'hull' : 'milestone',
+                life: 42,
+                maxLife: 42
+            });
         } else {
             activateOverdrive();
             showOverdriveHint(getOverdriveDurationMs());
+            rewardVisuals.push({ x: ship.x, y: ship.y, kind: 'overdrive', life: 42, maxLife: 42 });
         }
         AudioManager.play('SIGNAL_COLLECT');
     }
@@ -226,7 +291,7 @@ export function createFieldEventSystem() {
 
     return {
         shift(dx, dy) {
-            [...markers, ...obstacles].forEach((item) => { item.x += dx; item.y += dy; });
+            [...markers, ...obstacles, ...rewardVisuals].forEach((item) => { item.x += dx; item.y += dy; });
         },
         updateAndDraw({ ship, canvas, ctx, now, dt, level, easyMode, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint, showSalvageHint }) {
             if (nextMarkerAt === null) nextMarkerAt = now + FIELD_EVENTS.FIRST_MARKER_DELAY_MS;
@@ -255,7 +320,14 @@ export function createFieldEventSystem() {
 
             for (let i = markers.length - 1; i >= 0; i--) {
                 const marker = markers[i];
-                if (now >= marker.expiresAt) { markers.splice(i, 1); continue; }
+                const distance = Math.hypot(marker.x - ship.x, marker.y - ship.y);
+                marker.closestDistance = Math.min(marker.closestDistance, distance);
+                if (!marker.followed && marker.initialDistance - marker.closestDistance >= FIELD_EVENTS.MARKER_FOLLOW_COMMIT_DISTANCE) {
+                    marker.followed = true;
+                }
+                // Once a pilot has demonstrably followed the navigation arrow,
+                // the route remains a valid commitment until it is recovered.
+                if (!marker.followed && now >= marker.expiresAt) { markers.splice(i, 1); continue; }
                 const inView = marker.x >= 0 && marker.x <= canvas.width && marker.y >= 0 && marker.y <= canvas.height;
                 if (inView) drawSalvageMarker(ctx, marker, now);
                 else drawOffscreenMarker(ctx, { ...marker, shipX: ship.x, shipY: ship.y }, canvas, now);
@@ -263,6 +335,16 @@ export function createFieldEventSystem() {
                     rewardMarker(marker, ship, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint);
                     markers.splice(i, 1);
                 }
+            }
+
+            for (let i = rewardVisuals.length - 1; i >= 0; i--) {
+                const visual = rewardVisuals[i];
+                visual.life -= dt;
+                if (visual.life <= 0) {
+                    rewardVisuals.splice(i, 1);
+                    continue;
+                }
+                drawRewardVisual(ctx, visual);
             }
         }
     };

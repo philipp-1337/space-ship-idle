@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.6.1', date: '2026-08-06', changes: ['Salvage signals last longer and stay active after a pilot commits to the route; every salvage reward now has a distinct visual confirmation.'] },
     { version: '0.6.0', date: '2026-08-06', changes: ['Bosses now lock on before firing a slow-tracking red laser that can be evaded through sustained flight; their Death Ray still turns on enemies after defeat.'] },
     { version: '0.5.2', date: '2026-08-06', changes: ['Extended AEGIS pulse flight to six seconds and added a visible cyan detonation on impact or expiry.'] },
     { version: '0.5.1', date: '2026-08-06', changes: ['Restored the hidden Drone Emitter III node and refined AEGIS pulses with a smaller octagonal form, longer flight, and visible-contact audio.'] },

@@ -14,7 +14,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - Tech Tree branches for automated fire, missiles (including damage, endurance, blast radius, and guidance upgrades), drones, drone targeting, piercing and explosive rounds, EMP-style signal interference, Reactor Nova, salvage, and several XP improvements.
 - Defensive systems including Hull Integrity, Nanite Repair, and Deflector Charge.
 - Weapon and utility upgrades including Magnet, Collector Pulse, Chain Lightning, Weapon Overdrive, and incremental XP gain.
-- Sparse field events: off-screen salvage signals reward exploration with XP, Plasma, hull recovery, or Overdrive; occasional asteroids and drifting debris alter flight paths without crowding the arena.
+- Sparse field events: off-screen salvage signals reward exploration with XP, Plasma, hull recovery, or Overdrive; once a route is actively followed, it remains available until recovery. Occasional asteroids and drifting debris alter flight paths without crowding the arena.
 - Long-range salvage routes add sparse route hazards, while AEGIS contacts fire telegraphed homing pulse cannons. Drone and missile tech branches each include independent five-rank damage upgrades.
 - Normal and Easy difficulty modes. Normal is the default Pre-Flight selection.
 - Desktop keyboard controls, mouse interaction, and mobile touch controls with automatic firing.
