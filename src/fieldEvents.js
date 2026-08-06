@@ -1,5 +1,5 @@
 import { FIELD_EVENTS } from './constants.js';
-import { activateOverdrive, getOverdriveDurationMs } from './upgrades.js';
+import { activateOverdrive } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 import Enemy from './enemy.js';
@@ -118,7 +118,9 @@ function drawRewardVisual(ctx, visual) {
         xp: '#ffd23f',
         hull: '#39ff6a',
         milestone: '#ffd23f',
-        overdrive: '#ffd23f'
+        overdrive: '#ffd23f',
+        drone: '#7fe8ff',
+        overcharge: '#39ff6a'
     };
     const color = palette[visual.kind];
     const radius = 18 + progress * 52;
@@ -133,7 +135,7 @@ function drawRewardVisual(ctx, visual) {
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
-    if (visual.kind === 'hull') {
+    if (visual.kind === 'hull' || visual.kind === 'overcharge') {
         ctx.globalAlpha = fade * 0.9;
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -235,8 +237,11 @@ export function createFieldEventSystem() {
         AudioManager.play('SPACE_OBSTACLE');
     }
 
-    function rewardMarker(marker, ship, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint) {
-        const reward = Math.floor(Math.random() * 4);
+    function rewardMarker(marker, ship, level, maxXP, now, spawnXpOrb, PlasmaCell, plasmaCells, showSalvageRewardHint) {
+        const rewards = level > FIELD_EVENTS.PLASMA_MAX_LEVEL
+            ? ['xp', 'hull', 'overdrive', 'drone', 'overcharge']
+            : ['plasma', 'xp', 'hull', 'overdrive', 'drone', 'overcharge'];
+        const reward = rewards[Math.floor(Math.random() * rewards.length)];
         const outwardAngle = Math.atan2(marker.y - ship.y, marker.x - ship.x);
         const rewardPosition = (index, count, distance = 58) => {
             const spread = count > 1 ? (index / (count - 1) - 0.5) * 0.7 : 0;
@@ -245,22 +250,26 @@ export function createFieldEventSystem() {
                 y: marker.y + Math.sin(outwardAngle + spread) * distance
             };
         };
-        if (reward === 0) {
-            for (let i = 0; i < 3; i++) {
-                const position = rewardPosition(i, 3);
+        if (reward === 'plasma') {
+            const cellCount = 3 + Math.floor(level / 8);
+            for (let i = 0; i < cellCount; i++) {
+                const position = rewardPosition(i, cellCount);
                 plasmaCells.push(new PlasmaCell(position.x, position.y));
             }
             rewardVisuals.push({ x: marker.x, y: marker.y, kind: 'plasma', life: 34, maxLife: 34 });
-        } else if (reward === 1) {
-            for (let i = 0; i < 5; i++) {
-                const position = rewardPosition(i, 5, 62 + (i % 2) * 8);
-                spawnXpOrb(position.x, position.y, 2);
+        } else if (reward === 'xp') {
+            const orbCount = 5;
+            const totalXp = Math.max(10, Math.ceil(maxXP * (0.20 + Math.random() * 0.15)));
+            for (let i = 0; i < orbCount; i++) {
+                const position = rewardPosition(i, orbCount, 62 + (i % 2) * 8);
+                spawnXpOrb(position.x, position.y, totalXp / orbCount);
             }
             rewardVisuals.push({ x: marker.x, y: marker.y, kind: 'xp', life: 34, maxLife: 34 });
-        } else if (reward === 2) {
+        } else if (reward === 'hull') {
             const before = ship.hp;
             ship.hp = Math.min(ship.maxHp, ship.hp + 1);
             AudioManager.play(ship.hp > before ? 'SHIELD_UP_V2' : 'MILESTONE');
+            showSalvageRewardHint(ship.hp > before ? 'hull' : 'milestone');
             rewardVisuals.push({
                 x: ship.x,
                 y: ship.y,
@@ -268,10 +277,18 @@ export function createFieldEventSystem() {
                 life: 42,
                 maxLife: 42
             });
-        } else {
+        } else if (reward === 'overdrive') {
             activateOverdrive();
-            showOverdriveHint(getOverdriveDurationMs());
+            showSalvageRewardHint('overdrive');
             rewardVisuals.push({ x: ship.x, y: ship.y, kind: 'overdrive', life: 42, maxLife: 42 });
+        } else if (reward === 'drone') {
+            ship.droneUplinkUntil = now + FIELD_EVENTS.DRONE_UPLINK_DURATION_MS;
+            showSalvageRewardHint('drone');
+            rewardVisuals.push({ x: ship.x, y: ship.y, kind: 'drone', life: 42, maxLife: 42 });
+        } else {
+            ship.salvageOverchargeUntil = now + FIELD_EVENTS.HULL_OVERCHARGE_DURATION_MS;
+            showSalvageRewardHint('overcharge');
+            rewardVisuals.push({ x: ship.x, y: ship.y, kind: 'overcharge', life: 42, maxLife: 42 });
         }
         AudioManager.play('SIGNAL_COLLECT');
     }
@@ -293,7 +310,7 @@ export function createFieldEventSystem() {
         shift(dx, dy) {
             [...markers, ...obstacles, ...rewardVisuals].forEach((item) => { item.x += dx; item.y += dy; });
         },
-        updateAndDraw({ ship, canvas, ctx, now, dt, level, easyMode, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint, showSalvageHint }) {
+        updateAndDraw({ ship, canvas, ctx, now, dt, level, maxXP, easyMode, spawnXpOrb, PlasmaCell, plasmaCells, showSalvageHint, showSalvageRewardHint }) {
             if (nextMarkerAt === null) nextMarkerAt = now + FIELD_EVENTS.FIRST_MARKER_DELAY_MS;
             if (nextObstacleAt === null) nextObstacleAt = now + FIELD_EVENTS.FIRST_OBSTACLE_DELAY_MS;
             if (now >= nextMarkerAt && markers.length === 0) {
@@ -332,7 +349,7 @@ export function createFieldEventSystem() {
                 if (inView) drawSalvageMarker(ctx, marker, now);
                 else drawOffscreenMarker(ctx, { ...marker, shipX: ship.x, shipY: ship.y }, canvas, now);
                 if (distanceSquared(marker, ship) <= FIELD_EVENTS.MARKER_CONTACT_RADIUS ** 2) {
-                    rewardMarker(marker, ship, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint);
+                    rewardMarker(marker, ship, level, maxXP, now, spawnXpOrb, PlasmaCell, plasmaCells, showSalvageRewardHint);
                     markers.splice(i, 1);
                 }
             }

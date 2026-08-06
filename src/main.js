@@ -4,7 +4,7 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
@@ -526,7 +526,7 @@ window.syncRefsToVars = syncRefsToVars;
 const gameLoop = createGameLoop({
     ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
-    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint,
+    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint,
     displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,

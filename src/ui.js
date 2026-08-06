@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.8.0', date: '2026-08-06', changes: ['Expanded salvage rewards with temporary Drone Uplink and Hull Overcharge bonuses, scaled resource rewards, and no Plasma salvage beyond level 24.'] },
     { version: '0.7.2', date: '2026-08-06', changes: ['Enemy lasers now travel much farther through the flight space and end with a small visible magenta discharge.'] },
     { version: '0.7.1', date: '2026-08-06', changes: ['Slightly slowed the boss laser tracking and restored the boss Death Ray when a homing missile lands the final hit.'] },
     { version: '0.7.0', date: '2026-08-06', changes: ['Long flights now maintain nearby combat pressure by bringing distant regular enemies back toward the route and reinforcing sparse encounters.'] },
@@ -1935,6 +1936,18 @@ export function showBossHint() {
 
 export function showSalvageHint() {
     annunciator({ id: 'salvage-hint', top: '96px', text: 'Signal Contact — Salvage Opportunity', color: INK.gold, duration: 3500 });
+}
+
+export function showSalvageRewardHint(reward) {
+    const rewards = {
+        hull: { text: 'Salvage Recovery — Hull Repaired', color: INK.phosphor },
+        milestone: { text: 'Salvage Milestone — Hull Nominal', color: INK.gold },
+        overdrive: { text: 'Salvage Cache — Weapon Overdrive', color: INK.gold },
+        drone: { text: 'Salvage Uplink — Auxiliary Drone Online · 25s', color: INK.scope },
+        overcharge: { text: 'Salvage Overcharge — Barrier Online · 25s', color: INK.phosphor }
+    };
+    const entry = rewards[reward];
+    if (entry) annunciator({ id: 'salvage-reward-hint', top: '136px', text: entry.text, color: entry.color, duration: 3500 });
 }
 
 export function showToast({ id, message, buttonLabel, onClick, isShopOpenRef, isPausedRef, color = INK.scope }) {

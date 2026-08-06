@@ -140,6 +140,11 @@ class Ship {
         this.shieldCharge = false;
         this.shieldRechargeAt = null;
         this.shieldFlashUntil = 0;
+
+        // Salvage rewards can temporarily add one disposable emergency barrier
+        // without changing the player's permanent hull or Deflector progress.
+        this.salvageOverchargeUntil = 0;
+        this.droneUplinkUntil = 0;
     }
 
     // Wendet Schaden an, respektiert Unverwundbarkeitsfenster nach dem letzten Treffer.
@@ -148,6 +153,12 @@ class Ship {
     damage(amount) {
         const now = performance.now();
         if (now < this.invulnerableUntil || this.isExploding) return 'blocked';
+        if (now < this.salvageOverchargeUntil) {
+            this.salvageOverchargeUntil = 0;
+            this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
+            this.shieldFlashUntil = now + 200;
+            return 'blocked';
+        }
         if (this.shieldCharge) {
             // Schild fängt den Treffer komplett ab, bevor Armor verloren geht —
             // danach normales Unverwundbarkeits-Fenster, damit nicht im selben

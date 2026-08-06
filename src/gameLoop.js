@@ -184,7 +184,7 @@ export function createGameLoop(context) {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
         ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge,
-        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint,
+        displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
         startEnemySpawning, autoShootTimerRef, easyModeRef
@@ -600,21 +600,23 @@ export function createGameLoop(context) {
         }
         ship.update(dt);
         fieldEvents.updateAndDraw({
-            ship, canvas, ctx, now, dt, level: levelRef.value, easyMode: easyModeRef?.value,
+            ship, canvas, ctx, now, dt, level: levelRef.value, maxXP: maxXPRef.value, easyMode: easyModeRef?.value,
             spawnXpOrb, PlasmaCell, plasmaCells,
-            showOverdriveHint, showSalvageHint
+            showSalvageHint, showSalvageRewardHint
         });
         ship.draw(ctx);
 
         // Begleit-Drohne(n) (Tech-Tree-Waffe): kreisen ums Schiff und feuern
         // eigenständig auf den nächsten Gegner in Reichweite. Die zweite
         // Drohne (Twin Drones) startet exakt gegenüber der ersten.
-        if (techUpgrades.drone) {
-            const desiredDrones = techUpgrades.twinDrones ? 2 : 1;
+        if (techUpgrades.drone || now < ship.droneUplinkUntil) {
+            const permanentDrones = techUpgrades.drone ? (techUpgrades.twinDrones ? 2 : 1) : 0;
+            const desiredDrones = permanentDrones + (now < ship.droneUplinkUntil ? 1 : 0);
             while (drones.length < desiredDrones) {
                 const initialAngle = drones.length === 0 ? undefined : drones[0].orbitAngle + Math.PI;
                 drones.push(new Drone(initialAngle));
             }
+            if (drones.length > desiredDrones) drones.length = desiredDrones;
             drones.forEach(d => {
                 d.update(ship, dt);
                 d.draw(ctx);
