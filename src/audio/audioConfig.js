@@ -16,7 +16,7 @@ export const SOUNDS = {
     // Action
     SHIP_LASER: '/assets/audio/sfx/ship_laser_v2.wav',
     DRONE_LASER: '/assets/audio/sfx/drone_laser.wav',
-    ENEMY_LASER: '/assets/audio/sfx/enemy_laser_v2.wav',
+    ENEMY_LASER: '/assets/audio/sfx/enemy_laser_v3.wav',
     ENEMY_HIT: '/assets/audio/sfx/enemy_hit.wav',
     ENEMY_EXPLODE: '/assets/audio/sfx/enemy_explode.wav',
     ENEMY_BOSS: '/assets/audio/sfx/enemy_boss.wav',
@@ -25,7 +25,7 @@ export const SOUNDS = {
     SHIP_MISSILE_EXPLOSION: '/assets/audio/sfx/ship_missile_explosion.wav',
 
     // Idle & Resources
-    RES_COLLECT_XP: '/assets/audio/sfx/res_collect_xp.wav',
+    RES_COLLECT_XP: '/assets/audio/sfx/res_collect_xp_v2.wav',
     RES_COLLECT_PLASMA: '/assets/audio/sfx/res_collect_plasma.wav',
     RES_COLLECT_TRACTOR: '/assets/audio/sfx/res_collect_tractor.wav',
     SIGNAL_CONTACT: '/assets/audio/sfx/signal_contact.wav',
