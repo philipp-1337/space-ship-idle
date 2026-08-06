@@ -64,7 +64,7 @@ class Laser {
         // Annahme: window.BASE_LASER_DAMAGE ist in main.js gesetzt
         const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
         // Reduzierte kompoundierte Steigerung: z.B. 5% pro Level
-        this.damage = calculateLaserDamage(baseDamage, this.upgradeLevel) * getDamageMultiplier();
+        this.damage = options.damage ?? (calculateLaserDamage(baseDamage, this.upgradeLevel) * getDamageMultiplier());
     }
 
     update(canvasWidth, canvasHeight, dt = 1) {

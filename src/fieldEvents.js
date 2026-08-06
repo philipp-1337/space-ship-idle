@@ -2,6 +2,8 @@ import { FIELD_EVENTS } from './constants.js';
 import { activateOverdrive, getOverdriveDurationMs } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
+import Enemy from './enemy.js';
+import { enemies } from './enemyManager.js';
 
 const MARKER_COLOR = '#ffd23f';
 const ASTEROID_COLOR = '#6f7884';
@@ -135,9 +137,28 @@ export function createFieldEventSystem() {
     let nextMarkerAt = null;
     let nextObstacleAt = null;
 
-    function addMarker(ship, canvas, now) {
-        const position = spawnOutsideView(ship, canvas, FIELD_EVENTS.MARKER_OFFSCREEN_DISTANCE);
+    function addMarker(ship, canvas, now, level, easyMode) {
+        const distance = FIELD_EVENTS.MARKER_OFFSCREEN_DISTANCE + Math.random() * FIELD_EVENTS.MARKER_DISTANCE_VARIANCE;
+        const position = spawnOutsideView(ship, canvas, distance);
         markers.push({ ...position, expiresAt: now + FIELD_EVENTS.MARKER_LIFETIME_MS });
+        // Two sparse route contacts make the long flight a deliberate risk,
+        // rather than leaving the player alone until the final pickup.
+        [0.34, 0.68].forEach((progress) => {
+            const x = ship.x + (position.x - ship.x) * progress;
+            const y = ship.y + (position.y - ship.y) * progress;
+            enemies.push(new Enemy(x, y, Math.max(1, level), easyMode));
+            obstacles.push({
+                x: x + (Math.random() - 0.5) * 90,
+                y: y + (Math.random() - 0.5) * 90,
+                kind: Math.random() < 0.5 ? 'asteroid' : 'debris',
+                radius: 22 + Math.random() * 8,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.025,
+                expiresAt: now + FIELD_EVENTS.MARKER_LIFETIME_MS
+            });
+        });
         AudioManager.play('SIGNAL_CONTACT');
     }
 
@@ -207,11 +228,11 @@ export function createFieldEventSystem() {
         shift(dx, dy) {
             [...markers, ...obstacles].forEach((item) => { item.x += dx; item.y += dy; });
         },
-        updateAndDraw({ ship, canvas, ctx, now, dt, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint, showSalvageHint }) {
+        updateAndDraw({ ship, canvas, ctx, now, dt, level, easyMode, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint, showSalvageHint }) {
             if (nextMarkerAt === null) nextMarkerAt = now + FIELD_EVENTS.FIRST_MARKER_DELAY_MS;
             if (nextObstacleAt === null) nextObstacleAt = now + FIELD_EVENTS.FIRST_OBSTACLE_DELAY_MS;
             if (now >= nextMarkerAt && markers.length === 0) {
-                addMarker(ship, canvas, now);
+                addMarker(ship, canvas, now, level, easyMode);
                 nextMarkerAt = now + FIELD_EVENTS.MARKER_INTERVAL_MS;
                 showSalvageHint();
             }

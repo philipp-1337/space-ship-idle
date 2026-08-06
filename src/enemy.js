@@ -1,7 +1,7 @@
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
 import { AudioManager } from './audio/AudioManager.js';
-import { spawnEnemyLaser } from './enemyManager.js';
-import { ENEMY_BALANCE } from './constants.js';
+import { spawnEnemyLaser, spawnAegisPulse } from './enemyManager.js';
+import { AEGIS_PULSE, ENEMY_BALANCE } from './constants.js';
 
 // Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
 // Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
@@ -224,7 +224,8 @@ export const SURGE_AEGIS_TYPE = {
     baseSpeed: 0.5,
     color: '#55e8ff',
     baseXpValue: 12,
-    damageTakenMultiplier: 0.75
+    damageTakenMultiplier: 0.75,
+    canShoot: true
 };
 
 class Enemy {
@@ -265,6 +266,7 @@ class Enemy {
         // Shooter volleys should not synchronize when several enemies spawn
         // during the same wave.
         this.shootCooldown = type.canShoot ? Math.random() * 150 : 0;
+        this.pulseCharge = 0;
         // Speed-Skalierung bleibt wie zuvor oder kann angepasst werden
         this.speed = type.baseSpeed * (1 + Math.floor((level-1)/4) * 0.03);
 
@@ -332,9 +334,17 @@ class Enemy {
             this.x += dx * 0.5 * dt;
             this.y += dy * 0.5 * dt;
             // Shooter-Logik
-            if (this.canShoot && this.shootCooldown <= 0) {
-                this.shootCooldown = 150 + Math.random()*60;
-                spawnEnemyLaser(this.x, this.y, angle);
+            if (this.isAegis && this.pulseCharge > 0) {
+                this.pulseCharge -= dt;
+                if (this.pulseCharge <= 0) spawnAegisPulse(this.x, this.y, angle);
+            } else if (this.canShoot && this.shootCooldown <= 0) {
+                if (this.isAegis) {
+                    this.shootCooldown = AEGIS_PULSE.COOLDOWN_FRAMES + Math.random() * 90;
+                    this.pulseCharge = AEGIS_PULSE.CHARGE_FRAMES;
+                } else {
+                    this.shootCooldown = 150 + Math.random()*60;
+                    spawnEnemyLaser(this.x, this.y, angle);
+                }
             }
             if (this.canShoot && this.shootCooldown > 0) {
                 this.shootCooldown -= dt;
@@ -403,6 +413,18 @@ class Enemy {
                 ctx.arc(0, 0, this.size / 2 + 8 + pulse * 2, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.restore();
+                if (this.pulseCharge > 0) {
+                    const charge = 1 - this.pulseCharge / AEGIS_PULSE.CHARGE_FRAMES;
+                    ctx.save();
+                    ctx.globalAlpha = 0.4 + charge * 0.6;
+                    ctx.fillStyle = '#d9fbff';
+                    ctx.shadowColor = '#55e8ff';
+                    ctx.shadowBlur = 8 + charge * 16;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 3 + charge * 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
             }
 
             const sprites = ENEMY_SPRITES[this.type.shape];

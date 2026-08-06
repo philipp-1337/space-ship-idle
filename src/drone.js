@@ -1,7 +1,7 @@
 // Begleit-Drohne (Tech-Tree-Waffe): kreist ums Schiff und feuert automatisch
 // eigene Laser auf den nächsten Gegner in Reichweite.
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
-import { DRONE } from './constants.js';
+import { DRONE, GAME_CONFIG } from './constants.js';
 import Laser from './laser.js';
 
 // Kompakter Pfeilrumpf statt reiner Kreisscheibe, zeigt lokal in +x-Richtung
@@ -71,7 +71,7 @@ export default class Drone {
 
     // Sucht das nächste Ziel in Reichweite und gibt bei Treffer-Cooldown einen
     // neuen Laser zurück (Aufrufer fügt ihn dem lasers-Array hinzu), sonst null.
-    tryShoot(enemyGrid, upgradeLevel, prioritizeThreats = false) {
+    tryShoot(enemyGrid, damageRank = 0, prioritizeThreats = false) {
         const now = performance.now();
         if (now - this.lastShotAt < DRONE.FIRE_COOLDOWN_MS) return null;
 
@@ -95,7 +95,10 @@ export default class Drone {
         this.lastShotAt = now;
         this.muzzleFlash = MUZZLE_FLASH_FRAMES;
         const angle = Math.atan2(closest.y - this.y, closest.x - this.x);
-        return new Laser(this.x, this.y, angle, upgradeLevel, {});
+        const damage = GAME_CONFIG.BASE_LASER_DAMAGE * (
+            DRONE.BASE_DAMAGE_MULTIPLIER + damageRank * DRONE.DAMAGE_MULTIPLIER_PER_RANK
+        );
+        return new Laser(this.x, this.y, angle, 2, { damage });
     }
 
     draw(ctx) {

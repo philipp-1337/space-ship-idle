@@ -22,6 +22,7 @@ export const SOUNDS = {
     ENEMY_BOSS: '/assets/audio/sfx/enemy_boss.wav',
     ENEMY_BOSS_RAY: '/assets/audio/sfx/enemy_boss_ray.wav',
     ENEMY_SURGE: '/assets/audio/sfx/enemy_surge.wav',
+    ENEMY_PULSE_START: '/assets/audio/sfx/enemy_pulse_start.wav',
     SHIP_HIT: '/assets/audio/sfx/ship_hit.wav',
     SHIP_MISSILE: '/assets/audio/sfx/ship_missile_start.wav',
     SHIP_MISSILE_EXPLOSION: '/assets/audio/sfx/ship_missile_explosion.wav',

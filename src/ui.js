@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.5.0', date: '2026-08-06', changes: ['Added long-range salvage routes with route hazards, AEGIS homing pulse attacks, and five-rank independent damage paths for drones and homing missiles.'] },
     { version: '0.4.4', date: '2026-08-06', changes: ['Added distinct sounds for boss rays, surges, low hull, salvage recovery, and incoming space obstacles.'] },
     { version: '0.4.3', date: '2026-08-06', changes: ['Update enemy laser sound effect and resource collection sound'] },
     { version: '0.4.2', date: '2026-08-05', changes: ['Made salvage signals rarer and more distant, added a collection ping and visible reward drops, improved obstacle persistence and drift, removed boss popcorn spawns, and strengthened keyboard selection in Pause and Settings.'] },
@@ -1676,19 +1677,28 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     const nodes = [
         { key: 'xpResonance', label: 'XP Resonance', desc: 'Amplifies the XP carried by every collected orb.', cost: 5, col: 1, row: 1 },
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
-        { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own laser at nearby enemies.', cost: 12, col: 4, row: 1 },
+        { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own independent laser at nearby enemies.', cost: 12, col: 4, row: 1 },
         { key: 'resonanceCascade', label: 'Resonance Cascade', desc: 'Further increases the XP yield of collected orbs.', cost: 9, col: 1, row: 3, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
         { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'missilePayload', label: 'Missile Payload', desc: 'Homing missiles deal +4 damage on impact and in their blast.', cost: 8, col: 3, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target.', cost: 8, col: 3, row: 9, requires: 'missilePayload', requiresLabel: 'Missile Payload' },
-        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther.', cost: 10, col: 3, row: 11, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
-        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets.', cost: 10, col: 3, row: 13, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
-        { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
+        { key: 'missilePayload', label: 'Payload Amplifier I', desc: 'Homing missiles gain +1.2 independent damage.', cost: 5, col: 3, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'missilePayload2', label: 'Payload Amplifier II', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 6, col: 3, row: 9, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
+        { key: 'missilePayload3', label: 'Payload Amplifier III', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 7, col: 3, row: 11, requires: 'missilePayload2', requiresLabel: 'Payload Amplifier II' },
+        { key: 'missilePayload4', label: 'Payload Amplifier IV', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 8, col: 3, row: 13, requires: 'missilePayload3', requiresLabel: 'Payload Amplifier III' },
+        { key: 'missilePayload5', label: 'Payload Amplifier V', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 10, col: 3, row: 15, requires: 'missilePayload4', requiresLabel: 'Payload Amplifier IV' },
+        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target.', cost: 8, col: 3, row: 17, requires: 'missilePayload5', requiresLabel: 'Payload Amplifier V' },
+        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther.', cost: 10, col: 3, row: 19, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
+        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets.', cost: 10, col: 3, row: 21, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
+        { key: 'droneDamage1', label: 'Drone Emitter I', desc: 'Drone lasers deal 0.12× base laser damage more.', cost: 4, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
+        { key: 'droneDamage2', label: 'Drone Emitter II', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 5, col: 4, row: 5, requires: 'droneDamage1', requiresLabel: 'Drone Emitter I' },
+        { key: 'droneDamage3', label: 'Drone Emitter III', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 6, col: 4, row: 7, requires: 'droneDamage2', requiresLabel: 'Drone Emitter II' },
+        { key: 'droneDamage4', label: 'Drone Emitter IV', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 8, col: 4, row: 9, requires: 'droneDamage3', requiresLabel: 'Drone Emitter III' },
+        { key: 'droneDamage5', label: 'Drone Emitter V', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 10, col: 4, row: 11, requires: 'droneDamage4', requiresLabel: 'Drone Emitter IV' },
+        { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 13, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
         { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 only. The bonus expires after level 5.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
         { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 3, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s.', cost: 12, col: 4, row: 5, requires: 'drone', requiresLabel: 'Drone', minLevel: 18 },
+        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s.', cost: 12, col: 4, row: 15, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V', minLevel: 18 },
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
         { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
@@ -1774,8 +1784,8 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         const groups = [
             { label: 'XP SYSTEMS', keys: ['xpResonance', 'resonanceCascade', 'learningProtocol'] },
             { label: 'WEAPON SYSTEMS', keys: ['autoShoot', 'rapidFire', 'piercing', 'explosiveRounds', 'reactorNova'] },
-            { label: 'MISSILE SYSTEMS', keys: ['homingMissile', 'twinMissiles', 'missilePayload', 'missileEndurance', 'missileWarhead', 'missileGuidance'] },
-            { label: 'DRONE SYSTEMS', keys: ['drone', 'targetingMatrix', 'twinDrones', 'signalInterference'] },
+            { label: 'MISSILE SYSTEMS', keys: ['homingMissile', 'twinMissiles', 'missilePayload', 'missilePayload2', 'missilePayload3', 'missilePayload4', 'missilePayload5', 'missileEndurance', 'missileWarhead', 'missileGuidance'] },
+            { label: 'DRONE SYSTEMS', keys: ['drone', 'droneDamage1', 'droneDamage2', 'droneDamage3', 'droneDamage4', 'droneDamage5', 'targetingMatrix', 'twinDrones', 'signalInterference'] },
             { label: 'UTILITY SYSTEMS', keys: ['salvage'] }
         ];
         groups.forEach((group) => {

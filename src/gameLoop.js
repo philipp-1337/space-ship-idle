@@ -287,8 +287,10 @@ export function createGameLoop(context) {
                     }
                 }
                 if (closest) {
+                    const missilePayloadRank = ['missilePayload', 'missilePayload2', 'missilePayload3', 'missilePayload4', 'missilePayload5']
+                        .filter((key) => techUpgrades[key]).length;
                     const missileDamage = HOMING_MISSILE_TECH.BASE_DAMAGE
-                        + (techUpgrades.missilePayload ? HOMING_MISSILE_TECH.DAMAGE_BONUS : 0);
+                        + missilePayloadRank * HOMING_MISSILE_TECH.DAMAGE_BONUS_PER_RANK;
                     const missileLife = HOMING_MISSILE_TECH.BASE_LIFE
                         + (techUpgrades.missileEndurance ? HOMING_MISSILE_TECH.LIFE_BONUS : 0);
                     const missileGrace = HOMING_MISSILE_TECH.BASE_LOST_TARGET_GRACE_FRAMES
@@ -425,7 +427,8 @@ export function createGameLoop(context) {
         }
         ship.update(dt);
         fieldEvents.updateAndDraw({
-            ship, canvas, ctx, now, dt, spawnXpOrb, PlasmaCell, plasmaCells,
+            ship, canvas, ctx, now, dt, level: levelRef.value, easyMode: easyModeRef?.value,
+            spawnXpOrb, PlasmaCell, plasmaCells,
             showOverdriveHint, showSalvageHint
         });
         ship.draw(ctx);
@@ -442,7 +445,9 @@ export function createGameLoop(context) {
             drones.forEach(d => {
                 d.update(ship, dt);
                 d.draw(ctx);
-                const droneShot = d.tryShoot(enemyGrid, upgrades.laser, techUpgrades.targetingMatrix);
+                const droneDamageRank = ['droneDamage1', 'droneDamage2', 'droneDamage3', 'droneDamage4', 'droneDamage5']
+                    .filter((key) => techUpgrades[key]).length;
+                const droneShot = d.tryShoot(enemyGrid, droneDamageRank, techUpgrades.targetingMatrix);
                 if (droneShot) {
                     lasers.push(droneShot);
                     AudioManager.play('DRONE_LASER');
@@ -725,6 +730,14 @@ export function createGameLoop(context) {
 
         for (let idx = enemyLasers.length - 1; idx >= 0; idx--) {
             const l = enemyLasers[idx];
+            if (l.kind === 'aegisPulse' && l.homingFrames > 0) {
+                const desiredAngle = Math.atan2(ship.y - l.y, ship.x - l.x);
+                let angleDelta = desiredAngle - l.angle;
+                while (angleDelta > Math.PI) angleDelta -= Math.PI * 2;
+                while (angleDelta < -Math.PI) angleDelta += Math.PI * 2;
+                l.angle += Math.max(-l.turnSpeed * dt, Math.min(l.turnSpeed * dt, angleDelta));
+                l.homingFrames -= dt;
+            }
             l.x += Math.cos(l.angle) * l.speed * dt;
             l.y += Math.sin(l.angle) * l.speed * dt;
             l.life -= dt;
@@ -732,18 +745,18 @@ export function createGameLoop(context) {
                 x: l.x,
                 y: l.y,
                 angle: l.angle,
-                width: 10,
-                height: 4,
-                color: 'magenta',
-                glowColor: 'pink'
+                width: l.kind === 'aegisPulse' ? 18 : 10,
+                height: l.kind === 'aegisPulse' ? 18 : 4,
+                color: l.kind === 'aegisPulse' ? '#55e8ff' : 'magenta',
+                glowColor: l.kind === 'aegisPulse' ? '#55e8ff' : 'pink'
             });
             if (l.life <= 0 || l.x < 0 || l.x > canvas.width || l.y < 0 || l.y > canvas.height) {
                 enemyLasers.splice(idx, 1);
             } else if (!ship.isExploding) {
                 const dx = l.x - ship.x;
                 const dy = l.y - ship.y;
-                if (Math.sqrt(dx * dx + dy * dy) < ship.getCollisionRadius() + 5) {
-                    const result = ship.damage(1);
+                if (Math.sqrt(dx * dx + dy * dy) < ship.getCollisionRadius() + (l.radius || 5)) {
+                    const result = ship.damage(l.damage || 1);
                     if (result === 'dead') {
                         suppressAutosave();
                         clearRunState();

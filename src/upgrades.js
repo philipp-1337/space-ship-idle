@@ -24,9 +24,18 @@ export let techUpgrades = {
     autoShoot: false,
     drone: false, // Begleit-Drohne, kreist ums Schiff und feuert automatisch
     twinDrones: false, // zweite Begleit-Drohne, gegenüberliegend auf der Umlaufbahn
+    droneDamage1: false,
+    droneDamage2: false,
+    droneDamage3: false,
+    droneDamage4: false,
+    droneDamage5: false,
 
     homingMissile: false, // Lenkraketen-Upgrade
     missilePayload: false,
+    missilePayload2: false,
+    missilePayload3: false,
+    missilePayload4: false,
+    missilePayload5: false,
     missileEndurance: false,
     missileWarhead: false,
     missileGuidance: false,
@@ -59,15 +68,24 @@ export const TECH_PREREQUISITES = {
     rapidFire: 'autoShoot',
     homingMissile: 'autoShoot',
     missilePayload: 'homingMissile',
-    missileEndurance: 'missilePayload',
+    missilePayload2: 'missilePayload',
+    missilePayload3: 'missilePayload2',
+    missilePayload4: 'missilePayload3',
+    missilePayload5: 'missilePayload4',
+    missileEndurance: 'missilePayload5',
     missileWarhead: 'missileEndurance',
     missileGuidance: 'missileWarhead',
     piercing: 'autoShoot',
     salvage: 'rapidFire',
     twinMissiles: 'homingMissile',
     explosiveRounds: 'piercing',
-    twinDrones: 'drone',
-    signalInterference: 'drone',
+    twinDrones: 'droneDamage5',
+    droneDamage1: 'drone',
+    droneDamage2: 'droneDamage1',
+    droneDamage3: 'droneDamage2',
+    droneDamage4: 'droneDamage3',
+    droneDamage5: 'droneDamage4',
+    signalInterference: 'droneDamage5',
     targetingMatrix: ['autoShoot', 'drone'],
     reactorNova: 'explosiveRounds',
     resonanceCascade: 'xpResonance',
@@ -322,6 +340,10 @@ export function loadTechUpgrades() {
             // Mutiere die Eigenschaften des bestehenden techUpgrades-Objekts,
             // anstatt die Variable neu zuzuweisen.
             Object.assign(techUpgrades, loadedFromStorage);
+            if (loadedFromStorage.missilePayload && !('missilePayload2' in loadedFromStorage)) {
+                techUpgrades.missilePayload2 = true;
+                techUpgrades.missilePayload3 = true;
+            }
         } catch (e) {
             console.error("Fehler beim Parsen der techUpgrades aus localStorage. Es werden die initialen Standardwerte verwendet.", e);
             // techUpgrades behält seine initial definierten Standardwerte, falls das Parsen fehlschlägt.

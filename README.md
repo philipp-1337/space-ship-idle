@@ -15,6 +15,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - Defensive systems including Hull Integrity, Nanite Repair, and Deflector Charge.
 - Weapon and utility upgrades including Magnet, Collector Pulse, Chain Lightning, Weapon Overdrive, and incremental XP gain.
 - Sparse field events: off-screen salvage signals reward exploration with XP, Plasma, hull recovery, or Overdrive; occasional asteroids and drifting debris alter flight paths without crowding the arena.
+- Long-range salvage routes add sparse route hazards, while AEGIS contacts fire telegraphed homing pulse cannons. Drone and missile tech branches each include independent five-rank damage upgrades.
 - Normal and Easy difficulty modes. Normal is the default Pre-Flight selection.
 - Desktop keyboard controls, mouse interaction, and mobile touch controls with automatic firing.
 - Mobile touch controls support Twin-Stick and One-Handed schemes. Twin-Stick uses the left stick for aim and the right stick for thrust, with optional strafe. One-Handed uses the legacy movement-vector stick: the left stick turns and flies forward in the selected direction; the right stick can add thrust and strafe.

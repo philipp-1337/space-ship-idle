@@ -1,7 +1,7 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy, { BOSS_TYPE, ENEMY_TYPES, SURGE_AEGIS_TYPE } from './enemy.js';
-import { GAME_CONFIG } from './constants.js';
+import { GAME_CONFIG, AEGIS_PULSE } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 export let enemies = [];
@@ -25,6 +25,19 @@ export function spawnEnemyLaser(x, y, angle) {
         life: 80
     });
     AudioManager.play('ENEMY_LASER');
+}
+
+export function spawnAegisPulse(x, y, angle) {
+    enemyLasers.push({
+        kind: 'aegisPulse', x, y, angle,
+        speed: AEGIS_PULSE.SPEED,
+        life: AEGIS_PULSE.LIFE_FRAMES,
+        homingFrames: AEGIS_PULSE.HOMING_FRAMES,
+        turnSpeed: AEGIS_PULSE.TURN_SPEED,
+        damage: AEGIS_PULSE.DAMAGE,
+        radius: AEGIS_PULSE.RADIUS
+    });
+    AudioManager.play('ENEMY_PULSE_START');
 }
 
 // Helper function to get random spawn position on the canvas edge
