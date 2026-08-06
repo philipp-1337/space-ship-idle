@@ -336,7 +336,11 @@ class Enemy {
             // Shooter-Logik
             if (this.isAegis && this.pulseCharge > 0) {
                 this.pulseCharge -= dt;
-                if (this.pulseCharge <= 0) spawnAegisPulse(this.x, this.y, angle);
+                if (this.pulseCharge <= 0) {
+                    const sourceVisible = this.x >= 0 && this.x <= window.logicalWidth
+                        && this.y >= 0 && this.y <= window.logicalHeight;
+                    spawnAegisPulse(this.x, this.y, angle, sourceVisible);
+                }
             } else if (this.canShoot && this.shootCooldown <= 0) {
                 if (this.isAegis) {
                     this.shootCooldown = AEGIS_PULSE.COOLDOWN_FRAMES + Math.random() * 90;

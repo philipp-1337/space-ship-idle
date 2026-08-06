@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.5.1', date: '2026-08-06', changes: ['Restored the hidden Drone Emitter III node and refined AEGIS pulses with a smaller octagonal form, longer flight, and visible-contact audio.'] },
     { version: '0.5.0', date: '2026-08-06', changes: ['Added long-range salvage routes with route hazards, AEGIS homing pulse attacks, and five-rank independent damage paths for drones and homing missiles.'] },
     { version: '0.4.4', date: '2026-08-06', changes: ['Added distinct sounds for boss rays, surges, low hull, salvage recovery, and incoming space obstacles.'] },
     { version: '0.4.3', date: '2026-08-06', changes: ['Update enemy laser sound effect and resource collection sound'] },
@@ -1701,7 +1702,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s.', cost: 12, col: 4, row: 15, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V', minLevel: 18 },
         { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
-        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 17, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
         { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 32 kills, discharge a wide shockwave. Light targets are destroyed; heavier targets take 4 damage. Nova cannot trigger more than once every 15s.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 

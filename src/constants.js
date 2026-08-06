@@ -190,11 +190,11 @@ export const AEGIS_PULSE = {
     CHARGE_FRAMES: 48,
     COOLDOWN_FRAMES: 420,
     SPEED: 1.7,
-    LIFE_FRAMES: 180,
+    LIFE_FRAMES: 240,
     HOMING_FRAMES: 54,
     TURN_SPEED: 0.028,
     DAMAGE: 2,
-    RADIUS: 10
+    RADIUS: 7
 };
 
 export const COLLECTOR_PULSE = {

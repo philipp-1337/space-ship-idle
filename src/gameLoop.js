@@ -18,6 +18,42 @@ const ENEMY_GRID_CELL_SIZE = 60;
 // Deckt den größten Laser-Trefferradius ab (this.size * 0.7, Elite-Größe 44 -> ~31).
 const LASER_HIT_QUERY_RADIUS = 35;
 
+function drawAegisPulse(ctx, pulse) {
+    const radius = 7;
+    ctx.save();
+    ctx.translate(pulse.x, pulse.y);
+    ctx.rotate(pulse.angle);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.shadowColor = '#55e8ff';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#0b2f3a';
+    ctx.strokeStyle = '#55e8ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let index = 0; index < 8; index++) {
+        const angle = Math.PI / 8 + index * Math.PI / 4;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#d9fbff';
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = '#55e8ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-15, 0);
+    ctx.lineTo(-7, 0);
+    ctx.stroke();
+    ctx.restore();
+}
+
 export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
@@ -741,14 +777,10 @@ export function createGameLoop(context) {
             l.x += Math.cos(l.angle) * l.speed * dt;
             l.y += Math.sin(l.angle) * l.speed * dt;
             l.life -= dt;
-            effectsSystem.drawEnemyLaser({
-                x: l.x,
-                y: l.y,
-                angle: l.angle,
-                width: l.kind === 'aegisPulse' ? 18 : 10,
-                height: l.kind === 'aegisPulse' ? 18 : 4,
-                color: l.kind === 'aegisPulse' ? '#55e8ff' : 'magenta',
-                glowColor: l.kind === 'aegisPulse' ? '#55e8ff' : 'pink'
+            if (l.kind === 'aegisPulse') drawAegisPulse(ctx, l);
+            else effectsSystem.drawEnemyLaser({
+                x: l.x, y: l.y, angle: l.angle, width: 10, height: 4,
+                color: 'magenta', glowColor: 'pink'
             });
             if (l.life <= 0 || l.x < 0 || l.x > canvas.width || l.y < 0 || l.y > canvas.height) {
                 enemyLasers.splice(idx, 1);

@@ -27,7 +27,7 @@ export function spawnEnemyLaser(x, y, angle) {
     AudioManager.play('ENEMY_LASER');
 }
 
-export function spawnAegisPulse(x, y, angle) {
+export function spawnAegisPulse(x, y, angle, sourceVisible) {
     enemyLasers.push({
         kind: 'aegisPulse', x, y, angle,
         speed: AEGIS_PULSE.SPEED,
@@ -37,7 +37,7 @@ export function spawnAegisPulse(x, y, angle) {
         damage: AEGIS_PULSE.DAMAGE,
         radius: AEGIS_PULSE.RADIUS
     });
-    AudioManager.play('ENEMY_PULSE_START');
+    if (sourceVisible) AudioManager.play('ENEMY_PULSE_START', 0.55);
 }
 
 // Helper function to get random spawn position on the canvas edge

@@ -28,14 +28,15 @@ class AudioService {
         this.sfxEnabled = saved === null ? true : saved === 'true';
     }
 
-    play(soundKey) {
+    play(soundKey, volumeMultiplier = 1) {
         const sound = this.sounds[soundKey];
         if (!this.sfxEnabled || !sound) return;
 
         const now = performance.now();
         if (this.lastPlayed[soundKey] && now - this.lastPlayed[soundKey] < THROTTLE_MS) return;
         this.lastPlayed[soundKey] = now;
-        sound.play();
+        const soundId = sound.play();
+        sound.volume(0.5 * volumeMultiplier, soundId);
     }
 
     playSequence(soundKey, count, intervalMs) {
