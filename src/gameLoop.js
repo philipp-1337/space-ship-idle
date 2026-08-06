@@ -1019,6 +1019,7 @@ export function createGameLoop(context) {
 
                     if (detonateThisFrame) {
                         m.detonate(enemyGrid, effectsSystem, {
+                            awardKillIfNeeded,
                             xpPoints,
                             XP,
                             spawnXpOrb,

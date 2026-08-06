@@ -330,6 +330,12 @@ export default class HomingMissile {
                     e.takeDamage(this.damage);
 
                     if (e.hp <= 0) { 
+                        e.destroy();
+                        if (wasAliveBeforeHit && typeof rewardContext?.awardKillIfNeeded === 'function') {
+                            rewardContext.awardKillIfNeeded(e);
+                            destroyedAnyEnemy = true;
+                            continue;
+                        }
                         if (wasAliveBeforeHit && !e.alreadyAwardedXP && rewardContext) {
                             if (rewardContext.spawnXpOrb) {
                                 rewardContext.spawnXpOrb(e.x, e.y);
@@ -356,7 +362,6 @@ export default class HomingMissile {
                             rewardContext.killsRef.value++;
                             e.alreadyAwardedXP = true;
                         }
-                        e.destroy(); 
                         destroyedAnyEnemy = true;
                     } else if (wasAliveBeforeHit) { 
                         if (!e.isHit) {
