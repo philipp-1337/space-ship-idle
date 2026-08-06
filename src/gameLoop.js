@@ -1,5 +1,5 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER, COMBAT_PRESSURE } from './constants.js';
+import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER, COMBAT_PRESSURE, ENEMY_LASER } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
@@ -77,6 +77,31 @@ function drawAegisPulseExplosion(ctx, explosion) {
     ctx.globalAlpha *= 0.65;
     ctx.fillStyle = '#d9fbff';
     ctx.fillRect(-3, -3, 6, 6);
+    ctx.restore();
+}
+
+function drawEnemyLaserExplosion(ctx, explosion) {
+    const progress = 1 - explosion.life / explosion.maxLife;
+    const radius = 3 + progress * 10;
+    if (explosion.x + radius < 0 || explosion.x - radius > ctx.canvas.width
+        || explosion.y + radius < 0 || explosion.y - radius > ctx.canvas.height) return;
+    ctx.save();
+    ctx.translate(explosion.x, explosion.y);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = (1 - progress) * 0.8;
+    ctx.strokeStyle = '#ff5fc8';
+    ctx.shadowColor = '#ff5fc8';
+    ctx.shadowBlur = 7;
+    ctx.lineWidth = 1.5;
+    for (let index = 0; index < 4; index++) {
+        const angle = explosion.angle + index * Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * radius * 0.25, Math.sin(angle) * radius * 0.25);
+        ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#fff0fb';
+    ctx.fillRect(-1.5, -1.5, 3, 3);
     ctx.restore();
 }
 
@@ -167,6 +192,7 @@ export function createGameLoop(context) {
 
     let homingMissiles = [];
     let aegisPulseExplosions = [];
+    let enemyLaserExplosions = [];
     let lastMissileTime = 0;
     let drones = []; // lazy erzeugt/erweitert, sobald techUpgrades.drone/twinDrones freigeschaltet werden
     let chainFlashes = []; // kurzlebige Blitz-Linien fürs Chain-Lightning-Upgrade
@@ -955,14 +981,15 @@ export function createGameLoop(context) {
             l.x += Math.cos(l.angle) * l.speed * dt;
             l.y += Math.sin(l.angle) * l.speed * dt;
             l.life -= dt;
-            if (l.kind === 'aegisPulse') drawAegisPulse(ctx, l);
-            else effectsSystem.drawEnemyLaser({
-                x: l.x, y: l.y, angle: l.angle, width: 10, height: 4,
-                color: 'magenta', glowColor: 'pink'
-            });
             const outOfBounds = l.x < 0 || l.x > canvas.width || l.y < 0 || l.y > canvas.height;
-            if (l.life <= 0 || (l.kind !== 'aegisPulse' && outOfBounds)) {
+            if (l.kind === 'aegisPulse') drawAegisPulse(ctx, l);
+            else if (!outOfBounds) effectsSystem.drawEnemyLaser({
+                x: l.x, y: l.y, angle: l.angle, width: ENEMY_LASER.WIDTH, height: ENEMY_LASER.HEIGHT,
+                color: ENEMY_LASER.COLOR, glowColor: ENEMY_LASER.GLOW_COLOR
+            });
+            if (l.life <= 0) {
                 if (l.kind === 'aegisPulse') aegisPulseExplosions.push({ x: l.x, y: l.y, life: 20, maxLife: 20 });
+                else enemyLaserExplosions.push({ x: l.x, y: l.y, angle: l.angle, life: ENEMY_LASER.EXPLOSION_LIFE, maxLife: ENEMY_LASER.EXPLOSION_LIFE });
                 enemyLasers.splice(idx, 1);
             } else if (!ship.isExploding) {
                 const dx = l.x - ship.x;
@@ -979,6 +1006,7 @@ export function createGameLoop(context) {
                         effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY * 0.5, EFFECTS.SCREEN_SHAKE_LASER_DURATION * 0.5);
                     }
                     if (l.kind === 'aegisPulse') aegisPulseExplosions.push({ x: l.x, y: l.y, life: 20, maxLife: 20 });
+                    else enemyLaserExplosions.push({ x: l.x, y: l.y, angle: l.angle, life: ENEMY_LASER.EXPLOSION_LIFE, maxLife: ENEMY_LASER.EXPLOSION_LIFE });
                     enemyLasers.splice(idx, 1);
                 }
             }
@@ -991,6 +1019,15 @@ export function createGameLoop(context) {
                 continue;
             }
             drawAegisPulseExplosion(ctx, explosion);
+        }
+        for (let index = enemyLaserExplosions.length - 1; index >= 0; index--) {
+            const explosion = enemyLaserExplosions[index];
+            explosion.life -= dt;
+            if (explosion.life <= 0) {
+                enemyLaserExplosions.splice(index, 1);
+                continue;
+            }
+            drawEnemyLaserExplosion(ctx, explosion);
         }
         // Update & Draw Homing Missiles
         for (let i = homingMissiles.length-1; i >= 0; i--) {

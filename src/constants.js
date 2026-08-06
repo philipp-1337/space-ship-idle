@@ -289,7 +289,8 @@ export const TOUCH_CONTROLS = {
 
 export const ENEMY_LASER = {
     SPEED: 5,
-    LIFE: 80,
+    LIFE: 210,
+    EXPLOSION_LIFE: 12,
     WIDTH: 10,
     HEIGHT: 4,
     COLOR: 'magenta',

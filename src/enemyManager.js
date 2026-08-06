@@ -1,7 +1,7 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy, { BOSS_TYPE, ENEMY_TYPES, SURGE_AEGIS_TYPE } from './enemy.js';
-import { GAME_CONFIG, AEGIS_PULSE, COMBAT_PRESSURE } from './constants.js';
+import { GAME_CONFIG, AEGIS_PULSE, COMBAT_PRESSURE, ENEMY_LASER } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 export let enemies = [];
@@ -21,8 +21,8 @@ export function spawnEnemyLaser(x, y, angle, sourceVisible) {
         x,
         y,
         angle,
-        speed: 5,
-        life: 80
+        speed: ENEMY_LASER.SPEED,
+        life: ENEMY_LASER.LIFE
     });
     if (sourceVisible) AudioManager.play('ENEMY_LASER');
 }
