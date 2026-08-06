@@ -1,5 +1,5 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH } from './constants.js';
+import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
@@ -80,6 +80,80 @@ function drawAegisPulseExplosion(ctx, explosion) {
     ctx.restore();
 }
 
+function drawBossLaserReticle(ctx, bossLaser) {
+    const progress = 1 - bossLaser.timer / BOSS_LASER.CHARGE_FRAMES;
+    const pulse = 0.82 + Math.sin(bossLaser.timer * 0.24) * 0.18;
+    const radius = 17 + progress * 10;
+    ctx.save();
+    ctx.translate(bossLaser.targetX, bossLaser.targetY);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = Math.min(1, 0.4 + progress * 0.8) * pulse;
+    ctx.strokeStyle = '#ff3b30';
+    ctx.shadowColor = '#ff3b30';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha *= 0.8;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-radius - 8, 0);
+    ctx.lineTo(-radius + 2, 0);
+    ctx.moveTo(radius - 2, 0);
+    ctx.lineTo(radius + 8, 0);
+    ctx.moveTo(0, -radius - 8);
+    ctx.lineTo(0, -radius + 2);
+    ctx.moveTo(0, radius - 2);
+    ctx.lineTo(0, radius + 8);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawBossLaserBeam(ctx, bossLaser) {
+    const originX = bossLaser.origin.x;
+    const originY = bossLaser.origin.y;
+    const endX = originX + Math.cos(bossLaser.angle) * BOSS_LASER.LENGTH;
+    const endY = originY + Math.sin(bossLaser.angle) * BOSS_LASER.LENGTH;
+    const phase = 1 - bossLaser.timer / BOSS_LASER.FIRE_FRAMES;
+    const pulse = 0.88 + Math.sin(bossLaser.timer * 0.18) * 0.12;
+    const fade = Math.min(1, phase * 12) * Math.min(1, (1 - phase) * 8) * pulse;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fade * 0.16;
+    ctx.strokeStyle = '#ff3b30';
+    ctx.shadowColor = '#ff3b30';
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = 58;
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    ctx.globalAlpha = fade * 0.68;
+    ctx.strokeStyle = '#ff6b61';
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 19;
+    ctx.stroke();
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = '#fff1ee';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.globalAlpha = fade * 0.95;
+    ctx.strokeStyle = '#ff3b30';
+    ctx.shadowColor = '#ff3b30';
+    ctx.shadowBlur = 14;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(originX, originY, 17 + Math.sin(bossLaser.timer * 0.16) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#fff1ee';
+    ctx.fillRect(originX - 3, originY - 3, 6, 6);
+    ctx.restore();
+    return { originX, originY, endX, endY };
+}
+
 export function createGameLoop(context) {
     const {
         ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
@@ -103,6 +177,7 @@ export function createGameLoop(context) {
     let reactorNovaCooldownUntil = 0;
     let reactorNovaTriggering = false;
     let sweepRay = { active: false, angle: 0, startAngle: 0, timer: 0, duration: 1500, origin: null };
+    let bossLaser = { phase: 'idle', cooldown: 90, timer: 0, origin: null, angle: 0, targetX: 0, targetY: 0 };
     // Wiederverwendetes Grid statt Neuallokation pro Frame — nur clear() pro Durchlauf.
     const enemyGrid = new SpatialGrid(ENEMY_GRID_CELL_SIZE);
 
@@ -772,6 +847,73 @@ export function createGameLoop(context) {
         if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
         handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt);
         handleTractorCollection(ship, tractorItems, effectsSystem, ctx);
+
+        const activeBoss = enemies.find((enemy) => enemy.isElite && enemy.alive && !enemy.exploding);
+        if (!activeBoss) {
+            bossLaser.phase = 'idle';
+            bossLaser.cooldown = 90;
+            bossLaser.origin = null;
+        } else if (bossLaser.phase === 'idle') {
+            const bossVisible = activeBoss.x >= 0 && activeBoss.x <= window.logicalWidth
+                && activeBoss.y >= 0 && activeBoss.y <= window.logicalHeight;
+            if (bossVisible) bossLaser.cooldown -= dt;
+            if (bossVisible && bossLaser.cooldown <= 0) {
+                bossLaser.phase = 'charge';
+                bossLaser.timer = BOSS_LASER.CHARGE_FRAMES;
+                bossLaser.origin = activeBoss;
+                bossLaser.targetX = ship.x;
+                bossLaser.targetY = ship.y;
+                bossLaser.angle = Math.atan2(ship.y - activeBoss.y, ship.x - activeBoss.x);
+            }
+        } else if (bossLaser.origin !== activeBoss) {
+            bossLaser.phase = 'idle';
+            bossLaser.cooldown = BOSS_LASER.COOLDOWN_FRAMES;
+            bossLaser.origin = null;
+        } else if (bossLaser.phase === 'charge') {
+            bossLaser.timer -= dt;
+            bossLaser.targetX += (ship.x - bossLaser.targetX) * Math.min(1, 0.06 * dt);
+            bossLaser.targetY += (ship.y - bossLaser.targetY) * Math.min(1, 0.06 * dt);
+            bossLaser.angle = Math.atan2(bossLaser.targetY - activeBoss.y, bossLaser.targetX - activeBoss.x);
+            drawBossLaserReticle(ctx, bossLaser);
+            if (bossLaser.timer <= 0) {
+                bossLaser.phase = 'fire';
+                bossLaser.timer = BOSS_LASER.FIRE_FRAMES;
+                AudioManager.play('ENEMY_BOSS_RAY', 0.65);
+            }
+        } else if (bossLaser.phase === 'fire') {
+            bossLaser.timer -= dt;
+            const desiredAngle = Math.atan2(ship.y - activeBoss.y, ship.x - activeBoss.x);
+            let angleDelta = desiredAngle - bossLaser.angle;
+            while (angleDelta > Math.PI) angleDelta -= Math.PI * 2;
+            while (angleDelta < -Math.PI) angleDelta += Math.PI * 2;
+            bossLaser.angle += Math.max(-BOSS_LASER.TURN_SPEED * dt, Math.min(BOSS_LASER.TURN_SPEED * dt, angleDelta));
+            const beam = drawBossLaserBeam(ctx, bossLaser);
+            if (!ship.isExploding) {
+                const beamDX = beam.endX - beam.originX;
+                const beamDY = beam.endY - beam.originY;
+                const beamLengthSquared = beamDX * beamDX + beamDY * beamDY;
+                const projection = Math.max(0, Math.min(1, ((ship.x - beam.originX) * beamDX + (ship.y - beam.originY) * beamDY) / beamLengthSquared));
+                const closestX = beam.originX + projection * beamDX;
+                const closestY = beam.originY + projection * beamDY;
+                const hitRadius = ship.getCollisionRadius() + BOSS_LASER.HIT_RADIUS;
+                if ((ship.x - closestX) ** 2 + (ship.y - closestY) ** 2 < hitRadius ** 2) {
+                    const result = ship.damage(BOSS_LASER.DAMAGE);
+                    if (result === 'dead') {
+                        suppressAutosave();
+                        clearRunState();
+                        ship.explode();
+                        effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY, EFFECTS.SCREEN_SHAKE_LASER_DURATION);
+                        setTimeout(() => endGame(), 1000);
+                    } else if (result === 'hit') {
+                        effectsSystem.triggerScreenShake(EFFECTS.SCREEN_SHAKE_LASER_INTENSITY * 0.5, EFFECTS.SCREEN_SHAKE_LASER_DURATION * 0.5);
+                    }
+                }
+            }
+            if (bossLaser.timer <= 0) {
+                bossLaser.phase = 'idle';
+                bossLaser.cooldown = BOSS_LASER.COOLDOWN_FRAMES;
+            }
+        }
 
         // A performance magnet is a recovery tool for an overloaded XP field,
         // not a generic low-FPS reward. Decide only after XP collection and

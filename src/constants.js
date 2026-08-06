@@ -197,6 +197,19 @@ export const AEGIS_PULSE = {
     RADIUS: 7
 };
 
+// The boss weapon is deliberately telegraphed: the lock-on gives the player
+// a chance to move, while the limited turn rate makes sustained flight the
+// reliable answer instead of a reflex-only dodge.
+export const BOSS_LASER = {
+    CHARGE_FRAMES: 60,
+    FIRE_FRAMES: 240,
+    COOLDOWN_FRAMES: 450,
+    TURN_SPEED: 0.018,
+    LENGTH: 2000,
+    DAMAGE: 1,
+    HIT_RADIUS: 22
+};
+
 export const COLLECTOR_PULSE = {
     BASE_DURATION_MS: 1500, // level 1 pull duration
     DURATION_STEP_MS: 400, // each further level extends the pull by this much
