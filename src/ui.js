@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.7.0', date: '2026-08-06', changes: ['Long flights now maintain nearby combat pressure by bringing distant regular enemies back toward the route and reinforcing sparse encounters.'] },
     { version: '0.6.2', date: '2026-08-06', changes: ['Enemy firing and Death Ray sounds now play only when their source is visible.'] },
     { version: '0.6.1', date: '2026-08-06', changes: ['Salvage signals last longer and stay active after a pilot commits to the route; every salvage reward now has a distinct visual confirmation.'] },
     { version: '0.6.0', date: '2026-08-06', changes: ['Bosses now lock on before firing a slow-tracking red laser that can be evaded through sustained flight; their Death Ray still turns on enemies after defeat.'] },

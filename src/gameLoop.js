@@ -1,5 +1,5 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
-import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER } from './constants.js';
+import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER, COMBAT_PRESSURE } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
@@ -9,7 +9,7 @@ import { AudioManager } from './audio/AudioManager.js';
 import packageInfo from '../package.json';
 
 const APP_VERSION = packageInfo.version;
-import { spawnSplitEnemies, spawnLateGameSurge } from './enemyManager.js';
+import { reinforceNearbyCombat, spawnSplitEnemies, spawnLateGameSurge } from './enemyManager.js';
 import Laser from './laser.js';
 
 // Zellgröße etwas über dem größten Gegner-Hitradius (Elite-Größe 44 * 0.7 ≈ 31),
@@ -186,6 +186,7 @@ export function createGameLoop(context) {
     let currentFps = 60;
     let lastMagnetDropTime = 0;
     let gameplayStartedAt = null;
+    let nextCombatPressureCheckAt = null;
     let lowFpsSince = null;
     let nextLateGameSurgeAt = null;
     const LOW_FPS_THRESHOLD = 30;
@@ -490,6 +491,12 @@ export function createGameLoop(context) {
 
         const now = performance.now();
         if (gameplayStartedAt === null) gameplayStartedAt = now;
+        if (nextCombatPressureCheckAt === null) {
+            nextCombatPressureCheckAt = now + COMBAT_PRESSURE.FIRST_CHECK_DELAY_MS;
+        } else if (now >= nextCombatPressureCheckAt) {
+            reinforceNearbyCombat(ship, levelRef.value, easyModeRef ? easyModeRef.value : false);
+            nextCombatPressureCheckAt = now + COMBAT_PRESSURE.CHECK_INTERVAL_MS;
+        }
         if (levelRef.value >= GAME_CONFIG.LATE_GAME_START_LEVEL) {
             if (nextLateGameSurgeAt === null) {
                 nextLateGameSurgeAt = now + GAME_CONFIG.LATE_GAME_SURGE_INITIAL_DELAY_MS;

@@ -8,7 +8,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 
 ## Features
 
-- Canvas-based space combat with player lasers, enemy projectiles, telegraphed boss lasers, missiles, drones, explosions, and screen effects.
+- Canvas-based space combat with player lasers, enemy projectiles, telegraphed boss lasers, pursuit reinforcements for long flights, missiles, drones, explosions, and screen effects.
 - XP progression: collect XP orbs, level up, and choose run-specific upgrades from the level-up shop.
 - Plasma progression: collect Plasma Cells and spend them in the permanent Tech Tree.
 - Tech Tree branches for automated fire, missiles (including damage, endurance, blast radius, and guidance upgrades), drones, drone targeting, piercing and explosive rounds, EMP-style signal interference, Reactor Nova, salvage, and several XP improvements.

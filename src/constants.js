@@ -51,6 +51,18 @@ export const FIELD_EVENTS = {
     MAX_ACTIVE_OBSTACLES: 2
 };
 
+// Keep long-distance flight populated without letting normal spawn timers turn
+// into a sudden swarm. Existing regular enemies can close the gap first; one
+// fresh contact is only added when that still leaves the player alone.
+export const COMBAT_PRESSURE = {
+    FIRST_CHECK_DELAY_MS: 20000,
+    CHECK_INTERVAL_MS: 8000,
+    NEARBY_RADIUS: 560,
+    MIN_NEARBY_ENEMIES: 3,
+    MIN_DISTANT_ENEMIES: 2,
+    REPOSITION_LIMIT: 2
+};
+
 export function calculateLaserDamage(baseDamage, upgradeLevel) {
     const earlyLevels = Math.min(Math.max(0, upgradeLevel), GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
     const lateLevels = Math.max(0, upgradeLevel - GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);

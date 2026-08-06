@@ -1,7 +1,7 @@
 // enemyManager.js
 // Verwaltung von Gegnern, Spawning, Elite-Logik, enemyLasers
 import Enemy, { BOSS_TYPE, ENEMY_TYPES, SURGE_AEGIS_TYPE } from './enemy.js';
-import { GAME_CONFIG, AEGIS_PULSE } from './constants.js';
+import { GAME_CONFIG, AEGIS_PULSE, COMBAT_PRESSURE } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 export let enemies = [];
@@ -55,6 +55,50 @@ function getRandomSpawnPosition(canvas) {
         x = Math.random() * window.logicalWidth; y = window.logicalHeight + padding;
     }
     return { x, y };
+}
+
+function getPursuitPosition(ship) {
+    const width = window.logicalWidth;
+    const height = window.logicalHeight;
+    const edges = [
+        { side: 'left', distance: ship.x },
+        { side: 'right', distance: width - ship.x },
+        { side: 'top', distance: ship.y },
+        { side: 'bottom', distance: height - ship.y }
+    ].sort((a, b) => a.distance - b.distance);
+    const edge = edges[Math.floor(Math.random() * 2)].side;
+    const padding = 90 + Math.random() * 90;
+    const lateral = (Math.random() - 0.5) * Math.min(width, height) * 0.7;
+    if (edge === 'left') return { x: -padding, y: Math.max(40, Math.min(height - 40, ship.y + lateral)) };
+    if (edge === 'right') return { x: width + padding, y: Math.max(40, Math.min(height - 40, ship.y + lateral)) };
+    if (edge === 'top') return { x: Math.max(40, Math.min(width - 40, ship.x + lateral)), y: -padding };
+    return { x: Math.max(40, Math.min(width - 40, ship.x + lateral)), y: height + padding };
+}
+
+export function reinforceNearbyCombat(ship, level, easyMode = false) {
+    const activeEnemies = enemies.filter((enemy) => enemy.alive && !enemy.exploding);
+    const nearby = activeEnemies.filter((enemy) => Math.hypot(enemy.x - ship.x, enemy.y - ship.y) <= COMBAT_PRESSURE.NEARBY_RADIUS);
+    const distantRegulars = activeEnemies
+        .filter((enemy) => !enemy.isElite && Math.hypot(enemy.x - ship.x, enemy.y - ship.y) > COMBAT_PRESSURE.NEARBY_RADIUS * 1.5)
+        .sort((a, b) => Math.hypot(b.x - ship.x, b.y - ship.y) - Math.hypot(a.x - ship.x, a.y - ship.y));
+
+    if (nearby.length >= COMBAT_PRESSURE.MIN_NEARBY_ENEMIES || distantRegulars.length < COMBAT_PRESSURE.MIN_DISTANT_ENEMIES) {
+        return false;
+    }
+
+    const needed = COMBAT_PRESSURE.MIN_NEARBY_ENEMIES - nearby.length;
+    const repositioned = Math.min(needed, COMBAT_PRESSURE.REPOSITION_LIMIT, distantRegulars.length);
+    for (let index = 0; index < repositioned; index++) {
+        const position = getPursuitPosition(ship);
+        distantRegulars[index].x = position.x;
+        distantRegulars[index].y = position.y;
+    }
+
+    if (repositioned < needed && canSpawnEnemy()) {
+        const position = getPursuitPosition(ship);
+        enemies.push(new Enemy(position.x, position.y, level, easyMode));
+    }
+    return repositioned > 0;
 }
 
 export function spawnEnemy(canvas, level, techUpgrades, easyMode = false) {
