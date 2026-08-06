@@ -333,6 +333,7 @@ export function createGameLoop(context) {
                     reactorNovaCooldownUntil = performance.now() + REACTOR_NOVA.COOLDOWN_MS;
                     const reactorNovaRadius = Math.max(REACTOR_NOVA.MIN_RADIUS, Math.hypot(canvas.width, canvas.height) * REACTOR_NOVA.RADIUS_FACTOR);
                     explosiveVisuals.push({ x: ship.x, y: ship.y, life: REACTOR_NOVA.VISUAL_LIFE, maxLife: REACTOR_NOVA.VISUAL_LIFE, radius: reactorNovaRadius, color: '#ffb000', kind: 'nova' });
+                    AudioManager.play('SHIP_NOVA');
                     effectsSystem.triggerScreenShake(12, 18);
                     const nearby = enemies.filter((other) => {
                         if (!other.alive || other.exploding) return false;
@@ -537,6 +538,7 @@ export function createGameLoop(context) {
         if (techUpgrades.signalInterference && now >= empCooldownUntil && enemies.some((enemy) => enemy.alive && enemy.canShoot)) {
             enemyLasers.length = 0;
             empDisruptionUntil = now + SIGNAL_INTERFERENCE.DISRUPTION_MS;
+            AudioManager.play('SHIP_EMP');
             enemies.forEach((enemy) => {
                 if (enemy.alive && enemy.canShoot) {
                     enemy.shootCooldown = SIGNAL_INTERFERENCE.DISRUPTION_MS / (1000 / 60) + Math.random() * 90;

@@ -26,6 +26,8 @@ export const SOUNDS = {
     SHIP_HIT: '/assets/audio/sfx/ship_hit.wav',
     SHIP_MISSILE: '/assets/audio/sfx/ship_missile_start.wav',
     SHIP_MISSILE_EXPLOSION: '/assets/audio/sfx/ship_missile_explosion.wav',
+    SHIP_EMP: '/assets/audio/sfx/ship_emp.wav',
+    SHIP_NOVA: '/assets/audio/sfx/ship_nova.wav',
 
     // Idle & Resources
     RES_COLLECT_XP: '/assets/audio/sfx/res_collect_xp_v2.wav',

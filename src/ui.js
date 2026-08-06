@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.8.1', date: '2026-08-06', changes: ['Added dedicated audio feedback for Signal Interference EMP and Reactor Nova discharges.'] },
     { version: '0.8.0', date: '2026-08-06', changes: ['Expanded salvage rewards with temporary Drone Uplink and Hull Overcharge bonuses, scaled resource rewards, and no Plasma salvage beyond level 24.'] },
     { version: '0.7.2', date: '2026-08-06', changes: ['Enemy lasers now travel much farther through the flight space and end with a small visible magenta discharge.'] },
     { version: '0.7.1', date: '2026-08-06', changes: ['Slightly slowed the boss laser tracking and restored the boss Death Ray when a homing missile lands the final hit.'] },
