@@ -16,7 +16,7 @@ function canSpawnEnemy() {
     return activeEnemyCount() < GAME_CONFIG.MAX_ACTIVE_ENEMIES;
 }
 
-export function spawnEnemyLaser(x, y, angle) {
+export function spawnEnemyLaser(x, y, angle, sourceVisible) {
     enemyLasers.push({
         x,
         y,
@@ -24,7 +24,7 @@ export function spawnEnemyLaser(x, y, angle) {
         speed: 5,
         life: 80
     });
-    AudioManager.play('ENEMY_LASER');
+    if (sourceVisible) AudioManager.play('ENEMY_LASER');
 }
 
 export function spawnAegisPulse(x, y, angle, sourceVisible) {

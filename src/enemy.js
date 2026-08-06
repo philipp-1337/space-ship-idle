@@ -347,7 +347,9 @@ class Enemy {
                     this.pulseCharge = AEGIS_PULSE.CHARGE_FRAMES;
                 } else {
                     this.shootCooldown = 150 + Math.random()*60;
-                    spawnEnemyLaser(this.x, this.y, angle);
+                    const sourceVisible = this.x >= 0 && this.x <= window.logicalWidth
+                        && this.y >= 0 && this.y <= window.logicalHeight;
+                    spawnEnemyLaser(this.x, this.y, angle, sourceVisible);
                 }
             }
             if (this.canShoot && this.shootCooldown > 0) {

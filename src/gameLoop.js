@@ -262,7 +262,9 @@ export function createGameLoop(context) {
                 sweepRay.angle = ship.angle;
                 
                 effectsSystem.triggerScreenShake(20, 30);
-                AudioManager.play('ENEMY_BOSS_RAY');
+                const bossWasVisible = enemy.x >= 0 && enemy.x <= window.logicalWidth
+                    && enemy.y >= 0 && enemy.y <= window.logicalHeight;
+                if (bossWasVisible) AudioManager.play('ENEMY_BOSS_RAY');
             } else {
                 spawnXpOrb(enemy.x, enemy.y, enemy.xpValue);
                 // Split mechanics for regular enemies
