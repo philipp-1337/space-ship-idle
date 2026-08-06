@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.5.2', date: '2026-08-06', changes: ['Extended AEGIS pulse flight to six seconds and added a visible cyan detonation on impact or expiry.'] },
     { version: '0.5.1', date: '2026-08-06', changes: ['Restored the hidden Drone Emitter III node and refined AEGIS pulses with a smaller octagonal form, longer flight, and visible-contact audio.'] },
     { version: '0.5.0', date: '2026-08-06', changes: ['Added long-range salvage routes with route hazards, AEGIS homing pulse attacks, and five-rank independent damage paths for drones and homing missiles.'] },
     { version: '0.4.4', date: '2026-08-06', changes: ['Added distinct sounds for boss rays, surges, low hull, salvage recovery, and incoming space obstacles.'] },
