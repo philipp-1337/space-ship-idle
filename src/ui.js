@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.4.4', date: '2026-08-06', changes: ['Added distinct sounds for boss rays, surges, low hull, salvage recovery, and incoming space obstacles.'] },
     { version: '0.4.3', date: '2026-08-06', changes: ['Update enemy laser sound effect and resource collection sound'] },
     { version: '0.4.2', date: '2026-08-05', changes: ['Made salvage signals rarer and more distant, added a collection ping and visible reward drops, improved obstacle persistence and drift, removed boss popcorn spawns, and strengthened keyboard selection in Pause and Settings.'] },
     { version: '0.4.1', date: '2026-08-05', changes: ['Added a dedicated scanner ping when a salvage signal enters the flight area.'] },

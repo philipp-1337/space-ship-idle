@@ -9,8 +9,8 @@ export const SOUNDS = {
     // Progression & state feedback
     LEVEL_UP: '/assets/audio/sfx/level_up.wav',
     TECH_UNLOCK: '/assets/audio/sfx/tech_unlock.wav',
-    SHIELD_DOWN: '/assets/audio/sfx/shield_down.wav',
-    SHIELD_UP: '/assets/audio/sfx/shield_up.wav',
+    SHIELD_LOW: '/assets/audio/sfx/shield_low.wav',
+    SHIELD_UP_V2: '/assets/audio/sfx/shield_up_v2.wav',
     GAME_OVER: '/assets/audio/sfx/game_over.wav',
 
     // Action
@@ -20,6 +20,8 @@ export const SOUNDS = {
     ENEMY_HIT: '/assets/audio/sfx/enemy_hit.wav',
     ENEMY_EXPLODE: '/assets/audio/sfx/enemy_explode.wav',
     ENEMY_BOSS: '/assets/audio/sfx/enemy_boss.wav',
+    ENEMY_BOSS_RAY: '/assets/audio/sfx/enemy_boss_ray.wav',
+    ENEMY_SURGE: '/assets/audio/sfx/enemy_surge.wav',
     SHIP_HIT: '/assets/audio/sfx/ship_hit.wav',
     SHIP_MISSILE: '/assets/audio/sfx/ship_missile_start.wav',
     SHIP_MISSILE_EXPLOSION: '/assets/audio/sfx/ship_missile_explosion.wav',
@@ -30,5 +32,6 @@ export const SOUNDS = {
     RES_COLLECT_TRACTOR: '/assets/audio/sfx/res_collect_tractor.wav',
     SIGNAL_CONTACT: '/assets/audio/sfx/signal_contact.wav',
     SIGNAL_COLLECT: '/assets/audio/sfx/signal_collect.wav',
+    SPACE_OBSTACLE: '/assets/audio/sfx/space_obstacle.wav',
     MILESTONE: '/assets/audio/sfx/milestone_reached.wav',
 };

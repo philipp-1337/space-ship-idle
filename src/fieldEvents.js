@@ -156,6 +156,7 @@ export function createFieldEventSystem() {
             rotationSpeed: (Math.random() - 0.5) * 0.025,
             expiresAt: now + FIELD_EVENTS.OBSTACLE_LIFETIME_MS
         });
+        AudioManager.play('SPACE_OBSTACLE');
     }
 
     function rewardMarker(marker, ship, spawnXpOrb, PlasmaCell, plasmaCells, showOverdriveHint) {
@@ -181,8 +182,7 @@ export function createFieldEventSystem() {
         } else if (reward === 2) {
             const before = ship.hp;
             ship.hp = Math.min(ship.maxHp, ship.hp + 1);
-            if (ship.hp > before) AudioManager.play('SHIELD_UP');
-            else AudioManager.play('RES_COLLECT_XP');
+            AudioManager.play(ship.hp > before ? 'SHIELD_UP_V2' : 'MILESTONE');
         } else {
             activateOverdrive();
             showOverdriveHint(getOverdriveDurationMs());

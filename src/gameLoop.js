@@ -124,7 +124,7 @@ export function createGameLoop(context) {
                 sweepRay.angle = ship.angle;
                 
                 effectsSystem.triggerScreenShake(20, 30);
-                AudioManager.play('SHIP_LASER');
+                AudioManager.play('ENEMY_BOSS_RAY');
             } else {
                 spawnXpOrb(enemy.x, enemy.y, enemy.xpValue);
                 // Split mechanics for regular enemies
@@ -356,7 +356,7 @@ export function createGameLoop(context) {
                 nextLateGameSurgeAt = now + GAME_CONFIG.LATE_GAME_SURGE_INTERVAL_MS;
                 if (typeof showWaveHint === 'function') showWaveHint();
                 effectsSystem.triggerScreenShake(6, 12);
-                AudioManager.play('ENEMY_BOSS');
+                AudioManager.play('ENEMY_SURGE');
             }
         }
         if (techUpgrades.signalInterference && now >= empCooldownUntil && enemies.some((enemy) => enemy.alive && enemy.canShoot)) {

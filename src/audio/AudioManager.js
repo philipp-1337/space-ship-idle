@@ -38,6 +38,12 @@ class AudioService {
         sound.play();
     }
 
+    playSequence(soundKey, count, intervalMs) {
+        for (let index = 0; index < count; index++) {
+            setTimeout(() => this.play(soundKey), index * intervalMs);
+        }
+    }
+
     setSfxEnabled(enabled) {
         this.sfxEnabled = !!enabled;
         localStorage.setItem(STORAGE_KEY, String(this.sfxEnabled));
