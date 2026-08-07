@@ -11,6 +11,8 @@ Space Ship Idle is a vanilla JavaScript/Vite Canvas 2D space shooter. It has two
 
 The app is English-only. Keep player-facing copy in English unless the user explicitly requests another language.
 
+Read and use [docs/GAME_OVERVIEW.md](./docs/GAME_OVERVIEW.md) as the gameplay and progression reference before changing enemies, spawning, level/XP rules, run upgrades, Tech Tree nodes, Plasma, Flight Data, Flight Protocols, persistence, or balancing. Keep its formulas, tables, phase descriptions, and development context aligned with the shipped implementation.
+
 ## Design authority
 
 Read and follow [DESIGN.md](./DESIGN.md) before changing UI, HUD, menus, modals, touch controls, visual effects, or player-facing interaction copy.
@@ -101,6 +103,8 @@ This command must not run automatically. It may be executed exactly once only af
 
 - Keep [README.md](./README.md) accurate when scripts, controls, deployment, major systems, or project structure change.
 - Keep [DESIGN.md](./DESIGN.md) as the visual and interaction reference. Update it only when the design system itself changes, not for every implementation detail.
+- Keep [docs/GAME_OVERVIEW.md](./docs/GAME_OVERVIEW.md) as the authoritative gameplay-development reference. Whenever a change modifies a documented enemy, spawn rule, level/XP formula, run upgrade, Tech Tree node, Plasma economy, Flight Data reward, Flight Protocol, persistence rule, or balancing assumption, update this document in the same commit.
+- When adding a new gameplay system, enemy, upgrade, progression phase, or persistent field, document its purpose, current values, unlock conditions, interactions, and reset/persistence behavior before handoff. Documentation drift is incomplete work even when the code is functional.
 - If a change affects a temporary release notice, mention its key/version and removal path in the relevant documentation or commit summary.
 
 ## Final handoff
