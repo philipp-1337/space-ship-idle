@@ -1,7 +1,7 @@
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { spawnEnemyLaser, spawnAegisPulse } from './enemyManager.js';
-import { AEGIS_PULSE, ENEMY_BALANCE } from './constants.js';
+import { AEGIS_PULSE, ENEMY_BALANCE, GAME_CONFIG, PRISM_ENEMY, PHASE_STALKER, HUNTER_ENEMY } from './constants.js';
 
 // Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
 // Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
@@ -114,6 +114,62 @@ const aegisSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
     }
 );
 
+const prismSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#6b4b00', '#2e2207', '#ffb000', '#fff3c4'], '#160f00',
+    (ctx) => {
+        const s = 15;
+        const points = [];
+        for (let i = 0; i < 6; i++) {
+            const angle = -Math.PI / 2 + i * Math.PI / 3;
+            points.push([Math.cos(angle) * s / 2, Math.sin(angle) * s / 2]);
+        }
+        enemyPath(ctx, points, '#6b4b00');
+        enemyPath(ctx, [points[5], points[0], points[1], [0, 0]], '#2e2207');
+        ctx.strokeStyle = '#ffb000';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(enemyMx(-5), enemyMy(4));
+        ctx.lineTo(enemyMx(0), enemyMy(-5));
+        ctx.lineTo(enemyMx(5), enemyMy(4));
+        ctx.stroke();
+        ctx.fillStyle = '#fff3c4';
+        ctx.fillRect(enemyMx(-1.5), enemyMy(-1.5), enemyMx(3) - enemyMx(0), enemyMy(3) - enemyMy(0));
+    }
+);
+
+const phaseSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#8e2f9f', '#32103c', '#ef83ff', '#ffe6ff'], '#14051a',
+    (ctx) => {
+        const s = 15;
+        enemyPath(ctx, [[0, -s / 2], [s / 2, 0], [0, s / 2], [-s / 2, 0]], '#8e2f9f');
+        enemyPath(ctx, [[0, -s / 2], [s / 2, 0], [0, 0]], '#32103c');
+        ctx.strokeStyle = '#ef83ff';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(enemyMx(-5), enemyMy(0));
+        ctx.lineTo(enemyMx(0), enemyMy(-5));
+        ctx.lineTo(enemyMx(5), enemyMy(0));
+        ctx.lineTo(enemyMx(0), enemyMy(5));
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fillStyle = '#ffe6ff';
+        ctx.fillRect(enemyMx(-1), enemyMy(-1), enemyMx(2) - enemyMx(0), enemyMy(2) - enemyMy(0));
+    }
+);
+
+const hunterSprite = makePixelSprite(ENEMY_SPRITE_RES, ENEMY_SPRITE_RES,
+    ['#8a3e18', '#35170b', '#ff7a3d', '#fff0d5'], '#1a0803',
+    (ctx) => {
+        const s = 15;
+        enemyPath(ctx, [[s / 2, 0], [0, -s / 2], [-s / 2, 0], [0, s / 2]], '#8a3e18');
+        enemyPath(ctx, [[s / 2, 0], [0, -s / 2], [0, 0]], '#35170b');
+        ctx.fillStyle = '#ff7a3d';
+        ctx.fillRect(enemyMx(-2), enemyMy(-2), enemyMx(4) - enemyMx(-2), enemyMy(4) - enemyMy(-2));
+        ctx.fillStyle = '#fff0d5';
+        ctx.fillRect(enemyMx(4), enemyMy(-1), enemyMx(6) - enemyMx(4), enemyMy(2) - enemyMy(-1));
+    }
+);
+
 // Boss-Sprite: gepanzerter, bestachelter Sechseck-Rumpf mit glühendem
 // Reaktorkern in Warnrot/Schwarz statt einer der zufälligen Standard-Formen —
 // jeder Boss sieht dadurch gleich und sofort als eigene Bedrohungsklasse
@@ -160,6 +216,9 @@ const ENEMY_SPRITES = {
     pentagon: { normal: pentagonSprite, hit: makeFlashSprite(pentagonSprite, '#ffffff') },
     circle: { normal: circleSprite, hit: makeFlashSprite(circleSprite, '#ffffff') },
     aegis: { normal: aegisSprite, hit: makeFlashSprite(aegisSprite, '#ffffff') },
+    prism: { normal: prismSprite, hit: makeFlashSprite(prismSprite, '#ffffff') },
+    phase: { normal: phaseSprite, hit: makeFlashSprite(phaseSprite, '#ffffff') },
+    hunter: { normal: hunterSprite, hit: makeFlashSprite(hunterSprite, '#ffffff') },
     boss: { normal: bossSprite, hit: makeFlashSprite(bossSprite, '#ffffff') },
 };
 
@@ -171,7 +230,8 @@ export const ENEMY_TYPES = [
         baseHp: 3,
         baseSpeed: 0.7,
         color: 'darkred',
-        baseXpValue: 1
+        baseXpValue: 1,
+        spawnWeight: 1
     },
     {
         name: 'square',
@@ -180,7 +240,8 @@ export const ENEMY_TYPES = [
         baseHp: 6,
         baseSpeed: 0.6,
         color: 'darkblue',
-        baseXpValue: 3
+        baseXpValue: 3,
+        spawnWeight: 1
     },
     {
         name: 'pentagon',
@@ -189,7 +250,8 @@ export const ENEMY_TYPES = [
         baseHp: 9, // The split creates two additional targets.
         baseSpeed: 0.5,
         color: 'darkgreen',
-        baseXpValue: 5
+        baseXpValue: 5,
+        spawnWeight: 1
     },
     {
         name: 'shooter',
@@ -199,7 +261,42 @@ export const ENEMY_TYPES = [
         baseSpeed: 0.45,
         color: 'purple',
         canShoot: true,
-        baseXpValue: 8
+        baseXpValue: 8,
+        spawnWeight: 1
+    },
+    {
+        name: 'prism',
+        minLevel: GAME_CONFIG.LATE_GAME_PRISM_LEVEL,
+        shape: 'prism',
+        baseHp: 18,
+        baseSpeed: 0.52,
+        color: '#ffb000',
+        baseXpValue: 16,
+        spawnWeight: 0.7,
+        prismShield: true
+    },
+    {
+        name: 'phase',
+        minLevel: GAME_CONFIG.LATE_GAME_PHASE_LEVEL,
+        shape: 'phase',
+        baseHp: 26,
+        baseSpeed: 0.62,
+        color: '#ef83ff',
+        baseXpValue: 20,
+        spawnWeight: 0.65,
+        phaseStalker: true
+    },
+    {
+        name: 'hunter',
+        minLevel: GAME_CONFIG.LATE_GAME_HUNTER_LEVEL,
+        shape: 'hunter',
+        baseHp: 32,
+        baseSpeed: 0.48,
+        color: '#ff7a3d',
+        canShoot: true,
+        baseXpValue: 24,
+        spawnWeight: 0.55,
+        hunter: true
     }
 ];
 
@@ -233,7 +330,12 @@ class Enemy {
         // Typ nach Level bestimmen (oder fest vorgegeben, z.B. BOSS_TYPE)
         const type = forcedType || (() => {
             const availableTypes = ENEMY_TYPES.filter(t => level >= t.minLevel);
-            return availableTypes[Math.floor(Math.random() * availableTypes.length)];
+            const totalWeight = availableTypes.reduce((sum, candidate) => sum + (candidate.spawnWeight || 1), 0);
+            let roll = Math.random() * totalWeight;
+            return availableTypes.find((candidate) => {
+                roll -= candidate.spawnWeight || 1;
+                return roll <= 0;
+            }) || availableTypes[availableTypes.length - 1];
         })();
         this.type = type;
         this.x = x;
@@ -249,6 +351,16 @@ class Enemy {
         this.maxHp = this.hp;
         this.damageTakenMultiplier = type.damageTakenMultiplier || 1;
         this.isAegis = type.name === 'aegis';
+        this.isPrism = !!type.prismShield;
+        this.isPhaseStalker = !!type.phaseStalker;
+        this.isHunter = !!type.hunter;
+        this.prismShieldActive = this.isPrism;
+        this.prismShieldRecharge = 0;
+        this.phaseActive = false;
+        this.phaseTimer = 0;
+        this.phaseCooldown = this.isPhaseStalker ? 75 + Math.random() * 90 : 0;
+        this.hunterDashTimer = 0;
+        this.hunterDashCooldown = this.isHunter ? 70 + Math.random() * 90 : 0;
         this.color = type.color;
         this.alive = true;
         this.canShoot = type.canShoot || false;
@@ -327,10 +439,45 @@ class Enemy {
             }
         }
         if (this.alive) {
+            if (this.isPrism && !this.prismShieldActive && this.prismShieldRecharge > 0) {
+                this.prismShieldRecharge -= dt;
+                if (this.prismShieldRecharge <= 0) {
+                    this.prismShieldActive = true;
+                    this.prismShieldRecharge = 0;
+                }
+            }
+            if (this.isPhaseStalker) {
+                if (this.phaseActive) {
+                    this.phaseTimer -= dt;
+                    if (this.phaseTimer <= 0) {
+                        this.phaseActive = false;
+                        this.phaseCooldown = PHASE_STALKER.PHASE_COOLDOWN_FRAMES;
+                    }
+                } else {
+                    this.phaseCooldown -= dt;
+                    if (this.phaseCooldown <= 0) {
+                        this.phaseActive = true;
+                        this.phaseTimer = PHASE_STALKER.PHASE_DURATION_FRAMES;
+                    }
+                }
+            }
+            const distanceToShip = Math.hypot(shipX - this.x, shipY - this.y);
+            if (this.isHunter) {
+                if (this.hunterDashTimer > 0) {
+                    this.hunterDashTimer -= dt;
+                } else {
+                    this.hunterDashCooldown -= dt;
+                    if (this.hunterDashCooldown <= 0 && distanceToShip < HUNTER_ENEMY.DASH_RANGE) {
+                        this.hunterDashTimer = HUNTER_ENEMY.DASH_DURATION_FRAMES;
+                        this.hunterDashCooldown = HUNTER_ENEMY.DASH_COOLDOWN_FRAMES;
+                    }
+                }
+            }
             // Bewegung
             const angle = Math.atan2(shipY - this.y, shipX - this.x);
-            const dx = Math.cos(angle) * this.speed;
-            const dy = Math.sin(angle) * this.speed;
+            const speedMultiplier = this.hunterDashTimer > 0 ? HUNTER_ENEMY.DASH_SPEED_MULTIPLIER : 1;
+            const dx = Math.cos(angle) * this.speed * speedMultiplier;
+            const dy = Math.sin(angle) * this.speed * speedMultiplier;
             this.x += dx * 0.5 * dt;
             this.y += dy * 0.5 * dt;
             // Shooter-Logik
@@ -432,6 +579,44 @@ class Enemy {
                     ctx.restore();
                 }
             }
+            if (this.isPrism) {
+                const pulse = this.prismShieldActive ? 0.75 + 0.25 * Math.sin(Date.now() / 160) : 0.22;
+                ctx.save();
+                ctx.globalAlpha = pulse;
+                ctx.strokeStyle = '#ffb000';
+                ctx.shadowColor = '#ffb000';
+                ctx.shadowBlur = this.prismShieldActive ? 13 : 4;
+                ctx.lineWidth = this.prismShieldActive ? 2.5 : 1;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2 + 8, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            if (this.isPhaseStalker) {
+                ctx.save();
+                ctx.globalAlpha = this.phaseActive ? 0.2 : 0.65;
+                ctx.strokeStyle = '#ef83ff';
+                ctx.shadowColor = '#ef83ff';
+                ctx.shadowBlur = this.phaseActive ? 18 : 7;
+                ctx.lineWidth = 2;
+                ctx.setLineDash(this.phaseActive ? [3, 5] : []);
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2 + 7, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            if (this.isHunter && this.hunterDashTimer > 0) {
+                ctx.save();
+                ctx.globalAlpha = 0.75;
+                ctx.strokeStyle = '#ff7a3d';
+                ctx.shadowColor = '#ff7a3d';
+                ctx.shadowBlur = 14;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2 + 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
 
             const sprites = ENEMY_SPRITES[this.type.shape];
             const sprite = (this.isHit && this.hitTimer > 0) ? sprites.hit : sprites.normal;
@@ -457,6 +642,12 @@ class Enemy {
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'bottom';
                     ctx.fillText('AEGIS', 0, barY - 3);
+                } else if (this.isPrism || this.isPhaseStalker || this.isHunter) {
+                    ctx.fillStyle = this.color;
+                    ctx.font = '700 8px "IBM Plex Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(this.type.name.toUpperCase(), 0, barY - 3);
                 }
             }
             ctx.restore();
@@ -465,7 +656,7 @@ class Enemy {
 
     checkCollision(ship) {
         // Hitbox ist nur aktiv, wenn der Gegner NICHT explodiert
-        if (this.exploding) return false;
+        if (this.exploding || this.phaseActive) return false;
         // Kleine Hitbox für Kollision mit Schiff
         const dx = this.x - ship.x;
         const dy = this.y - ship.y;
@@ -476,7 +667,7 @@ class Enemy {
 
     checkLaserHit(laser) {
         // Hitbox ist nur aktiv, wenn der Gegner NICHT explodiert
-        if (this.exploding) return false;
+        if (this.exploding || this.phaseActive) return false;
         // Große Hitbox für Lasertreffer
         const dx = this.x - laser.x;
         const dy = this.y - laser.y;
@@ -499,6 +690,11 @@ class Enemy {
     }
 
     takeDamage(amount) {
+        if (this.isPrism && this.prismShieldActive) {
+            this.prismShieldActive = false;
+            this.prismShieldRecharge = PRISM_ENEMY.SHIELD_RECHARGE_FRAMES;
+            return false;
+        }
         this.hp = Math.max(0, this.hp - amount * this.damageTakenMultiplier);
         return this.hp <= 0;
     }

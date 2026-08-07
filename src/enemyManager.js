@@ -169,9 +169,24 @@ export function spawnLateGameSurge(canvas, level, easyMode = false) {
         const angle = (Math.PI * 2 / surgeSize) * i + Math.random() * 0.18;
         const x = centerX + Math.cos(angle) * radius;
         const y = centerY + Math.sin(angle) * radius;
-        const forcedType = Math.random() < 0.28
-            ? SURGE_AEGIS_TYPE
-            : (availableTypes.length ? availableTypes[Math.floor(Math.random() * availableTypes.length)] : null);
+        let forcedType = null;
+        const lateRoll = Math.random();
+        if (level >= GAME_CONFIG.LATE_GAME_HUNTER_LEVEL && lateRoll < 0.14) {
+            forcedType = ENEMY_TYPES.find(type => type.name === 'hunter');
+        } else if (level >= GAME_CONFIG.LATE_GAME_PHASE_LEVEL && lateRoll < 0.30) {
+            forcedType = ENEMY_TYPES.find(type => type.name === 'phase');
+        } else if (level >= GAME_CONFIG.LATE_GAME_PRISM_LEVEL && lateRoll < 0.48) {
+            forcedType = ENEMY_TYPES.find(type => type.name === 'prism');
+        } else if (lateRoll < 0.72) {
+            forcedType = SURGE_AEGIS_TYPE;
+        } else if (availableTypes.length) {
+            const totalWeight = availableTypes.reduce((sum, type) => sum + (type.spawnWeight || 1), 0);
+            let roll = Math.random() * totalWeight;
+            forcedType = availableTypes.find(type => {
+                roll -= type.spawnWeight || 1;
+                return roll <= 0;
+            }) || availableTypes[availableTypes.length - 1];
+        }
         enemies.push(new Enemy(x, y, level, easyMode, forcedType));
     }
 }

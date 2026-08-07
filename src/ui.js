@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.6', date: '2026-08-07', changes: ['Added Prism, Phase Stalker, and Hunter enemies from level 50 onward with shields, phase windows, and attack dashes; late-game surges now use their distinct roles.'] },
     { version: '0.9.5', date: '2026-08-07', changes: ['Rebalanced Tech Tree access: earlier XP and Plasma economy, a guaranteed first salvage Plasma reward, and level-gated late-game weapon and drone upgrades.'] },
     { version: '0.9.4', date: '2026-08-07', changes: ['Factory Reset now clears all game progress while preserving settings and preferences.'] },
     { version: '0.9.3', date: '2026-08-07', changes: ['Matched the Pre-Flight Check height constraint to Settings and Tech Tree so small mobile screens get a real scroll viewport.'] },

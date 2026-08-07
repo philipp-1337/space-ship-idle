@@ -30,7 +30,10 @@ export const GAME_CONFIG = {
     LATE_GAME_SURGE_BASE_SIZE: 8,
     LATE_GAME_SURGE_LEVEL_STEP: 15,
     LATE_GAME_SURGE_MAX_SIZE: 20,
-    MAX_ACTIVE_ENEMIES: 90
+    MAX_ACTIVE_ENEMIES: 90,
+    LATE_GAME_PRISM_LEVEL: 50,
+    LATE_GAME_PHASE_LEVEL: 80,
+    LATE_GAME_HUNTER_LEVEL: 125
 };
 
 // Sparse points of interest keep the flight space legible: the player gets a
@@ -82,6 +85,24 @@ export const ENEMY_BALANCE = {
     HP_LEVEL_MULTIPLIER: 1.005,
     BOSS_HP_LEVEL_GROWTH: 0.8,
     BOSS_HP_LEVEL_MULTIPLIER: 1.01
+};
+
+// Late-game enemies add readable combat decisions instead of only inflating
+// regular HP. Values use the existing 60fps-normalized frame units.
+export const PRISM_ENEMY = {
+    SHIELD_RECHARGE_FRAMES: 210
+};
+
+export const PHASE_STALKER = {
+    PHASE_DURATION_FRAMES: 42,
+    PHASE_COOLDOWN_FRAMES: 150
+};
+
+export const HUNTER_ENEMY = {
+    DASH_RANGE: 420,
+    DASH_DURATION_FRAMES: 36,
+    DASH_COOLDOWN_FRAMES: 180,
+    DASH_SPEED_MULTIPLIER: 2.2
 };
 
 export const PHYSICS = {
