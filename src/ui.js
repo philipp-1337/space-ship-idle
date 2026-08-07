@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.1', date: '2026-08-07', changes: ['Fixed touch scrolling in the mobile Pre-Flight Check dialog.'] },
     { version: '0.9.0', date: '2026-08-07', changes: ['Made One-Handed the default mobile control scheme and made the Pre-Flight Check scrollable on small screens.'] },
     { version: '0.8.1', date: '2026-08-06', changes: ['Added dedicated audio feedback for Signal Interference EMP and Reactor Nova discharges.'] },
     { version: '0.8.0', date: '2026-08-06', changes: ['Expanded salvage rewards with temporary Drone Uplink and Hull Overcharge bonuses, scaled resource rewards, and no Plasma salvage beyond level 24.'] },
@@ -631,12 +632,38 @@ export function displayStartScreen(onSelect) {
 
     const { modal, panel } = consolePanelModal({ id: 'start-screen', zIndex: 3500, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 460px)';
+    panel.style.height = _isMobile ? '78vh' : 'auto';
     panel.style.maxHeight = _isMobile ? '78vh' : '86vh';
     panel.style.boxSizing = 'border-box';
-    panel.style.overflowY = 'auto';
-    panel.style.touchAction = 'pan-y';
-    panel.style.webkitOverflowScrolling = 'touch';
+    panel.style.overflow = 'hidden';
+    panel.style.minHeight = '0';
+    modal.style.touchAction = 'pan-y';
+
+    // html/body intentionally disable page panning for the game canvas. Allow
+    // vertical panning for this modal while it is open so mobile browsers can
+    // reach content below the fold instead of treating the gesture as game
+    // input.
+    const rootTouchAction = document.documentElement.style.touchAction;
+    const bodyTouchAction = document.body.style.touchAction;
+    if (_isMobile) {
+        document.documentElement.style.touchAction = 'pan-y';
+        document.body.style.touchAction = 'pan-y';
+    }
+    const closeStartScreen = () => {
+        document.documentElement.style.touchAction = rootTouchAction;
+        document.body.style.touchAction = bodyTouchAction;
+        modal.remove();
+    };
+
     panel.appendChild(panelTitleBar('Pre-Flight Check', INK.phosphor));
+    const content = document.createElement('div');
+    content.style.width = '100%';
+    content.style.minHeight = '0';
+    content.style.flex = '1 1 auto';
+    content.style.overflowY = 'auto';
+    content.style.touchAction = 'pan-y';
+    content.style.webkitOverflowScrolling = 'touch';
+    panel.appendChild(content);
 
     const intro = document.createElement('p');
     intro.innerText = 'Select your difficulty.';
@@ -645,7 +672,7 @@ export function displayStartScreen(onSelect) {
     intro.style.fontSize = scale(12);
     intro.style.margin = `0 0 ${scale(16)} 0`;
     intro.style.alignSelf = 'flex-start';
-    panel.appendChild(intro);
+    content.appendChild(intro);
 
     const modes = [
         { key: 'normal', label: 'Normal', desc: 'Standard difficulty — the full challenge.' },
@@ -673,10 +700,10 @@ export function displayStartScreen(onSelect) {
         row.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
         row.onclick = () => {
             AudioManager.play('UI_CLICK');
-            document.body.removeChild(modal);
+            closeStartScreen();
             onSelect(mode.key);
         };
-        panel.appendChild(row);
+        content.appendChild(row);
     });
 
     // Controls Hint
@@ -710,7 +737,7 @@ export function displayStartScreen(onSelect) {
             <div style="margin-top:${scale(6)}">Roll / Strafe: <kbd style="${kbdStyle}">Q</kbd> / <kbd style="${kbdStyle}">E</kbd></div>
         `;
     }
-    panel.appendChild(controls);
+    content.appendChild(controls);
 
     // PWA Install Hint
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -737,7 +764,7 @@ export function displayStartScreen(onSelect) {
         }
         
         pwaHint.innerText = pwaHintText;
-        panel.appendChild(pwaHint);
+        content.appendChild(pwaHint);
     }
 
     document.body.appendChild(modal);
