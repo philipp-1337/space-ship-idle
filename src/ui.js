@@ -39,9 +39,10 @@ const INK = {
 const FONT = "'IBM Plex Mono', 'SF Mono', 'Consolas', monospace";
 const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 // Temporary release notice for the mobile control redesign.
-const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v3';
+const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.0', date: '2026-08-07', changes: ['Made One-Handed the default mobile control scheme and made the Pre-Flight Check scrollable on small screens.'] },
     { version: '0.8.1', date: '2026-08-06', changes: ['Added dedicated audio feedback for Signal Interference EMP and Reactor Nova discharges.'] },
     { version: '0.8.0', date: '2026-08-06', changes: ['Expanded salvage rewards with temporary Drone Uplink and Hull Overcharge bonuses, scaled resource rewards, and no Plasma salvage beyond level 24.'] },
     { version: '0.7.2', date: '2026-08-06', changes: ['Enemy lasers now travel much farther through the flight space and end with a small visible magenta discharge.'] },
@@ -630,6 +631,11 @@ export function displayStartScreen(onSelect) {
 
     const { modal, panel } = consolePanelModal({ id: 'start-screen', zIndex: 3500, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 460px)';
+    panel.style.maxHeight = _isMobile ? '78vh' : '86vh';
+    panel.style.boxSizing = 'border-box';
+    panel.style.overflowY = 'auto';
+    panel.style.touchAction = 'pan-y';
+    panel.style.webkitOverflowScrolling = 'touch';
     panel.appendChild(panelTitleBar('Pre-Flight Check', INK.phosphor));
 
     const intro = document.createElement('p');
@@ -692,8 +698,8 @@ export function displayStartScreen(onSelect) {
     if (_isMobile) {
         controls.innerHTML = `
             <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.scope}">One-Handed (default):</span> Left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
             <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Twin-Stick:</span> Left aims; right up/down flies forward/reverse. Advanced adds strafe.</div>
-            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.scope}">One-Handed:</span> Left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
             <div><span style="color:${INK.text}">Switch later:</span> Settings → Mobile Control Scheme. Auto-Fire is ON.</div>
         `;
     } else {
@@ -775,8 +781,8 @@ export function showMobileMovementUpdateNotice() {
     notice.style.border = `1px solid ${INK.hairlineDim}`;
     notice.style.clipPath = chamferClip(scaleNum(6));
     notice.innerHTML = `
+        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.scope}">One-Handed (default):</span> left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
         <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">Twin-Stick:</span> left stick aims; right stick up/down flies forward/reverse, with optional strafe.</div>
-        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.scope}">One-Handed:</span> left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
         <div><span style="color:${INK.text}">Switch anytime:</span> Settings → Mobile Control Scheme.</div>
     `;
     panel.appendChild(notice);
@@ -1157,7 +1163,7 @@ export function showChangelogModal() {
     enableArrowKeyNav(panel);
 }
 
-export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, mobileControlScheme = 'twin-stick', isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onChangeControlScheme }) {
+export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedControls, mobileControlScheme = 'one-handed', isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onChangeControlScheme }) {
     if (document.getElementById('settings-menu')) return;
     if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
 
@@ -1253,7 +1259,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         panel.appendChild(toggleBtn);
 
         const ctrlNote = document.createElement('div');
-        ctrlNote.innerText = 'The left and right halves of the screen are touch zones. The left stick aims; the right stick controls forward/reverse thrust. Firing is always automatic.';
+        ctrlNote.innerText = 'The left and right halves of the screen are touch zones. One-Handed is the default; firing is always automatic.';
         ctrlNote.style.fontFamily = FONT;
         ctrlNote.style.fontSize = scale(11);
         ctrlNote.style.color = INK.textDim;
@@ -1279,7 +1285,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
 
         const schemeNote = document.createElement('div');
         schemeNote.innerText = mobileControlScheme === 'one-handed'
-            ? 'Left stick: move in a direction and turn toward it; this stick only flies forward. Right stick is optional and adds forward/reverse thrust plus strafe.'
+            ? 'Default: left stick moves in a direction and turns toward it; this stick only flies forward. Right stick is optional and adds forward/reverse thrust plus strafe.'
             : 'Left stick aims. Right stick flies forward or reverse; Advanced adds left/right strafe.';
         schemeNote.style.fontFamily = FONT;
         schemeNote.style.fontSize = scale(11);

@@ -565,7 +565,7 @@ window.onTechTreeChanged = function() {
     startEnemySpawning(canvas, levelRef, { value: techUpgrades }, isPausedRef, isShopOpenRef, isGameOverRef, easyModeRef);
 };
 
-function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mobileControlScheme = 'twin-stick') {
+function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mobileControlScheme = 'one-handed') {
     easyModeRef.value = mode === 'easy';
     if (easyModeRef.value) grantEasyModeArmorBonus();
     if (typeof inputManager.setControlsVisible === 'function') inputManager.setControlsVisible(controlsVisible);
@@ -632,7 +632,7 @@ if (savedSettings && savedSettings.mode) {
     showMobileMovementUpdateNotice();
 } else {
     displayStartScreen((mode) => {
-        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false, mobileControlScheme: 'twin-stick' }));
+        localStorage.setItem('spaceShipIdleSettings', JSON.stringify({ mode, controlsVisible: true, mobileAdvancedControls: false, mobileControlScheme: 'one-handed' }));
         applySettings(mode, true);
     });
     showMobileMovementUpdateNotice();

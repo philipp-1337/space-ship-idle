@@ -17,7 +17,7 @@ export class InputManager {
         this.strafeValue = 0; // -1..1, mobile right-stick horizontal axis
         this.maneuverThrustValue = 0; // -1..1, mobile right-stick vertical axis
         this.mobileAdvancedControls = false;
-        this.mobileControlScheme = 'twin-stick';
+        this.mobileControlScheme = 'one-handed';
         this.desktopShortcutHandler = null;
         this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         

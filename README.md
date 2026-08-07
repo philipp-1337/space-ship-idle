@@ -18,7 +18,7 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 - Long-range salvage routes add sparse route hazards, while AEGIS contacts fire telegraphed homing pulse cannons. Drone and missile tech branches each include independent five-rank damage upgrades.
 - Normal and Easy difficulty modes. Normal is the default Pre-Flight selection.
 - Desktop keyboard controls, mouse interaction, and mobile touch controls with automatic firing.
-- Mobile touch controls support Twin-Stick and One-Handed schemes. Twin-Stick uses the left stick for aim and the right stick for thrust, with optional strafe. One-Handed uses the legacy movement-vector stick: the left stick turns and flies forward in the selected direction; the right stick can add thrust and strafe.
+- Mobile touch controls support One-Handed by default and Twin-Stick as an alternative. Twin-Stick uses the left stick for aim and the right stick for thrust, with optional strafe. One-Handed uses the legacy movement-vector stick: the left stick turns and flies forward in the selected direction; the right stick can add thrust and strafe.
 - Keyboard-accessible menus and modals with spatial arrow-key navigation, W/A/S/D navigation, Enter/Space confirmation, visible selection feedback, and hover audio feedback.
 - Audio feedback for UI interaction, level-up moments, tech unlocks, shields, lasers, drones, explosions, and game over.
 - Semantic application version displayed beside the FPS counter in the lower-left HUD.
@@ -37,8 +37,8 @@ See [DESIGN.md](./DESIGN.md) for the visual system and interaction principles. A
 
 ### Mobile
 
+- One-Handed (default): left thumb selects the forward movement direction and turns the ship toward it; it cannot fly backward
 - Twin-Stick: left thumb turns/aims; right thumb, up/down, controls forward / reverse thrust
-- One-Handed: left thumb selects the forward movement direction and turns the ship toward it; it cannot fly backward
 - One-Handed optional right thumb: up/down adds thrust; left/right strafes
 - Firing is automatic on touch devices
 
