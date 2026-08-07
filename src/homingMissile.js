@@ -343,7 +343,7 @@ export default class HomingMissile {
                                 rewardContext.xpPoints.push(new rewardContext.XP(e.x, e.y));
                             }
                             const dropChance = rewardContext.GAME_CONFIG.PLASMA_DROP_CHANCE * ((rewardContext.techUpgrades && rewardContext.techUpgrades.salvage) ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
-                            if (e.isElite || Math.random() < dropChance) {
+                            if (!rewardContext.isTechTreeComplete?.() && (e.isElite || Math.random() < dropChance)) {
                                 let px = e.x;
                                 let py = e.y;
                                 const centerX = rewardContext.canvas.width / 2;

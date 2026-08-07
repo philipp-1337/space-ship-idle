@@ -1,6 +1,6 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
 import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER, COMBAT_PRESSURE, ENEMY_LASER } from './constants.js';
-import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse } from './upgrades.js';
+import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse, isTechTreeComplete } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
@@ -302,7 +302,7 @@ export function createGameLoop(context) {
             
             // Elite-Gegner droppen garantiert Plasma; Salvage Drive verdoppelt die normale Chance
             const dropChance = GAME_CONFIG.PLASMA_DROP_CHANCE * (techUpgrades.salvage ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
-            if (enemy.isElite || Math.random() < dropChance) {
+            if (!isTechTreeComplete() && (enemy.isElite || Math.random() < dropChance)) {
                 let px = enemy.x;
                 let py = enemy.y;
                 const centerX = canvas.width / 2;
@@ -1069,7 +1069,8 @@ export function createGameLoop(context) {
                             plasmaCells,
                             PlasmaCell,
                             canvas, // für Plasmakoordinaten
-                            techUpgrades // für Salvage Drive
+                            techUpgrades, // für Salvage Drive
+                            isTechTreeComplete
                         });
                     }
                 }

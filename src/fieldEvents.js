@@ -1,5 +1,5 @@
 import { FIELD_EVENTS } from './constants.js';
-import { activateOverdrive } from './upgrades.js';
+import { activateOverdrive, isTechTreeComplete } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
 import Enemy from './enemy.js';
@@ -239,10 +239,11 @@ export function createFieldEventSystem() {
     }
 
     function rewardMarker(marker, ship, level, maxXP, now, spawnXpOrb, PlasmaCell, plasmaCells, showSalvageRewardHint) {
-        const rewards = level > FIELD_EVENTS.PLASMA_MAX_LEVEL
+        const plasmaAvailable = !isTechTreeComplete();
+        const rewards = level > FIELD_EVENTS.PLASMA_MAX_LEVEL || !plasmaAvailable
             ? ['xp', 'hull', 'overdrive', 'drone', 'overcharge']
             : ['plasma', 'xp', 'hull', 'overdrive', 'drone', 'overcharge'];
-        const guaranteedEarlyPlasma = firstPlasmaRewardAvailable && level <= FIELD_EVENTS.PLASMA_MAX_LEVEL;
+        const guaranteedEarlyPlasma = plasmaAvailable && firstPlasmaRewardAvailable && level <= FIELD_EVENTS.PLASMA_MAX_LEVEL;
         const reward = guaranteedEarlyPlasma ? 'plasma' : rewards[Math.floor(Math.random() * rewards.length)];
         if (reward === 'plasma') firstPlasmaRewardAvailable = false;
         const outwardAngle = Math.atan2(marker.y - ship.y, marker.x - ship.x);

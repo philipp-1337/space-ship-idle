@@ -63,6 +63,13 @@ export function isAutoShootUnlocked() {
     return techUpgrades.autoShoot || isTouchDevice();
 }
 
+// Plasma is a progression currency, not an unbounded endgame pickup. Keep
+// this check centralized so enemy drops, missile rewards, and salvage routes
+// all stop at the same point when the permanent tree is complete.
+export function isTechTreeComplete() {
+    return Object.values(techUpgrades).every(Boolean);
+}
+
 // Manche Tech-Upgrades setzen ein anderes voraus (Baum-Struktur im Tech-Tree-UI)
 export const TECH_PREREQUISITES = {
     rapidFire: 'autoShoot',
