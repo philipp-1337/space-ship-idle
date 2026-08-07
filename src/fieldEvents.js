@@ -186,6 +186,7 @@ export function createFieldEventSystem() {
     const rewardVisuals = [];
     let nextMarkerAt = null;
     let nextObstacleAt = null;
+    let firstPlasmaRewardAvailable = true;
 
     function addMarker(ship, canvas, now, level, easyMode) {
         const distance = FIELD_EVENTS.MARKER_OFFSCREEN_DISTANCE + Math.random() * FIELD_EVENTS.MARKER_DISTANCE_VARIANCE;
@@ -241,7 +242,9 @@ export function createFieldEventSystem() {
         const rewards = level > FIELD_EVENTS.PLASMA_MAX_LEVEL
             ? ['xp', 'hull', 'overdrive', 'drone', 'overcharge']
             : ['plasma', 'xp', 'hull', 'overdrive', 'drone', 'overcharge'];
-        const reward = rewards[Math.floor(Math.random() * rewards.length)];
+        const guaranteedEarlyPlasma = firstPlasmaRewardAvailable && level <= FIELD_EVENTS.PLASMA_MAX_LEVEL;
+        const reward = guaranteedEarlyPlasma ? 'plasma' : rewards[Math.floor(Math.random() * rewards.length)];
+        if (reward === 'plasma') firstPlasmaRewardAvailable = false;
         const outwardAngle = Math.atan2(marker.y - ship.y, marker.x - ship.x);
         const rewardPosition = (index, count, distance = 58) => {
             const spread = count > 1 ? (index / (count - 1) - 0.5) * 0.7 : 0;

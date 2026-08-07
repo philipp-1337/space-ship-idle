@@ -4,7 +4,7 @@
 import { MOBILE, OVERDRIVE_CORE, XP_BOOST } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
-import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades } from './upgrades.js';
+import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades, TECH_MIN_LEVELS } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
 import packageInfo from '../package.json';
@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.5', date: '2026-08-07', changes: ['Rebalanced Tech Tree access: earlier XP and Plasma economy, a guaranteed first salvage Plasma reward, and level-gated late-game weapon and drone upgrades.'] },
     { version: '0.9.4', date: '2026-08-07', changes: ['Factory Reset now clears all game progress while preserving settings and preferences.'] },
     { version: '0.9.3', date: '2026-08-07', changes: ['Matched the Pre-Flight Check height constraint to Settings and Tech Tree so small mobile screens get a real scroll viewport.'] },
     { version: '0.9.2', date: '2026-08-07', changes: ['Aligned the mobile Pre-Flight Check with the working scroll behavior used by Settings and Tech Tree, and kept menus above the HUD readouts.'] },
@@ -1716,25 +1717,25 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
         { key: 'missilePayload', label: 'Payload Amplifier I', desc: 'Homing missiles gain +1.2 independent damage.', cost: 5, col: 3, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
         { key: 'missilePayload2', label: 'Payload Amplifier II', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 6, col: 3, row: 9, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
-        { key: 'missilePayload3', label: 'Payload Amplifier III', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 7, col: 3, row: 11, requires: 'missilePayload2', requiresLabel: 'Payload Amplifier II' },
-        { key: 'missilePayload4', label: 'Payload Amplifier IV', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 8, col: 3, row: 13, requires: 'missilePayload3', requiresLabel: 'Payload Amplifier III' },
-        { key: 'missilePayload5', label: 'Payload Amplifier V', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 10, col: 3, row: 15, requires: 'missilePayload4', requiresLabel: 'Payload Amplifier IV' },
-        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target.', cost: 8, col: 3, row: 17, requires: 'missilePayload5', requiresLabel: 'Payload Amplifier V' },
-        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther.', cost: 10, col: 3, row: 19, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
-        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets.', cost: 10, col: 3, row: 21, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
+        { key: 'missilePayload3', label: 'Payload Amplifier III', desc: 'Homing missiles gain another +1.2 independent damage. Available from Level 15.', cost: 7, col: 3, row: 11, requires: 'missilePayload2', requiresLabel: 'Payload Amplifier II' },
+        { key: 'missilePayload4', label: 'Payload Amplifier IV', desc: 'Homing missiles gain another +1.2 independent damage. Available from Level 18.', cost: 8, col: 3, row: 13, requires: 'missilePayload3', requiresLabel: 'Payload Amplifier III' },
+        { key: 'missilePayload5', label: 'Payload Amplifier V', desc: 'Homing missiles gain another +1.2 independent damage. Available from Level 22.', cost: 10, col: 3, row: 15, requires: 'missilePayload4', requiresLabel: 'Payload Amplifier IV' },
+        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target. Available from Level 25.', cost: 8, col: 3, row: 17, requires: 'missilePayload5', requiresLabel: 'Payload Amplifier V' },
+        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther. Available from Level 30.', cost: 10, col: 3, row: 19, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
+        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets. Available from Level 35.', cost: 10, col: 3, row: 21, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
         { key: 'droneDamage1', label: 'Drone Emitter I', desc: 'Drone lasers deal 0.12× base laser damage more.', cost: 4, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
         { key: 'droneDamage2', label: 'Drone Emitter II', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 5, col: 4, row: 5, requires: 'droneDamage1', requiresLabel: 'Drone Emitter I' },
         { key: 'droneDamage3', label: 'Drone Emitter III', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 6, col: 4, row: 7, requires: 'droneDamage2', requiresLabel: 'Drone Emitter II' },
-        { key: 'droneDamage4', label: 'Drone Emitter IV', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 8, col: 4, row: 9, requires: 'droneDamage3', requiresLabel: 'Drone Emitter III' },
-        { key: 'droneDamage5', label: 'Drone Emitter V', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 10, col: 4, row: 11, requires: 'droneDamage4', requiresLabel: 'Drone Emitter IV' },
-        { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first.', cost: 18, col: 4, row: 13, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
-        { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 only. The bonus expires after level 5.', cost: 12, col: 1, row: 5, requires: 'resonanceCascade', requiresLabel: 'Resonance Cascade' },
+        { key: 'droneDamage4', label: 'Drone Emitter IV', desc: 'Drone lasers deal another 0.12× base laser damage. Available from Level 15.', cost: 8, col: 4, row: 9, requires: 'droneDamage3', requiresLabel: 'Drone Emitter III' },
+        { key: 'droneDamage5', label: 'Drone Emitter V', desc: 'Drone lasers deal another 0.12× base laser damage. Available from Level 20.', cost: 10, col: 4, row: 11, requires: 'droneDamage4', requiresLabel: 'Drone Emitter IV' },
+        { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first. Available from Level 25.', cost: 18, col: 4, row: 13, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
+        { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 of every flight.', cost: 8, col: 1, row: 5, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
         { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 3, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
         { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s.', cost: 12, col: 4, row: 15, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V', minLevel: 18 },
-        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 8, col: 1, row: 7, requires: 'rapidFire', requiresLabel: 'Rapid-Fire Core' },
+        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s. Available from Level 18.', cost: 12, col: 4, row: 15, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
+        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 6, col: 1, row: 7, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
         { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
-        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley.', cost: 14, col: 4, row: 17, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley after Payload Amplifier I.', cost: 14, col: 4, row: 17, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
         { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 32 kills, discharge a wide shockwave. Light targets are destroyed; heavier targets take 4 damage. Nova cannot trigger more than once every 15s.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 
@@ -1788,7 +1789,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     // Connectors are rendered only on desktop. Mobile gets a linear branch list
     // below, which keeps the dependency hierarchy readable without shrinking a
     // graph into an unusable touch layout.
-    const visibleNodes = nodes.filter((node) => !node.minLevel || currentLevel >= node.minLevel);
+    const visibleNodes = nodes.filter((node) => !TECH_MIN_LEVELS[node.key] || currentLevel >= TECH_MIN_LEVELS[node.key]);
     const nodeByKey = new Map(visibleNodes.map((node) => [node.key, node]));
     const isUnlocked = (key) => key === 'autoShoot' ? (!!currentTechUpgrades[key] || _isMobile) : !!currentTechUpgrades[key];
     const nodeDepth = (node, seen = new Set()) => {

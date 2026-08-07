@@ -76,8 +76,8 @@ export const TECH_PREREQUISITES = {
     missileWarhead: 'missileEndurance',
     missileGuidance: 'missileWarhead',
     piercing: 'autoShoot',
-    salvage: 'rapidFire',
-    twinMissiles: 'homingMissile',
+    salvage: 'xpResonance',
+    twinMissiles: 'missilePayload',
     explosiveRounds: 'piercing',
     twinDrones: 'droneDamage5',
     droneDamage1: 'drone',
@@ -89,7 +89,22 @@ export const TECH_PREREQUISITES = {
     targetingMatrix: ['autoShoot', 'drone'],
     reactorNova: 'explosiveRounds',
     resonanceCascade: 'xpResonance',
-    learningProtocol: 'resonanceCascade'
+    learningProtocol: 'xpResonance'
+};
+
+// Late branches remain meaningful goals instead of being purchasable in full
+// as soon as a player has banked enough Plasma between runs.
+export const TECH_MIN_LEVELS = {
+    droneDamage4: 15,
+    droneDamage5: 20,
+    twinDrones: 25,
+    signalInterference: 18,
+    missilePayload3: 15,
+    missilePayload4: 18,
+    missilePayload5: 22,
+    missileEndurance: 25,
+    missileWarhead: 30,
+    missileGuidance: 35
 };
 
 export function applyUpgrade(key, ship, PHYSICS) {
@@ -364,6 +379,10 @@ export function savePlasmaCount() {
     localStorage.setItem('plasmaCount', upgrades.plasmaCount);
 }
 export function handleTechUpgrade(key, cost) {
+    const currentLevel = typeof window !== 'undefined' && typeof window.getCurrentLevel === 'function'
+        ? window.getCurrentLevel()
+        : Infinity;
+    if (TECH_MIN_LEVELS[key] && currentLevel < TECH_MIN_LEVELS[key]) return;
     const prereq = TECH_PREREQUISITES[key];
     const prerequisites = Array.isArray(prereq) ? prereq : (prereq ? [prereq] : []);
     const prereqMet = prerequisites.every((requirement) => requirement === 'autoShoot' ? isAutoShootUnlocked() : techUpgrades[requirement]);
