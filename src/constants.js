@@ -105,6 +105,19 @@ export const HUNTER_ENEMY = {
     DASH_SPEED_MULTIPLIER: 2.2
 };
 
+export const FLIGHT_PROTOCOL_SLOT_COUNT = 3;
+
+// Permanent post-tree loadout options. Their effects are intentionally
+// tactical counters and risk/reward modifiers, not another linear laser-DPS
+// ladder.
+export const FLIGHT_PROTOCOLS = [
+    { key: 'prismPiercer', label: 'Prism Piercer', description: 'Bypasses the first Prism shield hit.', cost: 12, minLevel: 50 },
+    { key: 'phaseLock', label: 'Phase Lock', description: 'Shortens Phase Stalker invulnerability windows.', cost: 14, minLevel: 80 },
+    { key: 'hunterDampener', label: 'Hunter Dampener', description: 'Reduces Hunter dash speed and pressure.', cost: 14, minLevel: 125 },
+    { key: 'emergencyVector', label: 'Emergency Vector', description: 'Once per flight, survive one otherwise lethal hit at 1 hull.', cost: 18, minLevel: 50 },
+    { key: 'deepScan', label: 'Deep Scan', description: 'Special enemies yield double Flight Data, but appear more often in surges.', cost: 16, minLevel: 75 }
+];
+
 export const PHYSICS = {
     SHIP_ACCELERATION: 0.15,
     SHIP_MAX_SPEED: 4,

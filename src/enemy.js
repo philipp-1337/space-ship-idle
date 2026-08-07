@@ -2,6 +2,7 @@ import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js
 import { AudioManager } from './audio/AudioManager.js';
 import { spawnEnemyLaser, spawnAegisPulse } from './enemyManager.js';
 import { AEGIS_PULSE, ENEMY_BALANCE, GAME_CONFIG, PRISM_ENEMY, PHASE_STALKER, HUNTER_ENEMY } from './constants.js';
+import { isProtocolActive } from './upgrades.js';
 
 // Pixel-Art Gegnergrafiken: einmalig aus den ursprünglichen Formen in niedriger
 // Auflösung gerendert, dann grob (nearest-neighbor) auf `size` hochskaliert.
@@ -457,7 +458,7 @@ class Enemy {
                     this.phaseCooldown -= dt;
                     if (this.phaseCooldown <= 0) {
                         this.phaseActive = true;
-                        this.phaseTimer = PHASE_STALKER.PHASE_DURATION_FRAMES;
+                        this.phaseTimer = PHASE_STALKER.PHASE_DURATION_FRAMES * (isProtocolActive('phaseLock') ? 0.55 : 1);
                     }
                 }
             }
@@ -475,7 +476,9 @@ class Enemy {
             }
             // Bewegung
             const angle = Math.atan2(shipY - this.y, shipX - this.x);
-            const speedMultiplier = this.hunterDashTimer > 0 ? HUNTER_ENEMY.DASH_SPEED_MULTIPLIER : 1;
+            const speedMultiplier = this.hunterDashTimer > 0
+                ? (isProtocolActive('hunterDampener') ? 1.6 : HUNTER_ENEMY.DASH_SPEED_MULTIPLIER)
+                : 1;
             const dx = Math.cos(angle) * this.speed * speedMultiplier;
             const dy = Math.sin(angle) * this.speed * speedMultiplier;
             this.x += dx * 0.5 * dt;
@@ -690,7 +693,7 @@ class Enemy {
     }
 
     takeDamage(amount) {
-        if (this.isPrism && this.prismShieldActive) {
+        if (this.isPrism && this.prismShieldActive && !isProtocolActive('prismPiercer')) {
             this.prismShieldActive = false;
             this.prismShieldRecharge = PRISM_ENEMY.SHIELD_RECHARGE_FRAMES;
             return false;

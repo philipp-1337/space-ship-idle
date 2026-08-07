@@ -1,6 +1,6 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, isTouchDevice, calculateLaserDamage } from './constants.js';
+import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT, isTouchDevice, calculateLaserDamage } from './constants.js';
 import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -15,7 +15,8 @@ export let upgrades = {
     chainLightning: 0, // leveled XP upgrade — see applyUpgrade()
     overdriveCore: 0, // leveled XP upgrade — see applyUpgrade()
     xpBoost: 0, // incremental XP gain from collected orbs
-    plasmaCount: 0 // plasmaCount als Eigenschaft von upgrades hinzufügen
+    plasmaCount: 0,
+    flightData: 0
 };
 export let magnetRadius = 0;
 export let magnetStrength = 0;
@@ -52,6 +53,11 @@ export let techUpgrades = {
     learningProtocol: false
 };
 
+export let flightProtocols = {
+    unlocked: [],
+    active: []
+};
+
 // Mobile firing is always-on (see input.js: keys.shooting is forced true,
 // there's no manual fire button), which makes the Auto-Fire tech redundant
 // there. Treat it as already unlocked on touch devices so its prerequisite-
@@ -68,6 +74,67 @@ export function isAutoShootUnlocked() {
 // all stop at the same point when the permanent tree is complete.
 export function isTechTreeComplete() {
     return Object.values(techUpgrades).every(Boolean);
+}
+
+export function isProtocolActive(key) {
+    return isTechTreeComplete() && flightProtocols.active.includes(key);
+}
+
+export function loadFlightProgress() {
+    const storedData = localStorage.getItem('flightData');
+    upgrades.flightData = storedData ? Math.max(0, parseInt(storedData, 10) || 0) : 0;
+    const storedProtocols = localStorage.getItem('flightProtocols');
+    if (!storedProtocols) return;
+    try {
+        const parsed = JSON.parse(storedProtocols);
+        const validKeys = new Set(FLIGHT_PROTOCOLS.map((protocol) => protocol.key));
+        flightProtocols.unlocked = Array.isArray(parsed.unlocked)
+            ? parsed.unlocked.filter((key) => validKeys.has(key))
+            : [];
+        flightProtocols.active = Array.isArray(parsed.active)
+            ? parsed.active.filter((key) => validKeys.has(key) && flightProtocols.unlocked.includes(key)).slice(0, FLIGHT_PROTOCOL_SLOT_COUNT)
+            : [];
+    } catch (error) {
+        console.error('Could not parse Flight Protocol progress; using defaults.', error);
+    }
+}
+
+export function saveFlightProgress() {
+    localStorage.setItem('flightData', String(upgrades.flightData));
+    localStorage.setItem('flightProtocols', JSON.stringify(flightProtocols));
+}
+
+export function addFlightData(amount) {
+    if (!isTechTreeComplete() || amount <= 0) return;
+    upgrades.flightData += Math.max(0, Math.floor(amount));
+    saveFlightProgress();
+}
+
+export function handleProtocolUnlock(key) {
+    if (!isTechTreeComplete() || flightProtocols.unlocked.includes(key)) return false;
+    const protocol = FLIGHT_PROTOCOLS.find((candidate) => candidate.key === key);
+    const currentLevel = typeof window !== 'undefined' && typeof window.getCurrentLevel === 'function'
+        ? window.getCurrentLevel()
+        : Infinity;
+    if (!protocol || currentLevel < protocol.minLevel || upgrades.flightData < protocol.cost) return false;
+    upgrades.flightData -= protocol.cost;
+    flightProtocols.unlocked.push(key);
+    saveFlightProgress();
+    return true;
+}
+
+export function toggleProtocol(key) {
+    if (!flightProtocols.unlocked.includes(key)) return false;
+    const activeIndex = flightProtocols.active.indexOf(key);
+    if (activeIndex >= 0) {
+        flightProtocols.active.splice(activeIndex, 1);
+    } else if (flightProtocols.active.length < FLIGHT_PROTOCOL_SLOT_COUNT) {
+        flightProtocols.active.push(key);
+    } else {
+        return false;
+    }
+    saveFlightProgress();
+    return true;
 }
 
 // Manche Tech-Upgrades setzen ein anderes voraus (Baum-Struktur im Tech-Tree-UI)

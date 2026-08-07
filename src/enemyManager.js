@@ -3,6 +3,7 @@
 import Enemy, { BOSS_TYPE, ENEMY_TYPES, SURGE_AEGIS_TYPE } from './enemy.js';
 import { GAME_CONFIG, AEGIS_PULSE, COMBAT_PRESSURE, ENEMY_LASER } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { isProtocolActive } from './upgrades.js';
 
 export let enemies = [];
 export let enemyLasers = [];
@@ -171,11 +172,12 @@ export function spawnLateGameSurge(canvas, level, easyMode = false) {
         const y = centerY + Math.sin(angle) * radius;
         let forcedType = null;
         const lateRoll = Math.random();
-        if (level >= GAME_CONFIG.LATE_GAME_HUNTER_LEVEL && lateRoll < 0.14) {
+        const deepScanBonus = isProtocolActive('deepScan') ? 0.12 : 0;
+        if (level >= GAME_CONFIG.LATE_GAME_HUNTER_LEVEL && lateRoll < 0.14 + deepScanBonus * 0.35) {
             forcedType = ENEMY_TYPES.find(type => type.name === 'hunter');
-        } else if (level >= GAME_CONFIG.LATE_GAME_PHASE_LEVEL && lateRoll < 0.30) {
+        } else if (level >= GAME_CONFIG.LATE_GAME_PHASE_LEVEL && lateRoll < 0.30 + deepScanBonus * 0.65) {
             forcedType = ENEMY_TYPES.find(type => type.name === 'phase');
-        } else if (level >= GAME_CONFIG.LATE_GAME_PRISM_LEVEL && lateRoll < 0.48) {
+        } else if (level >= GAME_CONFIG.LATE_GAME_PRISM_LEVEL && lateRoll < 0.48 + deepScanBonus) {
             forcedType = ENEMY_TYPES.find(type => type.name === 'prism');
         } else if (lateRoll < 0.72) {
             forcedType = SURGE_AEGIS_TYPE;

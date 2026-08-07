@@ -1,6 +1,6 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
 import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER, COMBAT_PRESSURE, ENEMY_LASER } from './constants.js';
-import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse, isTechTreeComplete } from './upgrades.js';
+import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse, isTechTreeComplete, isProtocolActive, addFlightData } from './upgrades.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
@@ -325,6 +325,11 @@ export function createGameLoop(context) {
             }
             
             killsRef.value++;
+            const isSpecialTarget = enemy.isElite || enemy.isAegis || enemy.isPrism || enemy.isPhaseStalker || enemy.isHunter;
+            if (isSpecialTarget) {
+                const dataReward = enemy.isElite ? 5 : 1;
+                addFlightData(dataReward * (isProtocolActive('deepScan') ? 2 : 1));
+            }
             if (techUpgrades.reactorNova && !reactorNovaTriggering && performance.now() >= reactorNovaCooldownUntil) {
                 reactorNovaKillCounter++;
                 if (reactorNovaKillCounter >= REACTOR_NOVA.KILLS_PER_TRIGGER) {
@@ -372,6 +377,9 @@ export function createGameLoop(context) {
         levelRef.value++;
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
+        if (isTechTreeComplete() && levelRef.value % 25 === 0) {
+            addFlightData(10);
+        }
         AudioManager.play('LEVEL_UP');
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
         pauseCollectorPulse();

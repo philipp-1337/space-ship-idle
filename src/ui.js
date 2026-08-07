@@ -1,10 +1,10 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/ui.js
 // Night-Flight Console — cockpit instrument HUD (see index.html body comment
 // for the direction contract).
-import { MOBILE, OVERDRIVE_CORE, XP_BOOST } from './constants.js';
+import { MOBILE, OVERDRIVE_CORE, XP_BOOST, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
-import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades, TECH_MIN_LEVELS } from './upgrades.js';
+import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades, TECH_MIN_LEVELS, isTechTreeComplete, flightProtocols, handleProtocolUnlock, toggleProtocol } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
 import packageInfo from '../package.json';
@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.8', date: '2026-08-07', changes: ['Added Flight Data and the post-tree Flight Protocols loadout with three active slots and five tactical protocols.'] },
     { version: '0.9.7', date: '2026-08-07', changes: ['Plasma drops now stop once the full Tech Tree is purchased; existing Plasma Cells can still be collected.'] },
     { version: '0.9.6', date: '2026-08-07', changes: ['Added Prism, Phase Stalker, and Hunter enemies from level 50 onward with shields, phase windows, and attack dashes; late-game surges now use their distinct roles.'] },
     { version: '0.9.5', date: '2026-08-07', changes: ['Rebalanced Tech Tree access: earlier XP and Plasma economy, a guaranteed first salvage Plasma reward, and level-gated late-game weapon and drone upgrades.'] },
@@ -1419,6 +1420,7 @@ export function displayPauseMenu(stats, onResume, onRestart) {
         ['Fire Interval', `${Math.round(stats.fireIntervalMs)} ms`],
         ['Homing Missiles', stats.missiles],
         ['Drones', stats.drones],
+        ...(Number.isFinite(Number(stats.flightData)) ? [['Flight Data', stats.flightData]] : []),
     ];
     const statsDiv = document.createElement('div');
     statsDiv.style.width = '100%';
@@ -1600,6 +1602,101 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
     enableArrowKeyNav(panel);
 }
 
+export function showFlightProtocolsModal() {
+    if (!isTechTreeComplete() || document.getElementById('flight-protocols-modal')) return;
+    const { modal, panel } = consolePanelModal({ id: 'flight-protocols-modal', zIndex: 5100, accent: INK.gold });
+    panel.style.width = _isMobile ? '92vw' : 'min(92vw, 560px)';
+    panel.style.maxHeight = _isMobile ? '76vh' : '82vh';
+    panel.style.overflowY = 'auto';
+    panel.style.touchAction = 'pan-y';
+    panel.style.webkitOverflowScrolling = 'touch';
+    panel.appendChild(panelTitleBar('Flight Protocols', INK.gold, () => modal.remove()));
+
+    const dataReadout = document.createElement('div');
+    dataReadout.innerText = `FLIGHT DATA  ${upgrades.flightData || 0}   ·   ACTIVE SLOTS  ${flightProtocols.active.length}/${FLIGHT_PROTOCOL_SLOT_COUNT}`;
+    dataReadout.style.fontFamily = FONT;
+    dataReadout.style.fontSize = scale(12);
+    dataReadout.style.color = INK.gold;
+    dataReadout.style.letterSpacing = '0.08em';
+    dataReadout.style.marginBottom = scale(8);
+    dataReadout.style.textAlign = 'center';
+    panel.appendChild(dataReadout);
+
+    const intro = document.createElement('div');
+    intro.innerText = 'Permanent countermeasures for deep-flight threats. Unlock them with Flight Data, then activate up to three before a flight.';
+    intro.style.fontFamily = FONT;
+    intro.style.fontSize = scale(12);
+    intro.style.lineHeight = '1.5';
+    intro.style.color = INK.textDim;
+    intro.style.textAlign = 'center';
+    intro.style.marginBottom = scale(16);
+    panel.appendChild(intro);
+
+    const currentLevel = typeof window.getCurrentLevel === 'function' ? window.getCurrentLevel() : Infinity;
+    const list = document.createElement('div');
+    list.style.display = 'grid';
+    list.style.gap = scale(8);
+    FLIGHT_PROTOCOLS.forEach((protocol) => {
+        const unlocked = flightProtocols.unlocked.includes(protocol.key);
+        const active = flightProtocols.active.includes(protocol.key);
+        const levelLocked = currentLevel < protocol.minLevel;
+        const row = document.createElement('div');
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '1fr auto';
+        row.style.gap = scale(10);
+        row.style.alignItems = 'center';
+        row.style.padding = `${scale(10)} ${scale(12)}`;
+        row.style.background = active ? INK.panelRaised : INK.panel;
+        row.style.border = `1px solid ${active ? INK.gold : INK.hairlineDim}`;
+        row.style.clipPath = chamferClip(scaleNum(6));
+
+        const copy = document.createElement('div');
+        const title = document.createElement('div');
+        title.innerText = `${protocol.label}${active ? '  [ACTIVE]' : ''}`;
+        title.style.fontFamily = FONT;
+        title.style.fontSize = scale(13);
+        title.style.fontWeight = '600';
+        title.style.color = active ? INK.gold : INK.text;
+        const desc = document.createElement('div');
+        desc.innerText = `${protocol.description}  ${levelLocked ? `Available from Level ${protocol.minLevel}.` : ''}`;
+        desc.style.fontFamily = FONT;
+        desc.style.fontSize = scale(11);
+        desc.style.lineHeight = '1.4';
+        desc.style.color = INK.textDim;
+        desc.style.marginTop = scale(4);
+        copy.append(title, desc);
+        row.appendChild(copy);
+
+        const action = consoleButton({
+            text: unlocked ? (active ? 'Deactivate' : 'Activate') : `Unlock · ${protocol.cost} Data`,
+            color: INK.gold,
+            glowColor: 'rgba(255,210,63,0.55)',
+            filled: active,
+            fontSize: 11,
+            sound: unlocked || (!levelLocked && upgrades.flightData >= protocol.cost) ? 'UI_UPGRADE' : 'UI_ERROR'
+        });
+        action.style.whiteSpace = 'nowrap';
+        const slotLocked = !active && flightProtocols.active.length >= FLIGHT_PROTOCOL_SLOT_COUNT;
+        if (levelLocked || slotLocked || (!unlocked && upgrades.flightData < protocol.cost)) {
+            action.style.opacity = '0.45';
+            action.setAttribute('aria-disabled', 'true');
+            action.style.cursor = 'not-allowed';
+        } else {
+            action.onclick = () => {
+                if (unlocked ? toggleProtocol(protocol.key) : handleProtocolUnlock(protocol.key)) {
+                    modal.remove();
+                    showFlightProtocolsModal();
+                }
+            };
+        }
+        row.appendChild(action);
+        list.appendChild(row);
+    });
+    panel.appendChild(list);
+    document.body.appendChild(modal);
+    enableArrowKeyNav(panel);
+}
+
 // Builds one tree node "card" — smaller/denser than the old full-width rows,
 // since several now sit side by side. `locked` means a prerequisite is
 // unmet (distinct from simply not being able to afford it yet). A tap opens
@@ -1705,6 +1802,14 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     plasmaLabel.style.marginBottom = scale(18);
     plasmaLabel.style.textAlign = 'center';
     panel.appendChild(plasmaLabel);
+
+    if (isTechTreeComplete()) {
+        const protocolsBtn = consoleButton({ text: 'Open Flight Protocols', color: INK.gold, glowColor: 'rgba(255,210,63,0.55)', filled: true, fontSize: 13, sound: 'UI_CLICK' });
+        protocolsBtn.style.width = '100%';
+        protocolsBtn.style.marginBottom = scale(16);
+        protocolsBtn.onclick = showFlightProtocolsModal;
+        panel.appendChild(protocolsBtn);
+    }
 
     const currentLevel = typeof window.getCurrentLevel === 'function'
         ? window.getCurrentLevel()

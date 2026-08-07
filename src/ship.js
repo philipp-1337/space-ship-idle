@@ -1,5 +1,5 @@
 import Laser from './laser.js';
-import { upgrades, techUpgrades } from './upgrades.js';
+import { upgrades, techUpgrades, isProtocolActive } from './upgrades.js';
 import { makePixelSprite, makeFlashSprite, drawPixelSprite } from './pixelArt.js';
 import { ARMOR, REPAIR_MODULE, DEFLECTOR_SHIELD } from './constants.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -145,6 +145,7 @@ class Ship {
         // without changing the player's permanent hull or Deflector progress.
         this.salvageOverchargeUntil = 0;
         this.droneUplinkUntil = 0;
+        this.emergencyVectorUsed = false;
     }
 
     // Wendet Schaden an, respektiert Unverwundbarkeitsfenster nach dem letzten Treffer.
@@ -173,6 +174,14 @@ class Ship {
         }
         const previousHp = this.hp;
         this.hp = Math.max(0, this.hp - amount);
+        if (this.hp <= 0 && isProtocolActive('emergencyVector') && !this.emergencyVectorUsed) {
+            this.emergencyVectorUsed = true;
+            this.hp = 1;
+            this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
+            this.hitFlashUntil = now + 150;
+            AudioManager.play('SHIELD_UP_V2');
+            return 'hit';
+        }
         this.invulnerableUntil = now + ARMOR.INVULNERABLE_MS;
         this.hitFlashUntil = now + 150;
         AudioManager.play('SHIP_HIT');
