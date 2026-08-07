@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.3', date: '2026-08-07', changes: ['Matched the Pre-Flight Check height constraint to Settings and Tech Tree so small mobile screens get a real scroll viewport.'] },
     { version: '0.9.2', date: '2026-08-07', changes: ['Aligned the mobile Pre-Flight Check with the working scroll behavior used by Settings and Tech Tree, and kept menus above the HUD readouts.'] },
     { version: '0.9.1', date: '2026-08-07', changes: ['Fixed touch scrolling in the mobile Pre-Flight Check dialog.'] },
     { version: '0.9.0', date: '2026-08-07', changes: ['Made One-Handed the default mobile control scheme and made the Pre-Flight Check scrollable on small screens.'] },
@@ -635,7 +636,7 @@ export function displayStartScreen(onSelect) {
 
     const { modal, panel } = consolePanelModal({ id: 'start-screen', zIndex: 3500, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 460px)';
-    panel.style.maxHeight = _isMobile ? '78vh' : '86vh';
+    panel.style.maxHeight = _isMobile ? '70vh' : '86vh';
     panel.style.overflowY = 'auto';
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
