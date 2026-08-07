@@ -119,7 +119,7 @@ Agents may offer this command, but must only execute it after the user explicitl
 
 ## Persistence
 
-The game uses browser `localStorage` for permanent Tech Tree progress, Plasma, difficulty/settings, current-run autosaves, and temporary release acknowledgements. A factory reset is available from Settings and clears the relevant game data.
+The game uses browser `localStorage` for permanent Tech Tree progress, Plasma, difficulty/settings, current-run autosaves, and temporary release acknowledgements. A factory reset is available from Settings and clears game progress while preserving settings and preferences.
 
 The canonical application version is the `version` field in `package.json`. It is shown in the lower-left HUD next to the FPS counter.
 

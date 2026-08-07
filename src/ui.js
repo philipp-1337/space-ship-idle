@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.4', date: '2026-08-07', changes: ['Factory Reset now clears all game progress while preserving settings and preferences.'] },
     { version: '0.9.3', date: '2026-08-07', changes: ['Matched the Pre-Flight Check height constraint to Settings and Tech Tree so small mobile screens get a real scroll viewport.'] },
     { version: '0.9.2', date: '2026-08-07', changes: ['Aligned the mobile Pre-Flight Check with the working scroll behavior used by Settings and Tech Tree, and kept menus above the HUD readouts.'] },
     { version: '0.9.1', date: '2026-08-07', changes: ['Fixed touch scrolling in the mobile Pre-Flight Check dialog.'] },
@@ -98,6 +99,18 @@ const CHANGELOG_ENTRIES = [
     { version: '0.1.0', date: '2026-08-04', changes: ['Introduced the semantic game version shown in the HUD.'] }
 ];
 const MOBILE_MOVEMENT_NOTICE_KEY = 'spaceShipIdleMobileMovementNotice';
+const PREFERENCE_STORAGE_KEYS = new Set([
+    'spaceShipIdleSettings',
+    'spaceShipIdle_sfxEnabled',
+    'spaceShipIdle_shakeEnabled'
+]);
+
+function clearGameProgressStorage() {
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+        const key = localStorage.key(index);
+        if (key && !PREFERENCE_STORAGE_KEYS.has(key)) localStorage.removeItem(key);
+    }
+}
 
 // HUD row offset (unscaled px). Row 1 (Level/Plasma dials, Pause, Settings,
 // Tech Tree) sits below the XP tape (14px tall) with a small gap, instead of
@@ -1349,10 +1362,10 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     resetBtn.onclick = () => {
         showConfirmModal({
             title: 'Factory Reset',
-            text: 'This will erase your current run, all settings, and return you to the Pre-Flight check. Are you sure?',
+            text: 'This will erase all game progress and return you to the Pre-Flight check. Your settings and preferences will be kept. Are you sure?',
             confirmText: 'Reset',
             onConfirm: () => {
-                localStorage.removeItem('spaceShipIdleSettings');
+                clearGameProgressStorage();
                 if (typeof window !== 'undefined' && window.saveRunState) {
                     suppressAutosave();
                     clearRunState();
