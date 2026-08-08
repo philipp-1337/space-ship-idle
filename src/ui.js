@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.21', date: '2026-08-08', changes: ['UI Polish: Restored the thematic gold border to the Flight Protocols button.'] },
     { version: '0.9.20', date: '2026-08-08', changes: ['Bugfix: Resolved an issue where the Tech Tree button would overlap the Flight Protocols button when Flight Data was active.'] },
     { version: '0.9.19', date: '2026-08-08', changes: ['UI Polish: Swapped position of Tech Tree and Flight Protocols buttons.', 'UI Polish: Removed stray border color from Tech Tree button.', 'Added 4/F desktop keyboard shortcut for Flight Protocols (visible in Settings once unlocked; Desktop only).'] },
     { version: '0.9.18', date: '2026-08-08', changes: ['Switched to self-hosted local fonts for GDPR/DSGVO compliance instead of loading them from Google Fonts.'] },
@@ -1593,7 +1594,7 @@ export function showProtocolsButton(onClick) {
         btn.style.height = scale(32);
         btn.style.cursor = 'pointer';
         btn.style.transition = 'box-shadow 0.15s, background 0.15s';
-        panelBase(btn, { chamfer: 6 });
+        panelBase(btn, { color: 'rgba(255,210,63,0.15)', chamfer: 6 });
         btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 rgba(255,210,63,0.25)`;
         btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.gold}`; };
         btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 rgba(255,210,63,0.25)`; };
