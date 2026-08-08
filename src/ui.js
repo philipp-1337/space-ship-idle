@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.22', date: '2026-08-08', changes: ['Balancing: The Salvage hull repair reward now restores the ship to full maximum hull instead of just 1 HP.'] },
     { version: '0.9.21', date: '2026-08-08', changes: ['UI Polish: Restored the thematic gold border to the Flight Protocols button.'] },
     { version: '0.9.20', date: '2026-08-08', changes: ['Bugfix: Resolved an issue where the Tech Tree button would overlap the Flight Protocols button when Flight Data was active.'] },
     { version: '0.9.19', date: '2026-08-08', changes: ['UI Polish: Swapped position of Tech Tree and Flight Protocols buttons.', 'UI Polish: Removed stray border color from Tech Tree button.', 'Added 4/F desktop keyboard shortcut for Flight Protocols (visible in Settings once unlocked; Desktop only).'] },
@@ -2156,7 +2157,7 @@ export function showSalvageHint() {
 
 export function showSalvageRewardHint(reward) {
     const rewards = {
-        hull: { text: 'Salvage Recovery — Hull Repaired', color: INK.phosphor },
+        hull: { text: 'Salvage Recovery — Hull Fully Repaired', color: INK.phosphor },
         milestone: { text: 'Salvage Milestone — Hull Nominal', color: INK.gold },
         overdrive: { text: 'Salvage Cache — Weapon Overdrive', color: INK.gold },
         drone: { text: 'Salvage Uplink — Auxiliary Drone Online · 25s', color: INK.scope },

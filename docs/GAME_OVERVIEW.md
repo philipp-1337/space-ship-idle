@@ -191,7 +191,7 @@ Special enemies are intentionally short time-to-kill targets with tactical rules
 
 ## Field events
 
-Long flights can contain sparse salvage signals and route hazards. Following a salvage signal can lead to rewards such as XP, early Plasma, hull recovery, temporary Overdrive, a temporary Drone Uplink, or a disposable Hull Overcharge. Asteroids and drifting debris alter flight paths without turning the arena into a permanent obstacle field.
+Long flights can contain sparse salvage signals and route hazards. Following a salvage signal can lead to rewards such as XP, early Plasma, full hull recovery, temporary Overdrive, a temporary Drone Uplink, or a disposable Hull Overcharge. Asteroids and drifting debris alter flight paths without turning the arena into a permanent obstacle field.
 
 ## Ship systems and defensive rules
 

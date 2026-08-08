@@ -271,7 +271,7 @@ export function createFieldEventSystem() {
             rewardVisuals.push({ x: marker.x, y: marker.y, kind: 'xp', life: 34, maxLife: 34 });
         } else if (reward === 'hull') {
             const before = ship.hp;
-            ship.hp = Math.min(ship.maxHp, ship.hp + 1);
+            ship.hp = ship.maxHp;
             AudioManager.play(ship.hp > before ? 'SHIELD_UP_V2' : 'MILESTONE');
             showSalvageRewardHint(ship.hp > before ? 'hull' : 'milestone');
             rewardVisuals.push({
