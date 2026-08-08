@@ -77,8 +77,11 @@ export function calculateLaserDamage(baseDamage, upgradeLevel) {
     // Exponential growth for early levels
     const earlyMult = Math.pow(GAME_CONFIG.LASER_DAMAGE_EARLY_MULTIPLIER, earlyLevels);
     
-    // Flattening square-root curve for late game
-    const lateMult = 1 + Math.sqrt(lateLevels) * (GAME_CONFIG.LASER_DAMAGE_LATE_MULTIPLIER - 1) * 3;
+    // Decaying exponential curve for late game to continuously flatten out.
+    // Instead of lateLevels growing linearly, we apply a fractional exponent (0.85),
+    // causing the percentage growth to smoothly diminish the higher the level goes.
+    const effectiveLateLevels = Math.pow(lateLevels, 0.85);
+    const lateMult = Math.pow(GAME_CONFIG.LASER_DAMAGE_LATE_MULTIPLIER, effectiveLateLevels);
     
     return baseDamage * earlyMult * lateMult;
 }
@@ -87,10 +90,10 @@ export const ENEMY_BALANCE = {
     // Regular enemy HP is budgeted around the player's growing weapon output.
     // Composition, split behavior, and ranged pressure provide the later-game
     // challenge; level should not turn regular enemies into damage sponges.
-    HP_LEVEL_GROWTH: 0.40,
-    HP_LEVEL_MULTIPLIER: 1.015,
-    BOSS_HP_LEVEL_GROWTH: 1.5,
-    BOSS_HP_LEVEL_MULTIPLIER: 1.025
+    HP_LEVEL_GROWTH: 0.3,
+    HP_LEVEL_MULTIPLIER: 1.008,
+    BOSS_HP_LEVEL_GROWTH: 1.0,
+    BOSS_HP_LEVEL_MULTIPLIER: 1.015
 };
 
 // Late-game enemies add readable combat decisions instead of only inflating
