@@ -549,9 +549,9 @@ class Enemy {
                 ctx.save();
                 ctx.globalAlpha = 0.55 * pulse;
                 ctx.strokeStyle = '#ff3b30';
-                ctx.lineWidth = 3;
-                ctx.shadowBlur = 14 * pulse;
-                ctx.shadowColor = '#ff3b30';
+                ctx.lineWidth = 4; // increased to compensate for removed shadowBlur
+                // ctx.shadowBlur = 14 * pulse; // Disabled for Chrome performance
+                // ctx.shadowColor = '#ff3b30';
                 ctx.beginPath();
                 ctx.arc(0, 0, this.size / 2 + 10, 0, Math.PI * 2);
                 ctx.stroke();
@@ -562,9 +562,9 @@ class Enemy {
                 ctx.save();
                 ctx.globalAlpha = 0.65 * pulse;
                 ctx.strokeStyle = '#55e8ff';
-                ctx.lineWidth = 2;
-                ctx.shadowBlur = 12 * pulse;
-                ctx.shadowColor = '#55e8ff';
+                ctx.lineWidth = 3; // increased to compensate for removed shadowBlur
+                // ctx.shadowBlur = 12 * pulse;
+                // ctx.shadowColor = '#55e8ff';
                 ctx.beginPath();
                 ctx.arc(0, 0, this.size / 2 + 8 + pulse * 2, 0, Math.PI * 2);
                 ctx.stroke();
@@ -574,8 +574,8 @@ class Enemy {
                     ctx.save();
                     ctx.globalAlpha = 0.4 + charge * 0.6;
                     ctx.fillStyle = '#d9fbff';
-                    ctx.shadowColor = '#55e8ff';
-                    ctx.shadowBlur = 8 + charge * 16;
+                    // ctx.shadowColor = '#55e8ff';
+                    // ctx.shadowBlur = 8 + charge * 16;
                     ctx.beginPath();
                     ctx.arc(0, 0, 3 + charge * 6, 0, Math.PI * 2);
                     ctx.fill();
@@ -587,9 +587,9 @@ class Enemy {
                 ctx.save();
                 ctx.globalAlpha = pulse;
                 ctx.strokeStyle = '#ffb000';
-                ctx.shadowColor = '#ffb000';
-                ctx.shadowBlur = this.prismShieldActive ? 13 : 4;
-                ctx.lineWidth = this.prismShieldActive ? 2.5 : 1;
+                // ctx.shadowColor = '#ffb000';
+                // ctx.shadowBlur = this.prismShieldActive ? 13 : 4;
+                ctx.lineWidth = this.prismShieldActive ? 4.5 : 2; // increased
                 ctx.beginPath();
                 ctx.arc(0, 0, this.size / 2 + 8, 0, Math.PI * 2);
                 ctx.stroke();
@@ -599,9 +599,9 @@ class Enemy {
                 ctx.save();
                 ctx.globalAlpha = this.phaseActive ? 0.2 : 0.65;
                 ctx.strokeStyle = '#ef83ff';
-                ctx.shadowColor = '#ef83ff';
-                ctx.shadowBlur = this.phaseActive ? 18 : 7;
-                ctx.lineWidth = 2;
+                // ctx.shadowColor = '#ef83ff';
+                // ctx.shadowBlur = this.phaseActive ? 18 : 7;
+                ctx.lineWidth = 3; // increased
                 ctx.setLineDash(this.phaseActive ? [3, 5] : []);
                 ctx.beginPath();
                 ctx.arc(0, 0, this.size / 2 + 7, 0, Math.PI * 2);
@@ -612,9 +612,9 @@ class Enemy {
                 ctx.save();
                 ctx.globalAlpha = 0.75;
                 ctx.strokeStyle = '#ff7a3d';
-                ctx.shadowColor = '#ff7a3d';
-                ctx.shadowBlur = 14;
-                ctx.lineWidth = 2;
+                // ctx.shadowColor = '#ff7a3d';
+                // ctx.shadowBlur = 14;
+                ctx.lineWidth = 4; // increased
                 ctx.beginPath();
                 ctx.arc(0, 0, this.size / 2 + 10, 0, Math.PI * 2);
                 ctx.stroke();
