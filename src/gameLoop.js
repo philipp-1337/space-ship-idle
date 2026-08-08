@@ -329,10 +329,13 @@ export function createGameLoop(context) {
             const isSpecialTarget = enemy.isElite || enemy.isAegis || enemy.isPrism || enemy.isPhaseStalker || enemy.isHunter;
             if (isSpecialTarget && isTechTreeComplete()) {
                 const dataReward = enemy.isElite ? 5 : 1;
-                // Offset the drop slightly so it doesn't overlap perfectly with the XP boss orb
-                const offsetX = (Math.random() - 0.5) * 60;
-                const offsetY = (Math.random() - 0.5) * 60;
-                dataDrops.push(new DataDrop(enemy.x + offsetX, enemy.y + offsetY, dataReward * (isProtocolActive('deepScan') ? 2 : 1)));
+                const dropChance = enemy.isElite ? 1.0 : 0.10; // 10% chance for non-boss special enemies
+                if (Math.random() <= dropChance) {
+                    // Offset the drop slightly so it doesn't overlap perfectly with the XP boss orb
+                    const offsetX = (Math.random() - 0.5) * 60;
+                    const offsetY = (Math.random() - 0.5) * 60;
+                    dataDrops.push(new DataDrop(enemy.x + offsetX, enemy.y + offsetY, dataReward * (isProtocolActive('deepScan') ? 2 : 1)));
+                }
             }
             if (techUpgrades.reactorNova && !reactorNovaTriggering && performance.now() >= reactorNovaCooldownUntil) {
                 reactorNovaKillCounter++;
