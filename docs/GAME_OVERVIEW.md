@@ -118,8 +118,8 @@ After the Tech Tree is complete, the game switches to a second permanent progres
 
 Flight Data is awarded for:
 
-- Special enemy kills: normally 1 Data
-- Boss kills: 5 Data
+- Special enemy kills: normally 1 Data (10% drop chance)
+- Boss kills: 5 Data (100% drop chance)
 - Every 25-level milestone after Tech Tree completion: 10 Data
 - Deep Scan doubles Data from special enemies
 
