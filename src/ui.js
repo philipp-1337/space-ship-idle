@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.17', date: '2026-08-08', changes: ['Added offline caching for Google Fonts to prevent the game from failing to start on poor or slow internet connections.'] },
     { version: '0.9.16', date: '2026-08-08', changes: ['Balancing: Hull Integrity (Armor) drops are now much rarer in the XP shop if you have 10+ Armor and Nanite Repair active, preserving late-game risk.'] },
     { version: '0.9.15', date: '2026-08-08', changes: ['Fixed an issue on mobile where Phase Two (Flight Data) could not be reached because Auto-Fire is unlocked by default and never purchased.'] },
     { version: '0.9.14', date: '2026-08-08', changes: ['Hotfix: Adjusted exponential scaling for late-game damage and HP to prevent extreme scaling drop-offs.'] },
