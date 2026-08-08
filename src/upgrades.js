@@ -73,7 +73,7 @@ export function isAutoShootUnlocked() {
 // this check centralized so enemy drops, missile rewards, and salvage routes
 // all stop at the same point when the permanent tree is complete.
 export function isTechTreeComplete() {
-    return Object.values(techUpgrades).every(Boolean);
+    return Object.keys(techUpgrades).every(key => key === 'autoShoot' ? isAutoShootUnlocked() : techUpgrades[key]);
 }
 
 export function isProtocolActive(key) {

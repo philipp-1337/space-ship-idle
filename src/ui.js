@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.15', date: '2026-08-08', changes: ['Fixed an issue on mobile where Phase Two (Flight Data) could not be reached because Auto-Fire is unlocked by default and never purchased.'] },
     { version: '0.9.14', date: '2026-08-08', changes: ['Hotfix: Adjusted exponential scaling for late-game damage and HP to prevent extreme scaling drop-offs.'] },
     { version: '0.9.13', date: '2026-08-08', changes: ['Flattened late-game laser damage/speed scaling', 'Increased enemy HP scaling', 'Buffed special enemies and adjusted their spawn pacing'] },
     { version: '0.9.12', date: '2026-08-08', changes: ['Reorganized HUD: Flight Data now appears on the far right, and Flight Protocols have their own dedicated button instead of being hidden in the Tech Tree.'] },
