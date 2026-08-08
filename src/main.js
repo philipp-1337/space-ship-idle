@@ -8,11 +8,11 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, updateFlightDataUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, updateFlightDataUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice, showFlightProtocolsModal } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
-import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, loadFlightProgress, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier } from './upgrades.js'; // plasmaCount entfernt
+import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, loadFlightProgress, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier, isTechTreeComplete } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection, handleDataCollection } from './collectibles.js';
 import { createFieldEventSystem } from './fieldEvents.js';
 import { createGameLoop } from './gameLoop.js';
@@ -622,7 +622,7 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mo
     });
 
     inputManager.setDesktopShortcutHandler((shortcut) => {
-        if (document.getElementById('settings-menu') || document.getElementById('tech-tree-modal') || isShopOpen || isGameOver) return;
+        if (document.getElementById('settings-menu') || document.getElementById('tech-tree-modal') || document.getElementById('flight-protocols-modal') || isShopOpen || isGameOver) return;
         if (shortcut === 'pause') {
             if (isPaused) resumeGame();
             else pauseGame();
@@ -632,6 +632,8 @@ function applySettings(mode, controlsVisible, mobileAdvancedControls = false, mo
             document.getElementById('settings-btn')?.click();
         } else if (shortcut === 'techTree') {
             showTechTreeModal(techUpgrades, handleTechUpgrade);
+        } else if (shortcut === 'flightProtocols' && isTechTreeComplete()) {
+            showFlightProtocolsModal();
         }
     });
 }

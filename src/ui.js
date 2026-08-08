@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.19', date: '2026-08-08', changes: ['UI Polish: Swapped position of Tech Tree and Flight Protocols buttons.', 'UI Polish: Removed stray border color from Tech Tree button.', 'Added 4/F keyboard shortcut for Flight Protocols (visible in Settings once unlocked).'] },
     { version: '0.9.18', date: '2026-08-08', changes: ['Switched to self-hosted local fonts for GDPR/DSGVO compliance instead of loading them from Google Fonts.'] },
     { version: '0.9.17', date: '2026-08-08', changes: ['Added offline caching for Google Fonts to prevent the game from failing to start on poor or slow internet connections.'] },
     { version: '0.9.16', date: '2026-08-08', changes: ['Balancing: Hull Integrity (Armor) drops are now much rarer in the XP shop if you have 10+ Armor and Nanite Repair active, preserving late-game risk.'] },
@@ -1394,7 +1395,11 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     if (!isMobile) {
         panel.appendChild(label('Desktop Shortcuts', INK.textDim));
         const shortcuts = document.createElement('div');
-        shortcuts.innerText = 'P / 1  Pause\nO / 2  Settings\nT / 3  Tech Tree';
+        let shortcutText = 'P / 1  Pause\nO / 2  Settings\nT / 3  Tech Tree';
+        if (isTechTreeComplete()) {
+            shortcutText += '\nF / 4  Flight Protocols';
+        }
+        shortcuts.innerText = shortcutText;
         shortcuts.style.whiteSpace = 'pre-line';
         shortcuts.style.fontFamily = FONT;
         shortcuts.style.fontSize = scale(12);
@@ -1545,7 +1550,7 @@ export function showTechTreeButton(onClick) {
         btn.setAttribute('aria-label', 'Tech Tree');
         btn.style.position = 'fixed';
         btn.style.top = scale(HUD_TOP_ROW1);
-        btn.style.right = isTechTreeComplete() ? scale(158) : scale(84); // clears the Plasma dial (and Data dial if active)
+        btn.style.right = isTechTreeComplete() ? scale(200) : scale(84); // clears the Plasma dial (and Data dial if active)
         btn.style.zIndex = '1200';
         btn.style.display = 'flex';
         btn.style.alignItems = 'center';
@@ -1554,7 +1559,7 @@ export function showTechTreeButton(onClick) {
         btn.style.height = scale(32);
         btn.style.cursor = 'pointer';
         btn.style.transition = 'box-shadow 0.15s, background 0.15s';
-        panelBase(btn, { color: INK.scopeDim, chamfer: 6 });
+        panelBase(btn, { chamfer: 6 });
         btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.scopeDim}`;
         btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.scope}`; };
         btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 ${INK.scopeDim}`; };
@@ -1578,7 +1583,7 @@ export function showProtocolsButton(onClick) {
         btn.setAttribute('aria-label', 'Flight Protocols');
         btn.style.position = 'fixed';
         btn.style.top = scale(HUD_TOP_ROW1);
-        btn.style.right = scale(200);
+        btn.style.right = scale(158);
         btn.style.zIndex = '1200';
         btn.style.display = 'flex';
         btn.style.alignItems = 'center';
@@ -1587,7 +1592,7 @@ export function showProtocolsButton(onClick) {
         btn.style.height = scale(32);
         btn.style.cursor = 'pointer';
         btn.style.transition = 'box-shadow 0.15s, background 0.15s';
-        panelBase(btn, { color: 'rgba(255,210,63,0.15)', chamfer: 6 });
+        panelBase(btn, { chamfer: 6 });
         btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 rgba(255,210,63,0.25)`;
         btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.gold}`; };
         btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 rgba(255,210,63,0.25)`; };

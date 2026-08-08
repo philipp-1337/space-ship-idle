@@ -35,6 +35,8 @@ export class InputManager {
                 const shortcut = {
                     t: 'techTree',
                     '3': 'techTree',
+                    f: 'flightProtocols',
+                    '4': 'flightProtocols',
                     p: 'pause',
                     '1': 'pause',
                     o: 'settings',
