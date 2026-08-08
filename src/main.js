@@ -1,3 +1,7 @@
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import '@fontsource/ibm-plex-mono/700.css';
 import { Ship } from './ship.js';
 import { enemies, enemyLasers, spawnEnemyLaser, spawnEnemy, startEnemySpawning, stopEnemySpawning, spawnEnemyWave, spawnBoss, spawnLateGameSurge } from './enemyManager.js';
 import Laser from './laser.js';

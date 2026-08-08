@@ -40,7 +40,7 @@ export default defineConfig({
             },
             injectManifest: {
                 rollupFormat: 'iife',
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,wav}']
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,wav,woff,woff2}']
             }
         })
     ]
