@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.20', date: '2026-08-08', changes: ['Bugfix: Resolved an issue where the Tech Tree button would overlap the Flight Protocols button when Flight Data was active.'] },
     { version: '0.9.19', date: '2026-08-08', changes: ['UI Polish: Swapped position of Tech Tree and Flight Protocols buttons.', 'UI Polish: Removed stray border color from Tech Tree button.', 'Added 4/F keyboard shortcut for Flight Protocols (visible in Settings once unlocked).'] },
     { version: '0.9.18', date: '2026-08-08', changes: ['Switched to self-hosted local fonts for GDPR/DSGVO compliance instead of loading them from Google Fonts.'] },
     { version: '0.9.17', date: '2026-08-08', changes: ['Added offline caching for Google Fonts to prevent the game from failing to start on poor or slow internet connections.'] },
@@ -424,7 +425,7 @@ export function updateFlightDataUI(count) {
 
         const ttBtn = document.getElementById('tech-tree-btn');
         if (ttBtn) {
-            ttBtn.style.right = scale(158);
+            ttBtn.style.right = scale(200);
         }
     }
     showProtocolsButton(showFlightProtocolsModal);
