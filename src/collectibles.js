@@ -1,6 +1,6 @@
 // collectibles.js
 // Verwaltung von XP- und Plasma-Handling (Sammeln, Magnet, UI)
-import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse, getXpMultiplier } from './upgrades.js';
+import { upgrades, savePlasmaCount, magnetRadius, magnetStrength, isCollectorPulseActive, triggerCollectorPulse, getXpMultiplier, addFlightData } from './upgrades.js';
 import { COLORS, COLLECTOR_PULSE, EFFECTS } from './constants.js';
 import { updateExperienceBar } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -199,4 +199,34 @@ export function handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt
             if (typeof window.updatePlasmaUI === 'function') window.updatePlasmaUI(upgrades.plasmaCount);
         }
     });
+}
+
+export function handleDataCollection(ship, dataDrops, effectsSystem, ctx, dt = 1) {
+    const pulseActive = isCollectorPulseActive();
+    const toRemove = [];
+    dataDrops.forEach((data, dIdx) => {
+        data.draw(ctx);
+        if ((upgrades.magnet > 0 || pulseActive) && !data.collected) {
+            const dx = ship.x - data.x;
+            const dy = ship.y - data.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (pulseActive || dist < magnetRadius) {
+                const strength = 1 - Math.pow(1 - (pulseActive ? COLLECTOR_PULSE.STRENGTH : magnetStrength), dt);
+                data.x += dx * strength;
+                data.y += dy * strength;
+            }
+        }
+        const dx = ship.x - data.x;
+        const dy = ship.y - data.y;
+        if (Math.sqrt(dx * dx + dy * dy) < ship.getXpRadius() + data.radius && !data.collected) {
+            effectsSystem.spawnXpParticles(data.x, data.y, '#ffd23f');
+            data.collected = true;
+            AudioManager.play('RES_COLLECT_PLASMA');
+            addFlightData(data.amount);
+            toRemove.push(dIdx);
+        }
+    });
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+        dataDrops.splice(toRemove[i], 1);
+    }
 }

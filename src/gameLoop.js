@@ -1,6 +1,7 @@
 // Haupt-Game-Loop und zugehörige Logik ausgelagert aus main.js
 import { PROGRESSION, EXPLOSIVE_ROUNDS, SALVAGE_DRIVE, CHAIN_LIGHTNING, SIGNAL_INTERFERENCE, REACTOR_NOVA, HOMING_MISSILE_TECH, BOSS_LASER, COMBAT_PRESSURE, ENEMY_LASER } from './constants.js';
 import { magnetRadius, activateOverdrive, getFireRateMultiplier, getOverdriveDurationMs, pauseCollectorPulse, resumeCollectorPulse, isTechTreeComplete, isProtocolActive, addFlightData } from './upgrades.js';
+import DataDrop from './dataDrop.js';
 import HomingMissile from './homingMissile.js';
 import Drone from './drone.js';
 import SpatialGrid from './spatialGrid.js';
@@ -181,9 +182,9 @@ function drawBossLaserBeam(ctx, bossLaser) {
 
 export function createGameLoop(context) {
     const {
-        ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
+        ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, dataDrops, fieldEvents,
         effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, PHYSICS, MOBILE,
-        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge,
+        ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, handleDataCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge,
         displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint,
         applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
         isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
@@ -326,9 +327,9 @@ export function createGameLoop(context) {
             
             killsRef.value++;
             const isSpecialTarget = enemy.isElite || enemy.isAegis || enemy.isPrism || enemy.isPhaseStalker || enemy.isHunter;
-            if (isSpecialTarget) {
+            if (isSpecialTarget && isTechTreeComplete()) {
                 const dataReward = enemy.isElite ? 5 : 1;
-                addFlightData(dataReward * (isProtocolActive('deepScan') ? 2 : 1));
+                dataDrops.push(new DataDrop(enemy.x, enemy.y, dataReward * (isProtocolActive('deepScan') ? 2 : 1)));
             }
             if (techUpgrades.reactorNova && !reactorNovaTriggering && performance.now() >= reactorNovaCooldownUntil) {
                 reactorNovaKillCounter++;
@@ -378,7 +379,7 @@ export function createGameLoop(context) {
         experienceRef.value = 0;
         maxXPRef.value += PROGRESSION.XP_INCREASE_PER_LEVEL;
         if (isTechTreeComplete() && levelRef.value % 25 === 0) {
-            addFlightData(10);
+            dataDrops.push(new DataDrop(ship.x, ship.y - 40, 10));
         }
         AudioManager.play('LEVEL_UP');
         displayLevel(levelRef.value, true); // Level-Anzeige mit Pop-Effekt
@@ -900,6 +901,7 @@ export function createGameLoop(context) {
         if (typeof window !== 'undefined' && window.syncRefsToVars) window.syncRefsToVars();
         handlePlasmaCollection(ship, plasmaCells, effectsSystem, ctx, dt);
         handleTractorCollection(ship, tractorItems, effectsSystem, ctx);
+        handleDataCollection(ship, dataDrops, effectsSystem, ctx, dt);
 
         const activeBoss = enemies.find((enemy) => enemy.isElite && enemy.alive && !enemy.exploding);
         if (!activeBoss) {

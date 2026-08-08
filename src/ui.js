@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.11', date: '2026-08-08', changes: ['Changed Flight Data to physical chip drops instead of instant credit.'] },
     { version: '0.9.10', date: '2026-08-08', changes: ['Added a Flight Data dial to the HUD for late-game progression.'] },
     { version: '0.9.9', date: '2026-08-08', changes: ['Fixed drone rendering overlap for multiple drones', 'Added visual ring for Salvage Event overcharge barrier'] },
     { version: '0.9.8', date: '2026-08-07', changes: ['Added Flight Data and the post-tree Flight Protocols loadout with three active slots and five tactical protocols.'] },

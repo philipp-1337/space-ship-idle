@@ -9,7 +9,7 @@ import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
 import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, loadFlightProgress, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier } from './upgrades.js'; // plasmaCount entfernt
-import { handleXpCollection, handlePlasmaCollection, handleTractorCollection } from './collectibles.js';
+import { handleXpCollection, handlePlasmaCollection, handleTractorCollection, handleDataCollection } from './collectibles.js';
 import { createFieldEventSystem } from './fieldEvents.js';
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
@@ -66,6 +66,7 @@ const ship = new Ship(window.logicalWidth / 2, window.logicalHeight / 2);
 const lasers = [];
 const xpPoints = [];
 const plasmaCells = [];
+const dataDrops = [];
 const fieldEvents = createFieldEventSystem();
 const tractorItems = [];
 let experience = 0;
@@ -205,6 +206,7 @@ function updateShipMovement(dt = 1) {
             enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
             plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
             tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
+            dataDrops.forEach(d => { d.x += offsetX; d.y += offsetY; });
             fieldEvents.shift(offsetX, offsetY);
             gameLoop?.shiftWorld?.(offsetX, offsetY);
             effectsSystem.moveXpParticles(offsetX, offsetY); // Korrekt über EffectsSystem
@@ -317,6 +319,7 @@ function updateShipMovement(dt = 1) {
         enemyLasers.forEach(l => { l.x += offsetX; l.y += offsetY; });
         plasmaCells.forEach(p => { p.x += offsetX; p.y += offsetY; });
         tractorItems.forEach(t => { t.x += offsetX; t.y += offsetY; });
+        dataDrops.forEach(d => { d.x += offsetX; d.y += offsetY; });
         fieldEvents.shift(offsetX, offsetY);
         gameLoop?.shiftWorld?.(offsetX, offsetY);
     }
@@ -525,9 +528,9 @@ function syncRefsToVars() {
 window.syncRefsToVars = syncRefsToVars;
 
 const gameLoop = createGameLoop({
-    ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, fieldEvents,
+    ship, enemies, enemyLasers, lasers, xpPoints, plasmaCells, tractorItems, dataDrops, fieldEvents,
     effectsSystem, inputManager, upgrades, GAME_CONFIG, EFFECTS, // magnetRadius hier entfernt
-    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint,
+    PHYSICS, MOBILE, ctx, canvas, XP, PlasmaCell, TractorItem, handleXpCollection, handlePlasmaCollection, handleTractorCollection, handleDataCollection, spawnEnemyWave, spawnBoss, spawnLateGameSurge, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint,
     displayLevel, updateExperienceBar, displayGameOverScreen, displayShopModal,
     applyUpgrade, showTechTreeButton, showTechTreeModal, techUpgrades,
     isPausedRef, isGameOverRef, isShopOpenRef, killsRef, xpCollectedRef, levelRef, experienceRef, maxXPRef,
