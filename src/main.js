@@ -4,7 +4,7 @@ import Laser from './laser.js';
 import XP from './xp.js';
 import PlasmaCell from './plasma.js';
 import TractorItem from './tractorItem.js';
-import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
+import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen, displayShopModal, displayPauseButton, removePauseButton, displayPauseMenu, removePauseMenu, updatePlasmaUI, updateFlightDataUI, showTechTreeButton, showTechTreeModal, showWaveHint, showOverdriveHint, showBossHint, showSalvageHint, showSalvageRewardHint, displayStartScreen, displaySettingsButton, showSettingsMenu, showUpdateToast, showMobileMovementUpdateNotice } from './ui.js';
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
@@ -546,6 +546,7 @@ loadFlightProgress();
 setupPlasmaUI();
 window.updatePlasmaUI(upgrades.plasmaCount);
 window.getPlasmaCount = () => upgrades.plasmaCount;
+updateFlightDataUI(upgrades.flightData);
 
 // Laufenden Flug wiederherstellen, falls vorhanden (Reload während des Spiels) —
 // muss VOR applySettings()/gameLoop-Start passieren, damit Ship-Stats und Refs

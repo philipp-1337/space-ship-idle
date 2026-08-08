@@ -392,6 +392,29 @@ export function updatePlasmaUI(count) {
     _plasmaDial.needle.style.transform = `rotate(${count * 15}deg)`;
 }
 
+// ---------------------------------------------------------------------------
+// Flight Data dial
+// ---------------------------------------------------------------------------
+let _dataDial = null;
+
+export function updateFlightDataUI(count) {
+    if (!isTechTreeComplete()) return;
+    if (!_dataDial) {
+        _dataDial = buildInstrumentDial({ id: 'data-display', captionText: 'Data', color: INK.gold, glowColor: 'rgba(255,210,63,0.55)' });
+        _dataDial.wrap.style.right = scale(84);
+        document.body.appendChild(_dataDial.wrap);
+
+        const ttBtn = document.getElementById('tech-tree-btn');
+        if (ttBtn) {
+            ttBtn.style.right = scale(158);
+        }
+    }
+    _dataDial.readout.innerText = String(count);
+    // 1 Data = 15 Grad (1 voller Kreis = 24 Data)
+    _dataDial.needle.style.transform = `rotate(${count * 15}deg)`;
+}
+
+
 // Armor is shown solely via the integrity ring around the ship (see
 // ship.js: drawIntegrityRing) — no numeric HUD dial. Freed-up screen space
 // matters most on mobile, and the ring is legible enough on its own.
@@ -1494,7 +1517,7 @@ export function showTechTreeButton(onClick) {
         btn.setAttribute('aria-label', 'Tech Tree');
         btn.style.position = 'fixed';
         btn.style.top = scale(HUD_TOP_ROW1);
-        btn.style.right = scale(84); // clears the Plasma dial (10 right + 64 diameter + 10 gap)
+        btn.style.right = isTechTreeComplete() ? scale(158) : scale(84); // clears the Plasma dial (and Data dial if active)
         btn.style.zIndex = '1200';
         btn.style.display = 'flex';
         btn.style.alignItems = 'center';

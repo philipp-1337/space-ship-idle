@@ -1,7 +1,7 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
 import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT, isTouchDevice, calculateLaserDamage } from './constants.js';
-import { updatePlasmaUI, showTechTreeButton, showTechTreeModal } from './ui.js';
+import { updatePlasmaUI, updateFlightDataUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
 
 export let upgrades = {
@@ -108,6 +108,7 @@ export function addFlightData(amount) {
     if (!isTechTreeComplete() || amount <= 0) return;
     upgrades.flightData += Math.max(0, Math.floor(amount));
     saveFlightProgress();
+    updateFlightDataUI(upgrades.flightData);
 }
 
 export function handleProtocolUnlock(key) {
@@ -472,6 +473,9 @@ export function handleTechUpgrade(key, cost) {
         const modal = document.getElementById('tech-tree-modal');
         if (modal) modal.remove();
         showTechTreeModal(techUpgrades, handleTechUpgrade);
+        if (isTechTreeComplete()) {
+            updateFlightDataUI(upgrades.flightData);
+        }
         // --- NEU: Callback für TechTree-Änderungen ---
         if (typeof window !== 'undefined' && typeof window.onTechTreeChanged === 'function') {
             window.onTechTreeChanged();
