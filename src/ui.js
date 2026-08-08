@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.12', date: '2026-08-08', changes: ['Reorganized HUD: Flight Data now appears on the far right, and Flight Protocols have their own dedicated button instead of being hidden in the Tech Tree.'] },
     { version: '0.9.11', date: '2026-08-08', changes: ['Changed Flight Data to physical chip drops instead of instant credit.'] },
     { version: '0.9.10', date: '2026-08-08', changes: ['Added a Flight Data dial to the HUD for late-game progression.'] },
     { version: '0.9.9', date: '2026-08-08', changes: ['Fixed drone rendering overlap for multiple drones', 'Added visual ring for Salvage Event overcharge barrier'] },
@@ -386,8 +387,12 @@ let _plasmaDial = null;
 export function updatePlasmaUI(count) {
     if (!_plasmaDial) {
         _plasmaDial = buildInstrumentDial({ id: 'plasma-display', captionText: 'Plasma', color: INK.scope, glowColor: INK.scopeDim });
-        _plasmaDial.wrap.style.right = scale(10);
         document.body.appendChild(_plasmaDial.wrap);
+    }
+    if (isTechTreeComplete()) {
+        _plasmaDial.wrap.style.right = scale(84);
+    } else {
+        _plasmaDial.wrap.style.right = scale(10);
     }
     _plasmaDial.readout.innerText = String(count);
     // 1 Plasma = 15 Grad (1 voller Kreis = 24 Plasma)
@@ -403,14 +408,20 @@ export function updateFlightDataUI(count) {
     if (!isTechTreeComplete()) return;
     if (!_dataDial) {
         _dataDial = buildInstrumentDial({ id: 'data-display', captionText: 'Data', color: INK.gold, glowColor: 'rgba(255,210,63,0.55)' });
-        _dataDial.wrap.style.right = scale(84);
+        _dataDial.wrap.style.right = scale(10);
         document.body.appendChild(_dataDial.wrap);
+
+        if (_plasmaDial) {
+            _plasmaDial.wrap.style.right = scale(84);
+        }
 
         const ttBtn = document.getElementById('tech-tree-btn');
         if (ttBtn) {
             ttBtn.style.right = scale(158);
         }
     }
+    showProtocolsButton(showFlightProtocolsModal);
+    
     _dataDial.readout.innerText = String(count);
     // 1 Data = 15 Grad (1 voller Kreis = 24 Data)
     _dataDial.needle.style.transform = `rotate(${count * 15}deg)`;
@@ -1539,6 +1550,39 @@ export function showTechTreeButton(onClick) {
     btn.style.display = 'flex';
 }
 
+export function showProtocolsButton(onClick) {
+    if (!isTechTreeComplete()) return;
+    let btn = document.getElementById('protocols-btn');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'protocols-btn';
+        btn.innerHTML = `<svg width="${scaleNum(16)}" height="${scaleNum(16)}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="6" width="16" height="12" rx="2" stroke="${INK.gold}" stroke-width="2"/>
+            <path d="M8 10h8 M8 14h8" stroke="${INK.gold}" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+        btn.setAttribute('aria-label', 'Flight Protocols');
+        btn.style.position = 'fixed';
+        btn.style.top = scale(HUD_TOP_ROW1);
+        btn.style.right = scale(200);
+        btn.style.zIndex = '1200';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.width = scale(32);
+        btn.style.height = scale(32);
+        btn.style.cursor = 'pointer';
+        btn.style.transition = 'box-shadow 0.15s, background 0.15s';
+        panelBase(btn, { color: 'rgba(255,210,63,0.15)', chamfer: 6 });
+        btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 rgba(255,210,63,0.25)`;
+        btn.onmouseenter = () => { btn.style.boxShadow = `0 0 ${scaleNum(14)}px ${scaleNum(2)}px ${INK.gold}`; };
+        btn.onmouseleave = () => { btn.style.boxShadow = `0 0 ${scaleNum(6)}px 0 rgba(255,210,63,0.25)`; };
+        btn.addEventListener('mouseenter', () => AudioManager.play('UI_HOVER'));
+        btn.onclick = () => { AudioManager.play('UI_CLICK'); onClick(); };
+        document.body.appendChild(btn);
+    }
+    btn.style.display = 'flex';
+}
+
 // One-time responsive stylesheet for the tech tree: collapses the 3-column
 // branch layout to a single stacked column on narrow screens, since a
 // side-by-side tree doesn't have room to breathe below ~460px.
@@ -1828,14 +1872,6 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     plasmaLabel.style.marginBottom = scale(18);
     plasmaLabel.style.textAlign = 'center';
     panel.appendChild(plasmaLabel);
-
-    if (isTechTreeComplete()) {
-        const protocolsBtn = consoleButton({ text: 'Open Flight Protocols', color: INK.gold, glowColor: 'rgba(255,210,63,0.55)', filled: true, fontSize: 13, sound: 'UI_CLICK' });
-        protocolsBtn.style.width = '100%';
-        protocolsBtn.style.marginBottom = scale(16);
-        protocolsBtn.onclick = showFlightProtocolsModal;
-        panel.appendChild(protocolsBtn);
-    }
 
     const currentLevel = typeof window.getCurrentLevel === 'function'
         ? window.getCurrentLevel()
