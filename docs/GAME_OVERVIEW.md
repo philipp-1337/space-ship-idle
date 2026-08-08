@@ -129,11 +129,11 @@ Current Protocols:
 
 | Protocol | Unlock level | Cost | Effect |
 | --- | ---: | ---: | --- |
-| Prism Piercer | 50 | 12 Data | Bypasses the first Prism shield hit. |
-| Phase Lock | 80 | 14 Data | Shortens Phase Stalker invulnerability windows. |
-| Hunter Dampener | 125 | 14 Data | Reduces Hunter dash speed and pressure. |
-| Emergency Vector | 50 | 18 Data | Once per flight, survives an otherwise lethal hit at 1 hull. |
-| Deep Scan | 75 | 16 Data | Doubles special-enemy Data, but increases special enemies in surges. |
+| Prism Piercer | 35 | 12 Data | Bypasses the first Prism shield hit. |
+| Phase Lock | 45 | 14 Data | Shortens Phase Stalker invulnerability windows. |
+| Hunter Dampener | 55 | 14 Data | Reduces Hunter dash speed and pressure. |
+| Emergency Vector | 35 | 18 Data | Once per flight, survives an otherwise lethal hit at 1 hull. |
+| Deep Scan | 45 | 16 Data | Doubles special-enemy Data, but increases special enemies in surges. |
 
 The Protocol layer is intended to extend the life of the game without making every late-game enemy a large HP target. Protocols mostly counter enemy behaviors, improve survival, or trade higher risk for better progression.
 

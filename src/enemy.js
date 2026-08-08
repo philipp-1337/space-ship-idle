@@ -356,7 +356,7 @@ class Enemy {
         this.isPhaseStalker = !!type.phaseStalker;
         this.isHunter = !!type.hunter;
         this.prismShieldActive = this.isPrism;
-        this.prismShieldRecharge = 0;
+        this.prismShieldTimer = PRISM_ENEMY.SHIELD_ON_FRAMES;
         this.phaseActive = false;
         this.phaseTimer = 0;
         this.phaseCooldown = this.isPhaseStalker ? 75 + Math.random() * 90 : 0;
@@ -440,11 +440,11 @@ class Enemy {
             }
         }
         if (this.alive) {
-            if (this.isPrism && !this.prismShieldActive && this.prismShieldRecharge > 0) {
-                this.prismShieldRecharge -= dt;
-                if (this.prismShieldRecharge <= 0) {
-                    this.prismShieldActive = true;
-                    this.prismShieldRecharge = 0;
+            if (this.isPrism) {
+                this.prismShieldTimer -= dt;
+                if (this.prismShieldTimer <= 0) {
+                    this.prismShieldActive = !this.prismShieldActive;
+                    this.prismShieldTimer = this.prismShieldActive ? PRISM_ENEMY.SHIELD_ON_FRAMES : PRISM_ENEMY.SHIELD_OFF_FRAMES;
                 }
             }
             if (this.isPhaseStalker) {
@@ -694,8 +694,7 @@ class Enemy {
 
     takeDamage(amount) {
         if (this.isPrism && this.prismShieldActive && !isProtocolActive('prismPiercer')) {
-            this.prismShieldActive = false;
-            this.prismShieldRecharge = PRISM_ENEMY.SHIELD_RECHARGE_FRAMES;
+            // Shield ignores damage while active
             return false;
         }
         this.hp = Math.max(0, this.hp - amount * this.damageTakenMultiplier);

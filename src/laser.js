@@ -50,7 +50,8 @@ class Laser {
         this.width = 12 + Math.min(upgradeLevel, 8);
         this.height = 5;
         // Startgeschwindigkeit niedriger, Upgrade-Skalierung langsam
-        this.speed = Math.min(6 + upgradeLevel * 1.2, GAME_CONFIG.MAX_LASER_PROJECTILE_SPEED);
+        let speedBonus = upgradeLevel <= 15 ? upgradeLevel * 1.2 : 18 + Math.sqrt(upgradeLevel - 15) * 2;
+        this.speed = 6 + speedBonus;
         this.angle = angle;
         this.isActive = true;
         this.upgradeLevel = upgradeLevel;

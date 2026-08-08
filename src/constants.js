@@ -31,9 +31,10 @@ export const GAME_CONFIG = {
     LATE_GAME_SURGE_LEVEL_STEP: 15,
     LATE_GAME_SURGE_MAX_SIZE: 20,
     MAX_ACTIVE_ENEMIES: 90,
-    LATE_GAME_PRISM_LEVEL: 50,
-    LATE_GAME_PHASE_LEVEL: 80,
-    LATE_GAME_HUNTER_LEVEL: 125
+    // Special enemy unlocks every 10 levels
+    LATE_GAME_PRISM_LEVEL: 35,
+    LATE_GAME_PHASE_LEVEL: 45,
+    LATE_GAME_HUNTER_LEVEL: 55
 };
 
 // Sparse points of interest keep the flight space legible: the player gets a
@@ -72,37 +73,43 @@ export const COMBAT_PRESSURE = {
 export function calculateLaserDamage(baseDamage, upgradeLevel) {
     const earlyLevels = Math.min(Math.max(0, upgradeLevel), GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
     const lateLevels = Math.max(0, upgradeLevel - GAME_CONFIG.LASER_DAMAGE_SOFT_CAP_LEVEL);
-    return baseDamage
-        * Math.pow(GAME_CONFIG.LASER_DAMAGE_EARLY_MULTIPLIER, earlyLevels)
-        * Math.pow(GAME_CONFIG.LASER_DAMAGE_LATE_MULTIPLIER, lateLevels);
+    
+    // Exponential growth for early levels
+    const earlyMult = Math.pow(GAME_CONFIG.LASER_DAMAGE_EARLY_MULTIPLIER, earlyLevels);
+    
+    // Flattening square-root curve for late game
+    const lateMult = 1 + Math.sqrt(lateLevels) * (GAME_CONFIG.LASER_DAMAGE_LATE_MULTIPLIER - 1) * 3;
+    
+    return baseDamage * earlyMult * lateMult;
 }
 
 export const ENEMY_BALANCE = {
     // Regular enemy HP is budgeted around the player's growing weapon output.
     // Composition, split behavior, and ranged pressure provide the later-game
     // challenge; level should not turn regular enemies into damage sponges.
-    HP_LEVEL_GROWTH: 0.25,
-    HP_LEVEL_MULTIPLIER: 1.005,
-    BOSS_HP_LEVEL_GROWTH: 0.8,
-    BOSS_HP_LEVEL_MULTIPLIER: 1.01
+    HP_LEVEL_GROWTH: 0.40,
+    HP_LEVEL_MULTIPLIER: 1.015,
+    BOSS_HP_LEVEL_GROWTH: 1.5,
+    BOSS_HP_LEVEL_MULTIPLIER: 1.025
 };
 
 // Late-game enemies add readable combat decisions instead of only inflating
 // regular HP. Values use the existing 60fps-normalized frame units.
 export const PRISM_ENEMY = {
-    SHIELD_RECHARGE_FRAMES: 210
+    SHIELD_ON_FRAMES: 180,
+    SHIELD_OFF_FRAMES: 90
 };
 
 export const PHASE_STALKER = {
-    PHASE_DURATION_FRAMES: 42,
-    PHASE_COOLDOWN_FRAMES: 150
+    PHASE_DURATION_FRAMES: 90, // was 42
+    PHASE_COOLDOWN_FRAMES: 120 // was 150
 };
 
 export const HUNTER_ENEMY = {
-    DASH_RANGE: 420,
-    DASH_DURATION_FRAMES: 36,
-    DASH_COOLDOWN_FRAMES: 180,
-    DASH_SPEED_MULTIPLIER: 2.2
+    DASH_RANGE: 500, // was 420
+    DASH_DURATION_FRAMES: 60, // was 36
+    DASH_COOLDOWN_FRAMES: 160,
+    DASH_SPEED_MULTIPLIER: 2.8 // was 2.2
 };
 
 export const FLIGHT_PROTOCOL_SLOT_COUNT = 3;
@@ -111,11 +118,11 @@ export const FLIGHT_PROTOCOL_SLOT_COUNT = 3;
 // tactical counters and risk/reward modifiers, not another linear laser-DPS
 // ladder.
 export const FLIGHT_PROTOCOLS = [
-    { key: 'prismPiercer', label: 'Prism Piercer', description: 'Bypasses the first Prism shield hit.', cost: 12, minLevel: 50 },
-    { key: 'phaseLock', label: 'Phase Lock', description: 'Shortens Phase Stalker invulnerability windows.', cost: 14, minLevel: 80 },
-    { key: 'hunterDampener', label: 'Hunter Dampener', description: 'Reduces Hunter dash speed and pressure.', cost: 14, minLevel: 125 },
-    { key: 'emergencyVector', label: 'Emergency Vector', description: 'Once per flight, survive one otherwise lethal hit at 1 hull.', cost: 18, minLevel: 50 },
-    { key: 'deepScan', label: 'Deep Scan', description: 'Special enemies yield double Flight Data, but appear more often in surges.', cost: 16, minLevel: 75 }
+    { key: 'prismPiercer', label: 'Prism Piercer', description: 'Bypasses the first Prism shield hit.', cost: 12, minLevel: 35 },
+    { key: 'phaseLock', label: 'Phase Lock', description: 'Shortens Phase Stalker invulnerability windows.', cost: 14, minLevel: 45 },
+    { key: 'hunterDampener', label: 'Hunter Dampener', description: 'Reduces Hunter dash speed and pressure.', cost: 14, minLevel: 55 },
+    { key: 'emergencyVector', label: 'Emergency Vector', description: 'Once per flight, survive one otherwise lethal hit at 1 hull.', cost: 18, minLevel: 35 },
+    { key: 'deepScan', label: 'Deep Scan', description: 'Special enemies yield double Flight Data, but appear more often in surges.', cost: 16, minLevel: 45 }
 ];
 
 export const PHYSICS = {
