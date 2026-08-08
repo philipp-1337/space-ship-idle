@@ -622,11 +622,17 @@ export function createGameLoop(context) {
         if (techUpgrades.drone || now < ship.droneUplinkUntil) {
             const permanentDrones = techUpgrades.drone ? (techUpgrades.twinDrones ? 2 : 1) : 0;
             const desiredDrones = permanentDrones + (now < ship.droneUplinkUntil ? 1 : 0);
-            while (drones.length < desiredDrones) {
-                const initialAngle = drones.length === 0 ? undefined : drones[0].orbitAngle + Math.PI;
-                drones.push(new Drone(initialAngle));
+            
+            if (drones.length !== desiredDrones) {
+                if (drones.length > desiredDrones) drones.length = desiredDrones;
+                while (drones.length < desiredDrones) drones.push(new Drone());
+                // Dynamically evenly space them around the ship relative to the first drone
+                const baseAngle = drones[0] ? drones[0].orbitAngle : 0;
+                for (let i = 0; i < drones.length; i++) {
+                    drones[i].orbitAngle = baseAngle + (Math.PI * 2 * i) / drones.length;
+                }
             }
-            if (drones.length > desiredDrones) drones.length = desiredDrones;
+
             drones.forEach(d => {
                 d.update(ship, dt);
                 d.draw(ctx);

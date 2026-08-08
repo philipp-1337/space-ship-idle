@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.9', date: '2026-08-08', changes: ['Fixed drone rendering overlap for multiple drones', 'Added visual ring for Salvage Event overcharge barrier'] },
     { version: '0.9.8', date: '2026-08-07', changes: ['Added Flight Data and the post-tree Flight Protocols loadout with three active slots and five tactical protocols.'] },
     { version: '0.9.7', date: '2026-08-07', changes: ['Plasma drops now stop once the full Tech Tree is purchased; existing Plasma Cells can still be collected.'] },
     { version: '0.9.6', date: '2026-08-07', changes: ['Added Prism, Phase Stalker, and Hunter enemies from level 50 onward with shields, phase windows, and attack dashes; late-game surges now use their distinct roles.'] },

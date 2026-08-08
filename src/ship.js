@@ -374,32 +374,73 @@ class Ship {
     // is ready, a dim partial arc while recharging, and a brief white flash the
     // instant a hit gets absorbed.
     drawShieldRing(ctx) {
-        if (this.shieldLevel <= 0) return;
-        const radius = this.width * 0.62 + 6;
         const now = performance.now();
         const flashing = now < this.shieldFlashUntil;
+        if (this.shieldLevel <= 0 && !flashing) return;
 
+        const radius = this.width * 0.62 + 6;
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.lineWidth = 2;
 
-        if (this.shieldCharge) {
-            ctx.globalAlpha = flashing ? 1 : 0.85;
-            ctx.strokeStyle = flashing ? '#ffffff' : '#7fe8ff';
+        if (flashing) {
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
             ctx.stroke();
-        } else {
-            ctx.globalAlpha = 0.9;
-            ctx.strokeStyle = flashing ? '#ffffff' : '#7fe8ff';
-            const total = Math.max(DEFLECTOR_SHIELD.MIN_RECHARGE_MS, DEFLECTOR_SHIELD.BASE_RECHARGE_MS - (this.shieldLevel - 1) * DEFLECTOR_SHIELD.RECHARGE_STEP_MS);
-            const remaining = this.shieldRechargeAt ? Math.max(0, this.shieldRechargeAt - now) : total;
-            const rechargeRatio = 1 - Math.min(1, remaining / total);
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + rechargeRatio * Math.PI * 2);
-            ctx.stroke();
+        } else if (this.shieldLevel > 0) {
+            if (this.shieldCharge) {
+                ctx.globalAlpha = 0.85;
+                ctx.strokeStyle = '#7fe8ff';
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                ctx.globalAlpha = 0.9;
+                ctx.strokeStyle = '#7fe8ff';
+                const total = Math.max(DEFLECTOR_SHIELD.MIN_RECHARGE_MS, DEFLECTOR_SHIELD.BASE_RECHARGE_MS - (this.shieldLevel - 1) * DEFLECTOR_SHIELD.RECHARGE_STEP_MS);
+                const remaining = this.shieldRechargeAt ? Math.max(0, this.shieldRechargeAt - now) : total;
+                const rechargeRatio = 1 - Math.min(1, remaining / total);
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, -Math.PI / 2, -Math.PI / 2 + rechargeRatio * Math.PI * 2);
+                ctx.stroke();
+            }
         }
 
+        ctx.restore();
+    }
+
+    // Salvage Event Overcharge Barrier — a disposable secondary shield layer.
+    // Drawn as a dashed, slowly rotating green ring outside the deflector shield.
+    // Blinks quickly just before expiring.
+    drawOverchargeRing(ctx) {
+        const now = performance.now();
+        if (now >= this.salvageOverchargeUntil) return;
+        
+        const radiusOffset = this.shieldLevel > 0 ? 12 : 6;
+        const radius = this.width * 0.62 + radiusOffset;
+        
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.lineWidth = 2;
+        
+        const timeRemaining = this.salvageOverchargeUntil - now;
+        let alpha = 0.85;
+        if (timeRemaining < 3000) {
+            alpha = (Math.floor(timeRemaining / 150) % 2 === 0) ? 0.85 : 0.3;
+        } else {
+            alpha = 0.75 + Math.sin(now / 200) * 0.15;
+        }
+
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#39ff6a';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.rotate(now / 1000);
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
         ctx.restore();
     }
 
@@ -443,6 +484,7 @@ class Ship {
 
         this.drawIntegrityRing(ctx);
         this.drawShieldRing(ctx);
+        this.drawOverchargeRing(ctx);
 
         const now = performance.now();
         const invulnerable = now < this.invulnerableUntil;
