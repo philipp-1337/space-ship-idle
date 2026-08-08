@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.16', date: '2026-08-08', changes: ['Balancing: Hull Integrity (Armor) drops are now much rarer in the XP shop if you have 10+ Armor and Nanite Repair active, preserving late-game risk.'] },
     { version: '0.9.15', date: '2026-08-08', changes: ['Fixed an issue on mobile where Phase Two (Flight Data) could not be reached because Auto-Fire is unlocked by default and never purchased.'] },
     { version: '0.9.14', date: '2026-08-08', changes: ['Hotfix: Adjusted exponential scaling for late-game damage and HP to prevent extreme scaling drop-offs.'] },
     { version: '0.9.13', date: '2026-08-08', changes: ['Flattened late-game laser damage/speed scaling', 'Increased enemy HP scaling', 'Buffed special enemies and adjusted their spawn pacing'] },
@@ -955,11 +956,20 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
     // picking them again would do nothing further. Repair Module also stays out
     // until at least one Armor Plating has been bought — with only the base 1 HP,
     // there's nothing meaningful for it to regenerate.
-    const availablePool = upgradePool.filter(u => {
+    let availablePool = upgradePool.filter(u => {
         if (u.maxLevel && (upgrades[u.key] || 0) >= u.maxLevel) return false;
         if (u.key === 'repairModule' && (upgrades.armor || 0) <= 0) return false;
         return true;
     });
+    // Reduce the frequency of Hull Integrity (armor) drops if the player has
+    // high health and Nanite Repair, preserving late-game risk.
+    availablePool = availablePool.map(u => {
+        if (u.key === 'armor' && (upgrades.armor || 0) >= 10 && (upgrades.repairModule || 0) > 0) {
+            return { ...u, rarity: 'legendary' };
+        }
+        return u;
+    });
+
     const upgradesData = drawWeightedUpgrades(availablePool, 3);
     const recommendedKey = getRecommendedUpgradeKey(ship, upgrades);
 
