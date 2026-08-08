@@ -43,7 +43,7 @@ const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
     { version: '0.9.20', date: '2026-08-08', changes: ['Bugfix: Resolved an issue where the Tech Tree button would overlap the Flight Protocols button when Flight Data was active.'] },
-    { version: '0.9.19', date: '2026-08-08', changes: ['UI Polish: Swapped position of Tech Tree and Flight Protocols buttons.', 'UI Polish: Removed stray border color from Tech Tree button.', 'Added 4/F keyboard shortcut for Flight Protocols (visible in Settings once unlocked).'] },
+    { version: '0.9.19', date: '2026-08-08', changes: ['UI Polish: Swapped position of Tech Tree and Flight Protocols buttons.', 'UI Polish: Removed stray border color from Tech Tree button.', 'Added 4/F desktop keyboard shortcut for Flight Protocols (visible in Settings once unlocked; Desktop only).'] },
     { version: '0.9.18', date: '2026-08-08', changes: ['Switched to self-hosted local fonts for GDPR/DSGVO compliance instead of loading them from Google Fonts.'] },
     { version: '0.9.17', date: '2026-08-08', changes: ['Added offline caching for Google Fonts to prevent the game from failing to start on poor or slow internet connections.'] },
     { version: '0.9.16', date: '2026-08-08', changes: ['Balancing: Hull Integrity (Armor) drops are now much rarer in the XP shop if you have 10+ Armor and Nanite Repair active, preserving late-game risk.'] },
