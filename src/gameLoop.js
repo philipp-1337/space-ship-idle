@@ -282,13 +282,13 @@ export function createGameLoop(context) {
             if (enemy.isElite) {
                 // A Boss orb always guarantees a level up upon collection.
                 spawnXpOrb(enemy.x, enemy.y, 0, true);
-                
+
                 sweepRay.active = true;
                 sweepRay.origin = enemy;
                 sweepRay.timer = 0;
                 sweepRay.startAngle = ship.angle;
                 sweepRay.angle = ship.angle;
-                
+
                 effectsSystem.triggerScreenShake(20, 30);
                 const bossWasVisible = enemy.x >= 0 && enemy.x <= window.logicalWidth
                     && enemy.y >= 0 && enemy.y <= window.logicalHeight;
@@ -300,7 +300,7 @@ export function createGameLoop(context) {
                     spawnSplitEnemies(enemy, easyModeRef ? easyModeRef.value : false);
                 }
             }
-            
+
             // Elite-Gegner droppen garantiert Plasma; Salvage Drive verdoppelt die normale Chance
             const dropChance = GAME_CONFIG.PLASMA_DROP_CHANCE * (techUpgrades.salvage ? SALVAGE_DRIVE.DROP_CHANCE_MULT : 1);
             if (!isTechTreeComplete() && (enemy.isElite || Math.random() < dropChance)) {
@@ -319,12 +319,12 @@ export function createGameLoop(context) {
                 py = Math.max(24, Math.min(canvas.height - 24, py));
                 plasmaCells.push(new PlasmaCell(px, py));
             }
-            
+
             // Random drop chance for Tractor Pulse Item (e.g. 1%)
             if (Math.random() < 0.01) {
                 tractorItems.push(new TractorItem(enemy.x, enemy.y));
             }
-            
+
             killsRef.value++;
             const isSpecialTarget = enemy.isElite || enemy.isAegis || enemy.isPrism || enemy.isPhaseStalker || enemy.isHunter;
             if (isSpecialTarget && isTechTreeComplete()) {
@@ -511,8 +511,21 @@ export function createGameLoop(context) {
             }
         }
     }
+    const TARGET_FPS = 60;
+    const FPS_INTERVAL = 1000 / TARGET_FPS;
+    let lastRenderTime = 0;
 
     function gameLoop(timestamp) {
+        const nowTime = typeof timestamp === 'number' ? timestamp : performance.now();
+        if (lastRenderTime === 0) lastRenderTime = nowTime;
+
+        // 1ms tolerance to avoid dropping frames on 60Hz displays due to minor jitter
+        if (nowTime - lastRenderTime < FPS_INTERVAL - 1) {
+            requestAnimationFrame(gameLoop);
+            return;
+        }
+        lastRenderTime = nowTime;
+
         const dt = computeDeltaFactor(timestamp);
         if (isGameOverRef.value) return;
         if (isPausedRef.value) {
@@ -576,7 +589,7 @@ export function createGameLoop(context) {
             currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
             frameCount = 0;
             lastFpsTime = now;
-            
+
             if (typeof window !== 'undefined') {
                 let fpsEl = document.getElementById('fps-display');
                 if (!fpsEl) {
@@ -629,7 +642,7 @@ export function createGameLoop(context) {
         if (techUpgrades.drone || now < ship.droneUplinkUntil) {
             const permanentDrones = techUpgrades.drone ? (techUpgrades.twinDrones ? 2 : 1) : 0;
             const desiredDrones = permanentDrones + (now < ship.droneUplinkUntil ? 1 : 0);
-            
+
             if (drones.length !== desiredDrones) {
                 if (drones.length > desiredDrones) drones.length = desiredDrones;
                 while (drones.length < desiredDrones) drones.push(new Drone());
@@ -1098,7 +1111,7 @@ export function createGameLoop(context) {
                 }
             }
         }
-        
+
         if (sweepRay.active) {
             sweepRay.timer += dt * (1000/60);
             if (sweepRay.timer >= sweepRay.duration) {
@@ -1108,7 +1121,7 @@ export function createGameLoop(context) {
                 // One controlled rotation over the duration keeps the reward
                 // readable without turning the whole screen into a strobe.
                 sweepRay.angle = sweepRay.startAngle + progress * Math.PI * 2;
-                
+
                 const originX = sweepRay.origin?.x ?? ship.x;
                 const originY = sweepRay.origin?.y ?? ship.y;
                 const beamLength = 2000;
@@ -1117,7 +1130,7 @@ export function createGameLoop(context) {
                 const pulse = 0.90 + Math.sin(sweepRay.timer * 0.035) * 0.10;
                 const fade = Math.min(1, progress * 12) * Math.min(1, (1 - progress) * 5);
                 const rayAlpha = pulse * fade;
-                
+
                 ctx.save();
                 ctx.globalCompositeOperation = 'lighter';
                 ctx.globalAlpha = rayAlpha * 0.20;
@@ -1129,7 +1142,7 @@ export function createGameLoop(context) {
                 ctx.moveTo(originX, originY);
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
-                
+
                 ctx.globalAlpha = rayAlpha * 0.62;
                 ctx.strokeStyle = '#ffb000';
                 ctx.lineWidth = 32;
@@ -1164,21 +1177,21 @@ export function createGameLoop(context) {
                 ctx.fillStyle = '#e8fff0';
                 ctx.fillRect(originX - 4, originY - 4, 8, 8);
                 ctx.restore();
-                
+
                 const A = originX, B = originY;
                 const C = endX, D = endY;
                 const dx = C - A, dy = D - B;
                 const l2 = dx * dx + dy * dy;
-                
+
                 for (let eIdx = enemies.length - 1; eIdx >= 0; eIdx--) {
                     const enemy = enemies[eIdx];
                     if (!enemy.alive || enemy.exploding) continue;
-                    
+
                     let t = Math.max(0, Math.min(1, ((enemy.x - A) * dx + (enemy.y - B) * dy) / l2));
                     const projX = A + t * dx;
                     const projY = B + t * dy;
                     const distSq = (enemy.x - projX) * (enemy.x - projX) + (enemy.y - projY) * (enemy.y - projY);
-                    
+
                     if (distSq < (enemy.size + 40) * (enemy.size + 40)) {
                         enemy.hp = 0;
                         enemy.destroy();
@@ -1191,7 +1204,7 @@ export function createGameLoop(context) {
         if (inputManager.isMobile) {
             ctx.restore();
         }
-        
+
         if (shakeActive) {
             effectsSystem.restoreScreenShake();
         }

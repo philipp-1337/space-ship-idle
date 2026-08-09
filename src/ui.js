@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.24', date: '2026-08-09', changes: ['Performance Fix: Added a hard 60 FPS cap to normalize device performance and prevent battery drain on high-refresh-rate phones (e.g. 120Hz/144Hz displays).'] },
     { version: '0.9.23', date: '2026-08-08', changes: ['Performance Fix: Removed expensive shadowBlur rendering from late-game enemies, resolving severe framerate drops in Chrome.'] },
     { version: '0.9.22', date: '2026-08-08', changes: ['Balancing: The Salvage hull repair reward now restores the ship to full maximum hull instead of just 1 HP.'] },
     { version: '0.9.21', date: '2026-08-08', changes: ['UI Polish: Restored the thematic gold border to the Flight Protocols button.'] },
