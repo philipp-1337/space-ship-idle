@@ -12,7 +12,7 @@ import { updateExperienceBar, displayLevel, initializeUI, displayGameOverScreen,
 import { InputManager } from './input.js';
 import { EffectsSystem } from './effects.js';
 import { GAME_CONFIG, PHYSICS, MAGNET, PROGRESSION, ENEMY_LASER, EFFECTS, STARS, TOUCH_CONTROLS, COLORS, MOBILE, calculateLaserDamage } from './constants.js';
-import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, loadFlightProgress, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier, isTechTreeComplete } from './upgrades.js'; // plasmaCount entfernt
+import { applyUpgrade, upgrades, techUpgrades, loadTechUpgrades, saveTechUpgrades, loadPlasmaCount, savePlasmaCount, loadFlightProgress, handleTechUpgrade, setupPlasmaUI, getDamageMultiplier, getFireRateMultiplier, getBoltSpeed, isTechTreeComplete } from './upgrades.js'; // plasmaCount entfernt
 import { handleXpCollection, handlePlasmaCollection, handleTractorCollection, handleDataCollection } from './collectibles.js';
 import { createFieldEventSystem } from './fieldEvents.js';
 import { createGameLoop } from './gameLoop.js';
@@ -373,6 +373,7 @@ function pauseGame() {
         xpCollected,
         laserDamage,
         fireIntervalMs: GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades),
+        boltSpeed: getBoltSpeed(),
         hull: `${Math.max(0, Math.ceil(ship.hp))} / ${Math.ceil(ship.maxHp)}`,
         missiles: techUpgrades.homingMissile ? 'Online' : 'Offline',
         drones: techUpgrades.drone ? (techUpgrades.twinDrones ? '2 Online' : '1 Online') : 'Offline',
@@ -473,6 +474,7 @@ function saveRun() {
             magnet: upgrades.magnet,
             laser: upgrades.laser,
             speed: upgrades.speed,
+            boltVelocity: upgrades.boltVelocity,
             armor: upgrades.armor,
             repairModule: upgrades.repairModule,
             deflectorShield: upgrades.deflectorShield,
@@ -501,7 +503,7 @@ function restoreRunState() {
     easyArmorGranted = true;
 
     const savedUpgrades = saved.upgrades || {};
-    ['magnet', 'laser', 'speed', 'armor', 'repairModule', 'deflectorShield', 'chainLightning', 'overdriveCore', 'xpBoost'].forEach((key) => {
+    ['magnet', 'laser', 'speed', 'boltVelocity', 'armor', 'repairModule', 'deflectorShield', 'chainLightning', 'overdriveCore', 'xpBoost'].forEach((key) => {
         const count = savedUpgrades[key] || 0;
         for (let i = 0; i < count; i++) applyUpgrade(key, ship, PHYSICS);
     });

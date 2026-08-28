@@ -1,6 +1,6 @@
 // upgrades.js
 // Verwaltung von Upgrades, Magnet, Plasma, Tech-Tree
-import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT, isTouchDevice, calculateLaserDamage } from './constants.js';
+import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, BOLT_VELOCITY, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT, isTouchDevice, calculateLaserDamage } from './constants.js';
 import { updatePlasmaUI, updateFlightDataUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -8,6 +8,7 @@ export let upgrades = {
     magnet: 0,
     laser: 0,
     speed: 0,
+    boltVelocity: 0, // leveled XP upgrade — unlocked by the boltVelocity tech node, see getBoltSpeed()
     armor: 0,
     repairModule: 0, // leveled XP upgrade — see applyUpgrade()
     deflectorShield: 0, // leveled XP upgrade — see applyUpgrade()
@@ -43,6 +44,7 @@ export let techUpgrades = {
     piercing: false, // Laser durchdringen Gegner
     explosiveRounds: false, // Laser verursachen Flächenschaden beim Einschlag
     rapidFire: false, // dauerhaft kürzere Feuer-Cooldowns
+    boltVelocity: false, // schaltet das wiederholbare Bolt-Velocity-Shop-Upgrade frei, siehe getBoltSpeed()
     salvage: false, // erhöhte Plasma-Drop-Chance
     twinMissiles: false, // zwei Lenkraketen pro Salve
     signalInterference: false,
@@ -196,6 +198,9 @@ export function applyUpgrade(key, ship, PHYSICS) {
         ship.maxSpeed += PHYSICS.SPEED_UPGRADE_INCREASE;
         ship.acceleration += PHYSICS.ACCELERATION_UPGRADE_INCREASE; // Erhöhe auch die Beschleunigung
     }
+    if (key === 'boltVelocity') {
+        upgrades.boltVelocity = Math.min(BOLT_VELOCITY.SHOP_MAX_LEVEL, upgrades.boltVelocity + 1);
+    }
     if (key === 'armor') {
         upgrades.armor++;
         ship.maxHp += ARMOR.HP_PER_UPGRADE;
@@ -248,6 +253,14 @@ function chainLightningChanceFor(level) {
 function overdriveDurationFor(level) {
     return OVERDRIVE.DURATION_MS * (1 + OVERDRIVE_CORE.DURATION_MULT_PER_LEVEL * Math.min(level, OVERDRIVE_CORE.MAX_LEVEL));
 }
+// Bolt (laser projectile) travel speed once the permanent Bolt Velocity tech
+// node is unlocked: flat unlock bonus + PER_SHOP_LEVEL per shop pick, capped.
+function boltSpeedFor(shopLevel) {
+    return Math.min(
+        BOLT_VELOCITY.MAX,
+        BOLT_VELOCITY.BASE + BOLT_VELOCITY.TECH_UNLOCK_BONUS + Math.max(0, shopLevel) * BOLT_VELOCITY.PER_SHOP_LEVEL
+    );
+}
 
 // --- Stat-Vorschau für den Upgrade-Screen: "Label: von -> nach" -------------
 // Nutzt exakt dieselben Formeln wie applyUpgrade()/laser.js/ship.js, damit die
@@ -267,6 +280,16 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
     }
     if (key === 'speed') {
         return { label: 'Max Speed', from: ship.maxSpeed.toFixed(1), to: (ship.maxSpeed + PHYSICS.SPEED_UPGRADE_INCREASE).toFixed(1) };
+    }
+    if (key === 'boltVelocity') {
+        const level = currentUpgrades.boltVelocity || 0;
+        const next = level + 1;
+        return {
+            label: 'Bolt Speed',
+            from: boltSpeedFor(level).toFixed(1),
+            to: boltSpeedFor(next).toFixed(1),
+            capped: next >= BOLT_VELOCITY.SHOP_MAX_LEVEL
+        };
     }
     if (key === 'armor') {
         return { label: 'Hull Integrity', from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
@@ -386,6 +409,14 @@ export function getFireRateMultiplier(currentTechUpgrades = techUpgrades) {
 
 export function getDamageMultiplier() {
     return isOverdriveActive() ? OVERDRIVE.DAMAGE_MULT : 1;
+}
+
+// Laser projectile travel speed. No longer tied to the Laser Damage upgrade —
+// stays at BOLT_VELOCITY.BASE until the permanent Bolt Velocity tech node is
+// bought, after which the repeatable shop upgrade (upgrades.boltVelocity) raises it.
+export function getBoltSpeed() {
+    if (!techUpgrades.boltVelocity) return BOLT_VELOCITY.BASE;
+    return boltSpeedFor(upgrades.boltVelocity);
 }
 
 // --- Collector Pulse: Sofort-Effekt (wiederholt wählbarer Shop-Eintrag), zieht

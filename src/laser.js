@@ -1,5 +1,5 @@
 import { makePixelSprite, drawPixelSprite } from './pixelArt.js';
-import { getDamageMultiplier } from './upgrades.js';
+import { getDamageMultiplier, getBoltSpeed } from './upgrades.js';
 import { GAME_CONFIG, calculateLaserDamage } from './constants.js';
 
 // Kleine, gestreckte Pixel-Art-Bolzen mit heißem Kern, in drei Farbstufen je
@@ -49,9 +49,11 @@ class Laser {
         // Bolzen wächst leicht mit dem Upgrade-Level, um die wachsende Feuerkraft sichtbar zu machen
         this.width = 12 + Math.min(upgradeLevel, 8);
         this.height = 5;
-        // Startgeschwindigkeit niedriger, Upgrade-Skalierung langsam
-        let speedBonus = upgradeLevel <= 15 ? upgradeLevel * 1.2 : 18 + Math.sqrt(upgradeLevel - 15) * 2;
-        this.speed = 6 + speedBonus;
+        // Bolzen-Geschwindigkeit ist NICHT mehr an das Laser-Schaden-Upgrade
+        // gekoppelt — sie kommt aus getBoltSpeed() (fester Basiswert, nur durch
+        // das permanente Bolt-Velocity-Upgrade erhöhbar). Drohnen erben denselben
+        // Wert; Sonderfälle können ihn per options.speed überschreiben.
+        this.speed = options.speed ?? getBoltSpeed();
         this.angle = angle;
         this.isActive = true;
         this.upgradeLevel = upgradeLevel;

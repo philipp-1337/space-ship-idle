@@ -1,7 +1,7 @@
 {
 	"name": "space-ship-idle",
 	"private": true,
-	"version": "0.9.24",
+	"version": "0.9.25",
 	"type": "module",
 	"scripts": {
 		"build": "vite build",

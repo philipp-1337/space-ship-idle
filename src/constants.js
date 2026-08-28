@@ -9,7 +9,6 @@ export function isTouchDevice() {
 
 export const GAME_CONFIG = {
     BASE_LASER_DAMAGE: 0.8,
-    MAX_LASER_PROJECTILE_SPEED: 26.4,
     LASER_DAMAGE_SOFT_CAP_LEVEL: 20,
     LASER_DAMAGE_EARLY_MULTIPLIER: 1.10,
     LASER_DAMAGE_LATE_MULTIPLIER: 1.07,
@@ -183,6 +182,18 @@ export const XP_TECH = {
 
 export const RAPID_FIRE = {
     COOLDOWN_MULT: 0.75 // permanent, stacks multiplicatively with Overdrive
+};
+
+// Laser projectile (bolt) travel speed. Decoupled from Laser Damage: the base
+// value never changes on its own. The permanent "Bolt Velocity" tech node grants
+// TECH_UNLOCK_BONUS immediately and unlocks a repeatable level-up-shop upgrade
+// worth PER_SHOP_LEVEL each, up to SHOP_MAX_LEVEL picks — capped at MAX.
+export const BOLT_VELOCITY = {
+    BASE: 6,
+    TECH_UNLOCK_BONUS: 2,
+    PER_SHOP_LEVEL: 2,
+    SHOP_MAX_LEVEL: 5, // 6 + 2 + 5*2 = 18
+    MAX: 18
 };
 
 export const REPAIR_MODULE = {

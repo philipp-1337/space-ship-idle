@@ -1,10 +1,10 @@
 // filepath: /Users/philippkanter/Developer/space-ship-idle/src/ui.js
 // Night-Flight Console — cockpit instrument HUD (see index.html body comment
 // for the direction contract).
-import { MOBILE, OVERDRIVE_CORE, XP_BOOST, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT } from './constants.js';
+import { MOBILE, OVERDRIVE_CORE, XP_BOOST, BOLT_VELOCITY, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT } from './constants.js';
 import { xpSprite } from './xp.js';
 import { clearRunState, suppressAutosave } from './runState.js';
-import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades, TECH_MIN_LEVELS, isTechTreeComplete, flightProtocols, handleProtocolUnlock, toggleProtocol } from './upgrades.js';
+import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades, techUpgrades, TECH_MIN_LEVELS, isTechTreeComplete, flightProtocols, handleProtocolUnlock, toggleProtocol } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
 import packageInfo from '../package.json';
@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.25', date: '2026-08-28', changes: ['Balancing: Laser projectile speed is no longer tied to Laser Damage. Added a permanent Bolt Velocity tech node that grants +2 bolt speed and unlocks a repeatable level-up upgrade raising bolt speed up to 18.'] },
     { version: '0.9.24', date: '2026-08-09', changes: ['Performance Fix: Added a hard 60 FPS cap to normalize device performance and prevent battery drain on high-refresh-rate phones (e.g. 120Hz/144Hz displays).'] },
     { version: '0.9.23', date: '2026-08-08', changes: ['Performance Fix: Removed expensive shadowBlur rendering from late-game enemies, resolving severe framerate drops in Chrome.'] },
     { version: '0.9.22', date: '2026-08-08', changes: ['Balancing: The Salvage hull repair reward now restores the ship to full maximum hull instead of just 1 HP.'] },
@@ -953,6 +954,7 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
         { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.', rarity: 'common' },
         { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.`, rarity: 'common' },
         { key: 'speed', label: 'Ship Speed', desc: "Increases your ship's maximum speed.", rarity: 'common' },
+        { key: 'boltVelocity', label: 'Bolt Velocity', desc: 'Increases how fast your laser bolts travel. Each purchase adds more velocity, up to the cap.', rarity: 'rare', maxLevel: BOLT_VELOCITY.SHOP_MAX_LEVEL },
         { key: 'armor', label: 'Hull Integrity', desc: 'Adds one point of hull integrity and fully repairs the hull.', rarity: 'common' },
         { key: 'chainLightning', label: 'Chain Lightning', desc: 'Lasers have a chance to arc to a second nearby enemy for reduced damage. Each purchase increases the arc chance.', rarity: 'common', maxLevel: 5 },
         { key: 'repairModule', label: 'Nanite Repair', desc: 'Regenerates 1 point of hull integrity over time while damaged. Each purchase shortens the repair interval.', rarity: 'rare', maxLevel: 5 },
@@ -967,6 +969,8 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
     let availablePool = upgradePool.filter(u => {
         if (u.maxLevel && (upgrades[u.key] || 0) >= u.maxLevel) return false;
         if (u.key === 'repairModule' && (upgrades.armor || 0) <= 0) return false;
+        // Bolt Velocity only enters the shop once its permanent tech node is bought.
+        if (u.key === 'boltVelocity' && !techUpgrades.boltVelocity) return false;
         return true;
     });
     // Reduce the frequency of Hull Integrity (armor) drops if the player has
@@ -1480,6 +1484,7 @@ export function displayPauseMenu(stats, onResume, onRestart) {
         ['Hull Integrity', stats.hull],
         ['Laser Damage', Number.isFinite(Number(stats.laserDamage)) ? Number(stats.laserDamage).toFixed(2) : stats.laserDamage],
         ['Fire Interval', `${Math.round(stats.fireIntervalMs)} ms`],
+        ...(Number.isFinite(Number(stats.boltSpeed)) ? [['Bolt Speed', Number(stats.boltSpeed).toFixed(1)]] : []),
         ['Homing Missiles', stats.missiles],
         ['Drones', stats.drones],
         ...(Number.isFinite(Number(stats.flightData)) ? [['Flight Data', stats.flightData]] : []),
@@ -1905,6 +1910,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     const nodes = [
         { key: 'xpResonance', label: 'XP Resonance', desc: 'Amplifies the XP carried by every collected orb.', cost: 5, col: 1, row: 1 },
         { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
+        { key: 'boltVelocity', label: 'Bolt Velocity', desc: 'Laser bolts fly +2 faster right away and unlock a repeatable Bolt Velocity upgrade in the level-up shop that raises bolt speed up to 18.', cost: 6, col: 3, row: 1 },
         { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own independent laser at nearby enemies.', cost: 12, col: 4, row: 1 },
         { key: 'resonanceCascade', label: 'Resonance Cascade', desc: 'Further increases the XP yield of collected orbs.', cost: 9, col: 1, row: 3, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
         { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
@@ -2011,7 +2017,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
 
         const groups = [
             { label: 'XP SYSTEMS', keys: ['xpResonance', 'resonanceCascade', 'learningProtocol'] },
-            { label: 'WEAPON SYSTEMS', keys: ['autoShoot', 'rapidFire', 'piercing', 'explosiveRounds', 'reactorNova'] },
+            { label: 'WEAPON SYSTEMS', keys: ['autoShoot', 'boltVelocity', 'rapidFire', 'piercing', 'explosiveRounds', 'reactorNova'] },
             { label: 'MISSILE SYSTEMS', keys: ['homingMissile', 'twinMissiles', 'missilePayload', 'missilePayload2', 'missilePayload3', 'missilePayload4', 'missilePayload5', 'missileEndurance', 'missileWarhead', 'missileGuidance'] },
             { label: 'DRONE SYSTEMS', keys: ['drone', 'droneDamage1', 'droneDamage2', 'droneDamage3', 'droneDamage4', 'droneDamage5', 'targetingMatrix', 'twinDrones', 'signalInterference'] },
             { label: 'UTILITY SYSTEMS', keys: ['salvage'] }
