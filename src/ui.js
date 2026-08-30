@@ -43,6 +43,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.10.2', date: '2026-08-30', changes: ['Bugfix: The Flight Protocols and tech-node detail modals no longer overflow the screen on mobile with the longer German labels; their buttons now stack on narrow screens.'] },
     { version: '0.10.1', date: '2026-08-30', changes: ['Tech Tree: Level-gated nodes (Twin Drones, Signal Interference, late Payload Amplifiers, etc.) now stay visible as locked cards showing the required level, instead of being hidden until the current run reaches that level.'] },
     { version: '0.10.0', date: '2026-08-30', changes: ['Added German localization with an English/Deutsch language switch in Settings; the game auto-detects the browser language on first launch. Changelog entries stay in English.'] },
     { version: '0.9.26', date: '2026-08-30', changes: ['Bugfix: On mobile, rotating between portrait and landscape now resizes the playfield to fill the screen instead of leaving it cropped.'] },
@@ -1712,11 +1713,17 @@ function showTechNodeDetail(upg, unlocked, locked, levelLocked, purchasable, cos
     row.style.display = 'flex';
     row.style.gap = scale(10);
     row.style.width = '100%';
+    // Two buttons don't both fit on one line in this narrow panel once the
+    // labels are German ("Bestätigen — N" / "Nicht genug Plasma" + "Abbrechen"),
+    // so stack them on mobile.
+    if (purchasable && _isMobile) row.style.flexDirection = 'column';
 
     if (purchasable) {
         const canAfford = typeof window !== 'undefined' && window.getPlasmaCount ? window.getPlasmaCount() >= upg.cost : true;
         const confirmBtn = consoleButton({ text: t('techTree.confirmCost', { cost: costLabel }), color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 13, sound: canAfford ? 'UI_UPGRADE' : 'UI_ERROR' });
-        confirmBtn.style.flex = '1';
+        confirmBtn.style.flex = _isMobile ? '1 1 auto' : '1';
+        confirmBtn.style.minWidth = '0';
+        confirmBtn.style.textAlign = 'center';
         if (!canAfford) {
             // Kein natives `disabled` — der Klick soll weiterhin feuern (siehe
             // consoleButton's Klick-Listener oben), damit der UI_ERROR-Sound
@@ -1735,7 +1742,10 @@ function showTechNodeDetail(upg, unlocked, locked, levelLocked, purchasable, cos
     }
 
     const closeBtn = consoleButton({ text: purchasable ? t('common.cancel') : t('common.close'), color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
-    closeBtn.style.flex = purchasable ? '0 0 auto' : '1';
+    // On mobile the two buttons stack (see row.flexDirection below), so each
+    // one spans the panel; on desktop keep the "confirm grows / cancel hugs" split.
+    closeBtn.style.flex = purchasable && !_isMobile ? '0 0 auto' : '1';
+    closeBtn.style.minWidth = '0';
     closeBtn.onclick = () => modal.remove();
     row.appendChild(closeBtn);
 
@@ -1788,7 +1798,11 @@ export function showFlightProtocolsModal() {
         const levelLocked = currentLevel < protocol.minLevel;
         const row = document.createElement('div');
         row.style.display = 'grid';
-        row.style.gridTemplateColumns = '1fr auto';
+        // Stack copy over the action button on mobile — the German labels
+        // ("Freischalten · N Data", "Deaktivieren") are too wide for a
+        // side-by-side column at phone width and were pushing the panel
+        // off-screen. minmax(0, 1fr) lets the copy column shrink on desktop.
+        row.style.gridTemplateColumns = _isMobile ? '1fr' : 'minmax(0, 1fr) auto';
         row.style.gap = scale(10);
         row.style.alignItems = 'center';
         row.style.padding = `${scale(10)} ${scale(12)}`;
@@ -1797,6 +1811,7 @@ export function showFlightProtocolsModal() {
         row.style.clipPath = chamferClip(scaleNum(6));
 
         const copy = document.createElement('div');
+        copy.style.minWidth = '0'; // allow the copy column to shrink instead of overflowing the panel
         const title = document.createElement('div');
         title.innerText = `${protocol.label}${active ? `  ${t('protocols.activeTag')}` : ''}`;
         title.style.fontFamily = FONT;
@@ -1824,6 +1839,12 @@ export function showFlightProtocolsModal() {
             sound: unlocked || (!levelLocked && upgrades.flightData >= protocol.cost) ? 'UI_UPGRADE' : 'UI_ERROR'
         });
         action.style.whiteSpace = 'nowrap';
+        if (_isMobile) {
+            // Stacked layout: keep the button at its natural width, left-aligned
+            // under the copy, with a little breathing room.
+            action.style.justifySelf = 'start';
+            action.style.marginTop = scale(4);
+        }
         const slotLocked = !active && flightProtocols.active.length >= FLIGHT_PROTOCOL_SLOT_COUNT;
         if (levelLocked || slotLocked || (!unlocked && upgrades.flightData < protocol.cost)) {
             action.style.opacity = '0.45';
