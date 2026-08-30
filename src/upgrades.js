@@ -3,6 +3,7 @@
 import { MAGNET, ARMOR, PHYSICS, OVERDRIVE, OVERDRIVE_CORE, RAPID_FIRE, BOLT_VELOCITY, COLLECTOR_PULSE, REPAIR_MODULE, DEFLECTOR_SHIELD, CHAIN_LIGHTNING, XP_BOOST, XP_TECH, FLIGHT_PROTOCOLS, FLIGHT_PROTOCOL_SLOT_COUNT, isTouchDevice, calculateLaserDamage } from './constants.js';
 import { updatePlasmaUI, updateFlightDataUI, showTechTreeButton, showTechTreeModal } from './ui.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { t } from './i18n.js';
 
 export let upgrades = {
     magnet: 0,
@@ -270,35 +271,35 @@ function boltSpeedFor(shopLevel) {
 export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
     if (key === 'magnet') {
         const radiusFor = (level) => Math.round(MAGNET.BASE_RADIUS + level * MAGNET.RADIUS_INCREASE);
-        const fromStr = currentUpgrades.magnet === 0 ? 'Off' : radiusFor(currentUpgrades.magnet) + 'm';
-        return { label: 'Range', from: fromStr, to: radiusFor(currentUpgrades.magnet + 1) + 'm' };
+        const fromStr = currentUpgrades.magnet === 0 ? t('common.off') : radiusFor(currentUpgrades.magnet) + 'm';
+        return { label: t('preview.range'), from: fromStr, to: radiusFor(currentUpgrades.magnet + 1) + 'm' };
     }
     if (key === 'laser') {
         const baseDamage = (typeof window !== 'undefined' && window.BASE_LASER_DAMAGE) ? window.BASE_LASER_DAMAGE : 1;
         const damageFor = (level) => calculateLaserDamage(baseDamage, level).toFixed(2);
-        return { label: 'Damage', from: damageFor(currentUpgrades.laser), to: damageFor(currentUpgrades.laser + 1) };
+        return { label: t('preview.damage'), from: damageFor(currentUpgrades.laser), to: damageFor(currentUpgrades.laser + 1) };
     }
     if (key === 'speed') {
-        return { label: 'Max Speed', from: ship.maxSpeed.toFixed(1), to: (ship.maxSpeed + PHYSICS.SPEED_UPGRADE_INCREASE).toFixed(1) };
+        return { label: t('preview.maxSpeed'), from: ship.maxSpeed.toFixed(1), to: (ship.maxSpeed + PHYSICS.SPEED_UPGRADE_INCREASE).toFixed(1) };
     }
     if (key === 'boltVelocity') {
         const level = currentUpgrades.boltVelocity || 0;
         const next = level + 1;
         return {
-            label: 'Bolt Speed',
+            label: t('preview.boltSpeed'),
             from: boltSpeedFor(level).toFixed(1),
             to: boltSpeedFor(next).toFixed(1),
             capped: next >= BOLT_VELOCITY.SHOP_MAX_LEVEL
         };
     }
     if (key === 'armor') {
-        return { label: 'Hull Integrity', from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
+        return { label: t('preview.hullIntegrity'), from: ship.maxHp, to: ship.maxHp + ARMOR.HP_PER_UPGRADE };
     }
     if (key === 'repairModule') {
         const level = currentUpgrades.repairModule;
         const next = level + 1;
         return {
-            label: 'Regen Interval',
+            label: t('preview.regenInterval'),
             from: level > 0 ? (repairModuleIntervalFor(level) / 1000).toFixed(1) : '—',
             to: (repairModuleIntervalFor(next) / 1000).toFixed(1),
             unit: 's',
@@ -309,7 +310,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
         const level = currentUpgrades.deflectorShield;
         const next = level + 1;
         return {
-            label: 'Recharge',
+            label: t('preview.recharge'),
             from: level > 0 ? (deflectorRechargeFor(level) / 1000).toFixed(1) : '—',
             to: (deflectorRechargeFor(next) / 1000).toFixed(1),
             unit: 's',
@@ -320,7 +321,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
         const level = currentUpgrades.collectorPulse;
         const next = level + 1;
         return {
-            label: 'Pull Duration',
+            label: t('preview.pullDuration'),
             from: level > 0 ? (collectorPulseDurationFor(level) / 1000).toFixed(1) : '—',
             to: (collectorPulseDurationFor(next) / 1000).toFixed(1),
             unit: 's',
@@ -331,7 +332,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
         const level = currentUpgrades.chainLightning;
         const next = level + 1;
         return {
-            label: 'Arc Chance',
+            label: t('preview.arcChance'),
             from: Math.round(chainLightningChanceFor(level) * 100),
             to: Math.round(chainLightningChanceFor(next) * 100),
             unit: '%',
@@ -342,7 +343,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
         const level = currentUpgrades.overdriveCore;
         const next = level + 1;
         return {
-            label: 'Overdrive Duration',
+            label: t('preview.overdriveDuration'),
             from: (overdriveDurationFor(level) / 1000).toFixed(1),
             to: (overdriveDurationFor(next) / 1000).toFixed(1),
             unit: 's',
@@ -352,7 +353,7 @@ export function getUpgradeStatPreview(key, ship, currentUpgrades = upgrades) {
     if (key === 'xpBoost') {
         const level = currentUpgrades.xpBoost || 0;
         return {
-            label: 'XP Gain',
+            label: t('preview.xpGain'),
             from: Math.round(level * XP_BOOST.XP_PER_LEVEL * 100),
             to: Math.round((level + 1) * XP_BOOST.XP_PER_LEVEL * 100),
             unit: '%',

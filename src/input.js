@@ -81,7 +81,7 @@ export class InputManager {
     }
 
     setupMouseListeners() {
-        const canvas = document.querySelector('canvas');
+        const canvas = document.getElementById('game-canvas');
         if (canvas) {
             canvas.addEventListener('mousedown', (e) => {
                 if (e.button === 0) {
@@ -471,7 +471,7 @@ export class InputManager {
     }
 
     resizeCanvasForMobile() {
-        const canvas = document.querySelector('canvas');
+        const canvas = document.getElementById('game-canvas');
         if (canvas && this.isMobile) {
             canvas.width = window.innerWidth * MOBILE.CANVAS_SCALE_FACTOR;
             canvas.height = window.innerHeight * MOBILE.CANVAS_SCALE_FACTOR;

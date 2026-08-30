@@ -17,6 +17,7 @@ import { handleXpCollection, handlePlasmaCollection, handleTractorCollection, ha
 import { createFieldEventSystem } from './fieldEvents.js';
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
+import { t } from './i18n.js';
 import { registerSW } from 'virtual:pwa-register';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -24,6 +25,7 @@ AudioManager.init();
 initializeUI();
 
 const canvas = document.createElement('canvas');
+canvas.id = 'game-canvas';
 const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
 canvas.width = window.innerWidth;
@@ -375,8 +377,8 @@ function pauseGame() {
         fireIntervalMs: GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades),
         boltSpeed: getBoltSpeed(),
         hull: `${Math.max(0, Math.ceil(ship.hp))} / ${Math.ceil(ship.maxHp)}`,
-        missiles: techUpgrades.homingMissile ? 'Online' : 'Offline',
-        drones: techUpgrades.drone ? (techUpgrades.twinDrones ? '2 Online' : '1 Online') : 'Offline',
+        missiles: techUpgrades.homingMissile ? t('pause.online') : t('pause.offline'),
+        drones: techUpgrades.drone ? t('pause.dronesOnline', { count: techUpgrades.twinDrones ? 2 : 1 }) : t('pause.offline'),
         flightData: upgrades.flightData
     }, resumeGame, restartGame);
     // Der gameLoop wird anhalten, da isPausedRef.value jetzt true ist.
@@ -401,7 +403,7 @@ function resumeGame() {
 // Mache resumeGame global verfügbar, damit das Tech-Tree-Modal es aufrufen kann
 window.resumeGame = resumeGame;
 
-window.addEventListener('resize', () => {
+function handleViewportResize() {
     window.logicalWidth = window.innerWidth;
     window.logicalHeight = window.innerHeight;
     if (inputManager.isMobile) {
@@ -412,11 +414,30 @@ window.addEventListener('resize', () => {
         applyDesktopResolutionCap();
     }
     effectsSystem.resize(window.logicalWidth, window.logicalHeight);
-    
+
     // Margin für Weltverschiebung neu berechnen, da sich das logische Fenster geändert hat
     marginX = window.logicalWidth * PHYSICS.MARGIN_FACTOR;
     marginY = window.logicalHeight * PHYSICS.MARGIN_FACTOR;
+
+    // Schiff wieder in den (evtl. geschrumpften) Spielbereich zwingen, damit es
+    // nach einem Wechsel ins Querformat nicht außerhalb des Canvas hängen bleibt.
+    ship.x = Math.max(marginX, Math.min(window.logicalWidth - marginX, ship.x));
+    ship.y = Math.max(marginY, Math.min(window.logicalHeight - marginY, ship.y));
+}
+
+window.addEventListener('resize', handleViewportResize);
+
+// iOS Safari (und einige Android-Browser) feuern beim Drehen entweder gar kein
+// resize oder eines mit noch veralteten innerWidth/innerHeight-Werten. Deshalb
+// zusätzlich auf orientationchange/visualViewport hören und die Messung nach dem
+// Layout-Update noch einmal nachziehen.
+window.addEventListener('orientationchange', () => {
+    handleViewportResize();
+    setTimeout(handleViewportResize, 300);
 });
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+}
 
 function restartGame() {
     document.location.reload();
