@@ -9,7 +9,7 @@ Space Ship Idle is a vanilla JavaScript/Vite Canvas 2D space shooter. It has two
 - Run progression: XP orbs, level-up shop upgrades, ship survival, and the current-flight autosave.
 - Permanent progression: Plasma Cells and the Tech Tree, including combat, drone, missile, defensive, utility, and XP branches.
 
-The app is English-only. Keep player-facing copy in English unless the user explicitly requests another language.
+The app is localized (English and German) through a small file-based i18n layer in `src/i18n.js` with dictionaries in `src/i18n/en.js` and `src/i18n/de.js`. English is the source of truth. Every new player-facing string must be added as a `t('...')` key to **both** dictionaries — never hardcode player-facing copy in components. Established feature names stay as English proper nouns in both languages (Tech Tree, Flight Protocols, Overdrive, Plasma, Flight Data, Salvage, tech-node and enemy names). The in-game changelog (`CHANGELOG_ENTRIES` in `src/ui.js`) is intentionally kept English-only.
 
 Read and use [docs/GAME_OVERVIEW.md](./docs/GAME_OVERVIEW.md) as the gameplay and progression reference before changing enemies, spawning, level/XP rules, run upgrades, Tech Tree nodes, Plasma, Flight Data, Flight Protocols, persistence, or balancing. Keep its formulas, tables, phase descriptions, and development context aligned with the shipped implementation.
 

@@ -17,6 +17,7 @@ import { handleXpCollection, handlePlasmaCollection, handleTractorCollection, ha
 import { createFieldEventSystem } from './fieldEvents.js';
 import { createGameLoop } from './gameLoop.js';
 import { saveRunState, loadRunState, isAutosaveSuppressed } from './runState.js';
+import { t } from './i18n.js';
 import { registerSW } from 'virtual:pwa-register';
 import { AudioManager } from './audio/AudioManager.js';
 
@@ -376,8 +377,8 @@ function pauseGame() {
         fireIntervalMs: GAME_CONFIG.LASER_SHOOT_COOLDOWN * getFireRateMultiplier(techUpgrades),
         boltSpeed: getBoltSpeed(),
         hull: `${Math.max(0, Math.ceil(ship.hp))} / ${Math.ceil(ship.maxHp)}`,
-        missiles: techUpgrades.homingMissile ? 'Online' : 'Offline',
-        drones: techUpgrades.drone ? (techUpgrades.twinDrones ? '2 Online' : '1 Online') : 'Offline',
+        missiles: techUpgrades.homingMissile ? t('pause.online') : t('pause.offline'),
+        drones: techUpgrades.drone ? t('pause.dronesOnline', { count: techUpgrades.twinDrones ? 2 : 1 }) : t('pause.offline'),
         flightData: upgrades.flightData
     }, resumeGame, restartGame);
     // Der gameLoop wird anhalten, da isPausedRef.value jetzt true ist.

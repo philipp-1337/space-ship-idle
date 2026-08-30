@@ -7,6 +7,7 @@ import { clearRunState, suppressAutosave } from './runState.js';
 import { getUpgradeStatPreview, getRecommendedUpgradeKey, upgrades, techUpgrades, TECH_MIN_LEVELS, isTechTreeComplete, flightProtocols, handleProtocolUnlock, toggleProtocol } from './upgrades.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { setScreenShakeEnabled, isScreenShakeEnabled } from './effects.js';
+import { t, getLanguage, setLanguage } from './i18n.js';
 import packageInfo from '../package.json';
 
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -42,6 +43,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.10.0', date: '2026-08-30', changes: ['Added German localization with an English/Deutsch language switch in Settings; the game auto-detects the browser language on first launch. Changelog entries stay in English.'] },
     { version: '0.9.26', date: '2026-08-30', changes: ['Bugfix: On mobile, rotating between portrait and landscape now resizes the playfield to fill the screen instead of leaving it cropped.'] },
     { version: '0.9.25', date: '2026-08-28', changes: ['Balancing: Laser projectile speed is no longer tied to Laser Damage. Added a permanent Bolt Velocity tech node that grants +2 bolt speed and unlocks a repeatable level-up upgrade raising bolt speed up to 18.'] },
     { version: '0.9.24', date: '2026-08-09', changes: ['Performance Fix: Added a hard 60 FPS cap to normalize device performance and prevent battery drain on high-refresh-rate phones (e.g. 120Hz/144Hz displays).'] },
@@ -529,7 +531,7 @@ function panelTitleBar(text, color, onClose) {
         : document.createElement('div');
     if (onClose) {
         lamp.classList.add('modal-close-button');
-        lamp.setAttribute('aria-label', `Close ${text}`);
+        lamp.setAttribute('aria-label', t('common.closeNamed', { name: text }));
         lamp.style.width = scale(32);
         lamp.style.height = scale(32);
         lamp.style.padding = '0';
@@ -708,10 +710,10 @@ export function displayStartScreen(onSelect) {
     panel.style.overflowY = 'auto';
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
-    panel.appendChild(panelTitleBar('Pre-Flight Check', INK.phosphor));
+    panel.appendChild(panelTitleBar(t('startScreen.title'), INK.phosphor));
 
     const intro = document.createElement('p');
-    intro.innerText = 'Select your difficulty.';
+    intro.innerText = t('startScreen.selectDifficulty');
     intro.style.fontFamily = FONT;
     intro.style.color = INK.textDim;
     intro.style.fontSize = scale(12);
@@ -720,8 +722,8 @@ export function displayStartScreen(onSelect) {
     panel.appendChild(intro);
 
     const modes = [
-        { key: 'normal', label: 'Normal', desc: 'Standard difficulty — the full challenge.' },
-        { key: 'easy', label: 'Easy', desc: 'Enemies at half strength, ship starts reinforced — a gentler entry.' }
+        { key: 'normal', label: t('startScreen.modeNormalLabel'), desc: t('startScreen.modeNormalDesc') },
+        { key: 'easy', label: t('startScreen.modeEasyLabel'), desc: t('startScreen.modeEasyDesc') }
     ];
 
     modes.forEach(mode => {
@@ -769,17 +771,17 @@ export function displayStartScreen(onSelect) {
 
     if (_isMobile) {
         controls.innerHTML = `
-            <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
-            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.scope}">One-Handed (default):</span> Left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
-            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">Twin-Stick:</span> Left aims; right up/down flies forward/reverse. Advanced adds strafe.</div>
-            <div><span style="color:${INK.text}">Switch later:</span> Settings → Mobile Control Scheme. Auto-Fire is ON.</div>
+            <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">${t('startScreen.controlsHeading')}</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.scope}">${t('startScreen.mobileOneHandedLabel')}</span> ${t('startScreen.mobileOneHandedText')}</div>
+            <div style="margin-bottom:${scale(4)}"><span style="color:${INK.phosphor}">${t('startScreen.mobileTwinStickLabel')}</span> ${t('startScreen.mobileTwinStickText')}</div>
+            <div><span style="color:${INK.text}">${t('startScreen.mobileSwitchLaterLabel')}</span> ${t('startScreen.mobileSwitchLaterText')}</div>
         `;
     } else {
         controls.innerHTML = `
-            <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">CONTROLS</div>
-            <div>Move: <kbd style="${kbdStyle}">W</kbd><kbd style="${kbdStyle}">A</kbd><kbd style="${kbdStyle}">S</kbd><kbd style="${kbdStyle}">D</kbd></div>
-            <div style="margin-top:${scale(6)}">Fire: <kbd style="${kbdStyle}">SPACE</kbd></div>
-            <div style="margin-top:${scale(6)}">Roll / Strafe: <kbd style="${kbdStyle}">Q</kbd> / <kbd style="${kbdStyle}">E</kbd></div>
+            <div style="color:${INK.text}; margin-bottom:${scale(6)}; font-weight:600; letter-spacing:0.05em;">${t('startScreen.controlsHeading')}</div>
+            <div>${t('startScreen.desktopMove')} <kbd style="${kbdStyle}">W</kbd><kbd style="${kbdStyle}">A</kbd><kbd style="${kbdStyle}">S</kbd><kbd style="${kbdStyle}">D</kbd></div>
+            <div style="margin-top:${scale(6)}">${t('startScreen.desktopFire')} <kbd style="${kbdStyle}">SPACE</kbd></div>
+            <div style="margin-top:${scale(6)}">${t('startScreen.desktopRollStrafe')} <kbd style="${kbdStyle}">Q</kbd> / <kbd style="${kbdStyle}">E</kbd></div>
         `;
     }
     panel.appendChild(controls);
@@ -801,11 +803,11 @@ export function displayStartScreen(onSelect) {
         let pwaHintText = '';
         const ua = navigator.userAgent;
         if (/iphone|ipad|ipod/i.test(ua)) {
-            pwaHintText = 'Tip: Install the game for optimal performance via Share → "Add to Home Screen".';
+            pwaHintText = t('startScreen.pwaHintIos');
         } else if (/Macintosh|Mac OS X/i.test(ua) && /Safari/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|FxiOS|Firefox/i.test(ua)) {
-            pwaHintText = 'Tip: Install the game as a Mac app via Safari (File > Add to Dock).';
+            pwaHintText = t('startScreen.pwaHintMacSafari');
         } else {
-            pwaHintText = 'Tip: Install the game for optimal performance via the browser menu ("Install App" or "Add to Home Screen").';
+            pwaHintText = t('startScreen.pwaHintGeneric');
         }
         
         pwaHint.innerText = pwaHintText;
@@ -832,10 +834,10 @@ export function showMobileMovementUpdateNotice() {
 
     const { modal, panel } = consolePanelModal({ id: 'mobile-movement-update', zIndex: 6500, accent: INK.scope });
     panel.style.width = 'min(92vw, 440px)';
-    panel.appendChild(panelTitleBar('Mobile Controls Updated', INK.scope));
+    panel.appendChild(panelTitleBar(t('mobileNotice.title'), INK.scope));
 
     const intro = document.createElement('div');
-    intro.innerText = 'Flight controls have been updated.';
+    intro.innerText = t('mobileNotice.heading');
     intro.style.fontFamily = FONT;
     intro.style.fontSize = scale(14);
     intro.style.fontWeight = '600';
@@ -853,13 +855,13 @@ export function showMobileMovementUpdateNotice() {
     notice.style.border = `1px solid ${INK.hairlineDim}`;
     notice.style.clipPath = chamferClip(scaleNum(6));
     notice.innerHTML = `
-        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.scope}">One-Handed (default):</span> left stick flies forward and turns toward its direction; right stick is optional for thrust plus strafe.</div>
-        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">Twin-Stick:</span> left stick aims; right stick up/down flies forward/reverse, with optional strafe.</div>
-        <div><span style="color:${INK.text}">Switch anytime:</span> Settings → Mobile Control Scheme.</div>
+        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.scope}">${t('mobileNotice.oneHandedLabel')}</span> ${t('mobileNotice.oneHandedText')}</div>
+        <div style="margin-bottom:${scale(8)}"><span style="color:${INK.phosphor}">${t('mobileNotice.twinStickLabel')}</span> ${t('mobileNotice.twinStickText')}</div>
+        <div><span style="color:${INK.text}">${t('mobileNotice.switchAnytimeLabel')}</span> ${t('mobileNotice.switchAnytimeText')}</div>
     `;
     panel.appendChild(notice);
 
-    const confirmBtn = consoleButton({ text: 'Got it', color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 14 });
+    const confirmBtn = consoleButton({ text: t('common.gotIt'), color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 14 });
     confirmBtn.style.width = '100%';
     confirmBtn.style.marginTop = scale(18);
     confirmBtn.onclick = () => {
@@ -886,17 +888,17 @@ export function displayGameOverScreen(currentLevel) {
     if (document.getElementById('game-over-screen')) return;
 
     const { modal, panel } = consolePanelModal({ id: 'game-over-screen', zIndex: 2000, accent: INK.danger });
-    panel.appendChild(panelTitleBar('Systems Failure', INK.danger));
+    panel.appendChild(panelTitleBar(t('gameOver.title'), INK.danger));
 
     const levelText = document.createElement('p');
-    levelText.innerText = `Flight ended at Level ${currentLevel}.`;
+    levelText.innerText = t('gameOver.endedAtLevel', { level: currentLevel });
     levelText.style.fontFamily = FONT;
     levelText.style.color = INK.text;
     levelText.style.fontSize = scale(15);
     levelText.style.margin = `0 0 ${scale(26)} 0`;
     panel.appendChild(levelText);
 
-    const restartButton = consoleButton({ text: 'Restart', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 15 });
+    const restartButton = consoleButton({ text: t('common.restart'), color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 15 });
     restartButton.onclick = () => {
         suppressAutosave();
         clearRunState();
@@ -918,9 +920,9 @@ export function displayGameOverScreen(currentLevel) {
 // value pick.
 const RARITY_WEIGHTS = { common: 70, rare: 25, legendary: 5 };
 const RARITY_STYLE = {
-    common: { label: 'Common', text: INK.textDim, border: 'rgba(232,255,240,0.35)', borderHover: 'rgba(232,255,240,0.7)', glow: 'rgba(232,255,240,0.25)' },
-    rare: { label: 'Rare', text: INK.scope, border: 'rgba(127,232,255,0.45)', borderHover: INK.scope, glow: INK.scopeDim },
-    legendary: { label: 'Legendary', text: INK.gold, border: 'rgba(255,210,63,0.5)', borderHover: INK.gold, glow: 'rgba(255,210,63,0.6)' }
+    common: { labelKey: 'shop.rarity.common', text: INK.textDim, border: 'rgba(232,255,240,0.35)', borderHover: 'rgba(232,255,240,0.7)', glow: 'rgba(232,255,240,0.25)' },
+    rare: { labelKey: 'shop.rarity.rare', text: INK.scope, border: 'rgba(127,232,255,0.45)', borderHover: INK.scope, glow: INK.scopeDim },
+    legendary: { labelKey: 'shop.rarity.legendary', text: INK.gold, border: 'rgba(255,210,63,0.5)', borderHover: INK.gold, glow: 'rgba(255,210,63,0.6)' }
 };
 
 // Weighted draw of `count` distinct entries from `pool` (no replacement) —
@@ -949,19 +951,19 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
 
     const { modal, panel } = consolePanelModal({ id: 'shop-modal', zIndex: 3000, accent: INK.phosphor });
     panel.style.width = 'min(92vw, 460px)';
-    panel.appendChild(panelTitleBar('Upgrade Available', INK.phosphor));
+    panel.appendChild(panelTitleBar(t('shop.title'), INK.phosphor));
 
     const upgradePool = [
-        { key: 'magnet', label: 'Magnet Range', desc: 'Increases the passive pull range and strength of your XP magnet.', rarity: 'common' },
-        { key: 'laser', label: 'Laser Damage', desc: `Increases your laser's damage and triggers a brief Overdrive.`, rarity: 'common' },
-        { key: 'speed', label: 'Ship Speed', desc: "Increases your ship's maximum speed.", rarity: 'common' },
-        { key: 'boltVelocity', label: 'Bolt Velocity', desc: 'Increases how fast your laser bolts travel. Each purchase adds more velocity, up to the cap.', rarity: 'rare', maxLevel: BOLT_VELOCITY.SHOP_MAX_LEVEL },
-        { key: 'armor', label: 'Hull Integrity', desc: 'Adds one point of hull integrity and fully repairs the hull.', rarity: 'common' },
-        { key: 'chainLightning', label: 'Chain Lightning', desc: 'Lasers have a chance to arc to a second nearby enemy for reduced damage. Each purchase increases the arc chance.', rarity: 'common', maxLevel: 5 },
-        { key: 'repairModule', label: 'Nanite Repair', desc: 'Regenerates 1 point of hull integrity over time while damaged. Each purchase shortens the repair interval.', rarity: 'rare', maxLevel: 5 },
-        { key: 'overdriveCore', label: 'Overdrive Core', desc: 'Overdrive now triggers on every upgrade pick, not just Laser Damage, and lasts longer with each purchase.', rarity: 'rare', maxLevel: OVERDRIVE_CORE.MAX_LEVEL },
-        { key: 'deflectorShield', label: 'Deflector Charge', desc: 'Adds a rechargeable energy charge that blocks the next hit completely. Each purchase shortens the recharge time.', rarity: 'legendary', maxLevel: 4 },
-        { key: 'xpBoost', label: 'XP Amplifier', desc: 'Increases XP gained from every collected XP orb. Each purchase adds another 5%.', rarity: 'rare', maxLevel: XP_BOOST.MAX_LEVEL }
+        { key: 'magnet', label: t('shop.upgrades.magnet.label'), desc: t('shop.upgrades.magnet.desc'), rarity: 'common' },
+        { key: 'laser', label: t('shop.upgrades.laser.label'), desc: t('shop.upgrades.laser.desc'), rarity: 'common' },
+        { key: 'speed', label: t('shop.upgrades.speed.label'), desc: t('shop.upgrades.speed.desc'), rarity: 'common' },
+        { key: 'boltVelocity', label: t('shop.upgrades.boltVelocity.label'), desc: t('shop.upgrades.boltVelocity.desc'), rarity: 'rare', maxLevel: BOLT_VELOCITY.SHOP_MAX_LEVEL },
+        { key: 'armor', label: t('shop.upgrades.armor.label'), desc: t('shop.upgrades.armor.desc'), rarity: 'common' },
+        { key: 'chainLightning', label: t('shop.upgrades.chainLightning.label'), desc: t('shop.upgrades.chainLightning.desc'), rarity: 'common', maxLevel: 5 },
+        { key: 'repairModule', label: t('shop.upgrades.repairModule.label'), desc: t('shop.upgrades.repairModule.desc'), rarity: 'rare', maxLevel: 5 },
+        { key: 'overdriveCore', label: t('shop.upgrades.overdriveCore.label'), desc: t('shop.upgrades.overdriveCore.desc'), rarity: 'rare', maxLevel: OVERDRIVE_CORE.MAX_LEVEL },
+        { key: 'deflectorShield', label: t('shop.upgrades.deflectorShield.label'), desc: t('shop.upgrades.deflectorShield.desc'), rarity: 'legendary', maxLevel: 4 },
+        { key: 'xpBoost', label: t('shop.upgrades.xpBoost.label'), desc: t('shop.upgrades.xpBoost.desc'), rarity: 'rare', maxLevel: XP_BOOST.MAX_LEVEL }
     ];
     // Capped upgrades drop out of the pool once their level ceiling is reached —
     // picking them again would do nothing further. Repair Module also stays out
@@ -1005,12 +1007,12 @@ export function displayShopModal(ship, upgrades, onUpgrade) {
         row.style.fontFamily = FONT;
         row.style.transition = 'background 0.08s, border-color 0.08s, box-shadow 0.08s';
 
-        let badgesHtml = `<span style="font-size:${scale(9)};letter-spacing:0.1em;text-transform:uppercase;color:${rarity.text}">${rarity.label}</span>`;
+        let badgesHtml = `<span style="font-size:${scale(9)};letter-spacing:0.1em;text-transform:uppercase;color:${rarity.text}">${t(rarity.labelKey)}</span>`;
         if (isRecommended) {
-            badgesHtml += `<span style="font-size:${scale(9)};letter-spacing:0.1em;text-transform:uppercase;color:${INK.phosphor};margin-left:${scale(8)}">&#9679; Recommended</span>`;
+            badgesHtml += `<span style="font-size:${scale(9)};letter-spacing:0.1em;text-transform:uppercase;color:${INK.phosphor};margin-left:${scale(8)}">&#9679; ${t('shop.recommended')}</span>`;
         }
         const maxBadge = preview && preview.capped
-            ? ` <span style="color:${INK.textDim};letter-spacing:0.05em">(MAX)</span>`
+            ? ` <span style="color:${INK.textDim};letter-spacing:0.05em">(${t('shop.max')})</span>`
             : '';
         const previewHtml = preview
             ? `<div style="font-size:${scale(11)};color:${INK.scope};margin-top:${scale(6)};font-variant-numeric:tabular-nums">${preview.label}: ${preview.from}${preview.unit || ''} &rarr; ${preview.to}${preview.unit || ''}${maxBadge}</div>`
@@ -1052,7 +1054,7 @@ export function displayPauseButton(onPause) {
         <rect x="3" y="2" width="4" height="12" rx="0.5" fill="${INK.phosphor}"/>
         <rect x="9" y="2" width="4" height="12" rx="0.5" fill="${INK.phosphor}"/>
     </svg>`;
-    btn.setAttribute('aria-label', 'Pause');
+    btn.setAttribute('aria-label', t('ariaLabel.pause'));
     btn.style.position = 'fixed';
     btn.style.top = scale(HUD_TOP_ROW1);
     btn.style.left = scale(84); // clears the Level dial (10 left + 64 diameter + 10 gap)
@@ -1103,7 +1105,7 @@ export function showConfirmModal({ title, text, confirmText, cancelText, onConfi
     row.style.display = 'flex';
     row.style.gap = scale(12);
 
-    const cancelBtn = consoleButton({ text: cancelText || 'Cancel', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
+    const cancelBtn = consoleButton({ text: cancelText || t('common.cancel'), color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
     cancelBtn.onclick = () => {
         modal.remove();
         if (typeof window !== 'undefined' && window.isPausedRef && !document.getElementById('settings-menu') && !document.getElementById('pause-menu')) {
@@ -1112,7 +1114,7 @@ export function showConfirmModal({ title, text, confirmText, cancelText, onConfi
         if (onCancel) onCancel();
     };
 
-    const confirmBtn = consoleButton({ text: confirmText || 'Confirm', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 14 });
+    const confirmBtn = consoleButton({ text: confirmText || t('common.confirm'), color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 14 });
     confirmBtn.onclick = () => {
         modal.remove();
         if (onConfirm) onConfirm();
@@ -1138,7 +1140,7 @@ export function displaySettingsButton(onClick) {
         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="${INK.phosphor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="12" cy="12" r="3" stroke="${INK.phosphor}" stroke-width="2"/>
     </svg>`;
-    btn.setAttribute('aria-label', 'Settings');
+    btn.setAttribute('aria-label', t('ariaLabel.settings'));
     btn.style.position = 'fixed';
     btn.style.top = scale(HUD_TOP_ROW1);
     btn.style.left = scale(126); // clears the Pause button (84 left + 32 wide + 10 gap)
@@ -1170,10 +1172,10 @@ export function showChangelogModal() {
     panel.style.webkitOverflowScrolling = 'touch';
 
     const closeChangelog = () => modal.remove();
-    panel.appendChild(panelTitleBar('Changelog', INK.scope, closeChangelog));
+    panel.appendChild(panelTitleBar(t('changelog.title'), INK.scope, closeChangelog));
 
     const intro = document.createElement('div');
-    intro.innerText = `Release history · Current build v${packageInfo.version}`;
+    intro.innerText = t('changelog.intro', { version: packageInfo.version });
     intro.style.width = '100%';
     intro.style.fontFamily = FONT;
     intro.style.fontSize = scale(11);
@@ -1237,7 +1239,7 @@ export function showChangelogModal() {
     });
     panel.appendChild(history);
 
-    const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    const closeBtn = consoleButton({ text: t('common.close'), color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     closeBtn.style.marginTop = scale(14);
     closeBtn.style.padding = `${scale(8)} ${scale(20)}`;
     closeBtn.onclick = closeChangelog;
@@ -1262,20 +1264,44 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
         if (typeof window.resumeGame === 'function') window.resumeGame();
     };
-    panel.appendChild(panelTitleBar('Settings', INK.phosphor, closeSettings));
+    panel.appendChild(panelTitleBar(t('settings.title'), INK.phosphor, closeSettings));
 
     const rerender = (nextEasyMode, nextControlsVisible, nextAdvancedControls = mobileAdvancedControls, nextControlScheme = mobileControlScheme) => {
         modal.remove();
         showSettingsMenu({ easyMode: nextEasyMode, controlsVisible: nextControlsVisible, mobileAdvancedControls: nextAdvancedControls, mobileControlScheme: nextControlScheme, isMobile, onDifficultyChange, onToggleControls, onToggleAdvancedControls, onChangeControlScheme });
     };
 
-    panel.appendChild(label('Difficulty', INK.textDim));
+    // Language — switching reloads the page (a few HUD elements cache their
+    // captions); the current flight is autosaved and restored on reload.
+    panel.appendChild(label(t('settings.language'), INK.textDim));
+    const langRow = document.createElement('div');
+    langRow.style.display = 'flex';
+    langRow.style.gap = scale(10);
+    langRow.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
+    langRow.style.width = '100%';
+    [{ key: 'en', text: t('settings.languageEnglish') }, { key: 'de', text: t('settings.languageGerman') }].forEach(opt => {
+        const active = getLanguage() === opt.key;
+        const btn = consoleButton({ text: opt.text, color: INK.phosphor, glowColor: INK.phosphorDim, filled: active, fontSize: 13 });
+        btn.style.flex = '1';
+        btn.style.padding = `${scale(10)} ${scale(12)}`;
+        btn.onclick = () => {
+            if (active) return;
+            setLanguage(opt.key);
+            // Persist the in-progress flight so the reload restores it.
+            if (typeof window !== 'undefined' && typeof window.saveRunState === 'function') window.saveRunState();
+            document.location.reload();
+        };
+        langRow.appendChild(btn);
+    });
+    panel.appendChild(langRow);
+
+    panel.appendChild(label(t('settings.difficulty'), INK.textDim));
     const diffRow = document.createElement('div');
     diffRow.style.display = 'flex';
     diffRow.style.gap = scale(10);
     diffRow.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
     diffRow.style.width = '100%';
-    [{ key: 'easy', text: 'Easy' }, { key: 'normal', text: 'Normal' }].forEach(opt => {
+    [{ key: 'easy', text: t('settings.difficultyEasy') }, { key: 'normal', text: t('settings.difficultyNormal') }].forEach(opt => {
         const active = (opt.key === 'easy') === !!easyMode;
         const btn = consoleButton({ text: opt.text, color: INK.phosphor, glowColor: INK.phosphorDim, filled: active, fontSize: 13 });
         btn.style.flex = '1';
@@ -1283,9 +1309,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         btn.onclick = () => {
             if (active) return;
             showConfirmModal({
-                title: 'Change Difficulty',
-                text: 'Changing the difficulty will abort your current flight and start a new one. All current progress will be lost. Continue?',
-                confirmText: 'Change & Restart',
+                title: t('settings.changeDifficultyTitle'),
+                text: t('settings.changeDifficultyText'),
+                confirmText: t('settings.changeDifficultyConfirm'),
                 onConfirm: () => {
                     onDifficultyChange(opt.key);
                     if (typeof window !== 'undefined' && window.saveRunState) {
@@ -1301,16 +1327,16 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     panel.appendChild(diffRow);
 
     const diffNote = document.createElement('div');
-    diffNote.innerText = 'Switching difficulty will start a new run.';
+    diffNote.innerText = t('settings.difficultyNote');
     diffNote.style.fontFamily = FONT;
     diffNote.style.fontSize = scale(11);
     diffNote.style.color = INK.textDim;
     diffNote.style.margin = `0 0 ${scale(20)} 0`;
     panel.appendChild(diffNote);
 
-    panel.appendChild(label('Sound FX', INK.textDim));
+    panel.appendChild(label(t('settings.soundFx'), INK.textDim));
     const sfxEnabled = AudioManager.isSfxEnabled();
-    const sfxBtn = consoleButton({ text: sfxEnabled ? 'On' : 'Off', color: INK.phosphor, glowColor: INK.phosphorDim, filled: sfxEnabled, fontSize: 13 });
+    const sfxBtn = consoleButton({ text: sfxEnabled ? t('common.on') : t('common.off'), color: INK.phosphor, glowColor: INK.phosphorDim, filled: sfxEnabled, fontSize: 13 });
     sfxBtn.style.width = '100%';
     sfxBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
     sfxBtn.onclick = () => {
@@ -1319,9 +1345,9 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     };
     panel.appendChild(sfxBtn);
 
-    panel.appendChild(label('Screen Shake', INK.textDim));
+    panel.appendChild(label(t('settings.screenShake'), INK.textDim));
     const shakeEnabled = isScreenShakeEnabled();
-    const shakeBtn = consoleButton({ text: shakeEnabled ? 'On' : 'Off', color: INK.phosphor, glowColor: INK.phosphorDim, filled: shakeEnabled, fontSize: 13 });
+    const shakeBtn = consoleButton({ text: shakeEnabled ? t('common.on') : t('common.off'), color: INK.phosphor, glowColor: INK.phosphorDim, filled: shakeEnabled, fontSize: 13 });
     shakeBtn.style.width = '100%';
     shakeBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
     shakeBtn.onclick = () => {
@@ -1331,8 +1357,8 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     panel.appendChild(shakeBtn);
 
     if (isMobile) {
-        panel.appendChild(label('Touch Controls', INK.textDim));
-        const toggleBtn = consoleButton({ text: controlsVisible ? 'Visible' : 'Hidden', color: INK.scope, glowColor: INK.scopeDim, filled: controlsVisible, fontSize: 13 });
+        panel.appendChild(label(t('settings.touchControls'), INK.textDim));
+        const toggleBtn = consoleButton({ text: controlsVisible ? t('settings.touchControlsVisible') : t('settings.touchControlsHidden'), color: INK.scope, glowColor: INK.scopeDim, filled: controlsVisible, fontSize: 13 });
         toggleBtn.style.width = '100%';
         toggleBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
         toggleBtn.onclick = () => {
@@ -1343,19 +1369,19 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         panel.appendChild(toggleBtn);
 
         const ctrlNote = document.createElement('div');
-        ctrlNote.innerText = 'The left and right halves of the screen are touch zones. One-Handed is the default; firing is always automatic.';
+        ctrlNote.innerText = t('settings.touchControlsNote');
         ctrlNote.style.fontFamily = FONT;
         ctrlNote.style.fontSize = scale(11);
         ctrlNote.style.color = INK.textDim;
         ctrlNote.style.margin = `0 0 ${scale(20)} 0`;
         panel.appendChild(ctrlNote);
 
-        panel.appendChild(label('Mobile Control Scheme', INK.textDim));
+        panel.appendChild(label(t('settings.controlScheme'), INK.textDim));
         const schemeRow = document.createElement('div');
         schemeRow.style.display = 'flex';
         schemeRow.style.gap = scale(10);
         schemeRow.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
-        [{ key: 'twin-stick', text: 'Twin-Stick' }, { key: 'one-handed', text: 'One-Handed' }].forEach((option) => {
+        [{ key: 'twin-stick', text: t('settings.schemeTwinStick') }, { key: 'one-handed', text: t('settings.schemeOneHanded') }].forEach((option) => {
             const schemeBtn = consoleButton({ text: option.text, color: INK.scope, glowColor: INK.scopeDim, filled: mobileControlScheme === option.key, fontSize: 12 });
             schemeBtn.style.flex = '1';
             schemeBtn.onclick = () => {
@@ -1369,8 +1395,8 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
 
         const schemeNote = document.createElement('div');
         schemeNote.innerText = mobileControlScheme === 'one-handed'
-            ? 'Default: left stick moves in a direction and turns toward it; this stick only flies forward. Right stick is optional and adds forward/reverse thrust plus strafe.'
-            : 'Left stick aims. Right stick flies forward or reverse; Advanced adds left/right strafe.';
+            ? t('settings.schemeNoteOneHanded')
+            : t('settings.schemeNoteTwinStick');
         schemeNote.style.fontFamily = FONT;
         schemeNote.style.fontSize = scale(11);
         schemeNote.style.color = INK.textDim;
@@ -1378,8 +1404,8 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         panel.appendChild(schemeNote);
 
         if (mobileControlScheme === 'twin-stick') {
-            panel.appendChild(label('Mobile Maneuvering', INK.textDim));
-            const advancedBtn = consoleButton({ text: mobileAdvancedControls ? 'Advanced' : 'Simple', color: INK.scope, glowColor: INK.scopeDim, filled: mobileAdvancedControls, fontSize: 13 });
+            panel.appendChild(label(t('settings.maneuvering'), INK.textDim));
+            const advancedBtn = consoleButton({ text: mobileAdvancedControls ? t('settings.maneuverAdvanced') : t('settings.maneuverSimple'), color: INK.scope, glowColor: INK.scopeDim, filled: mobileAdvancedControls, fontSize: 13 });
             advancedBtn.style.width = '100%';
             advancedBtn.style.margin = `${scale(8)} 0 ${scale(10)} 0`;
             advancedBtn.onclick = () => {
@@ -1391,8 +1417,8 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
 
             const maneuverNote = document.createElement('div');
             maneuverNote.innerText = mobileAdvancedControls
-                ? 'Advanced: the right stick also strafes left and right.'
-                : 'Simple: left stick aims; right stick flies forward or reverse. Strafe is disabled.';
+                ? t('settings.maneuverNoteAdvanced')
+                : t('settings.maneuverNoteSimple');
             maneuverNote.style.fontFamily = FONT;
             maneuverNote.style.fontSize = scale(11);
             maneuverNote.style.color = INK.textDim;
@@ -1403,11 +1429,11 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     }
 
     if (!isMobile) {
-        panel.appendChild(label('Desktop Shortcuts', INK.textDim));
+        panel.appendChild(label(t('settings.desktopShortcuts'), INK.textDim));
         const shortcuts = document.createElement('div');
-        let shortcutText = 'P / 1  Pause\nO / 2  Settings\nT / 3  Tech Tree';
+        let shortcutText = `P / 1  ${t('settings.shortcutPause')}\nO / 2  ${t('settings.shortcutSettings')}\nT / 3  ${t('settings.shortcutTechTree')}`;
         if (isTechTreeComplete()) {
-            shortcutText += '\nF / 4  Flight Protocols';
+            shortcutText += `\nF / 4  ${t('settings.shortcutProtocols')}`;
         }
         shortcuts.innerText = shortcutText;
         shortcuts.style.whiteSpace = 'pre-line';
@@ -1419,22 +1445,22 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
         panel.appendChild(shortcuts);
     }
 
-    panel.appendChild(label('Release Notes', INK.textDim));
-    const changelogBtn = consoleButton({ text: 'Open Changelog', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    panel.appendChild(label(t('settings.releaseNotes'), INK.textDim));
+    const changelogBtn = consoleButton({ text: t('settings.openChangelog'), color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     changelogBtn.style.width = '100%';
     changelogBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
     changelogBtn.onclick = showChangelogModal;
     panel.appendChild(changelogBtn);
 
-    panel.appendChild(label('Factory Reset', INK.danger));
-    const resetBtn = consoleButton({ text: 'Reset Game', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 13 });
+    panel.appendChild(label(t('settings.factoryReset'), INK.danger));
+    const resetBtn = consoleButton({ text: t('settings.resetGame'), color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 13 });
     resetBtn.style.width = '100%';
     resetBtn.style.margin = `${scale(8)} 0 ${scale(20)} 0`;
     resetBtn.onclick = () => {
         showConfirmModal({
-            title: 'Factory Reset',
-            text: 'This will erase all game progress and return you to the Pre-Flight check. Your settings and preferences will be kept. Are you sure?',
-            confirmText: 'Reset',
+            title: t('settings.factoryReset'),
+            text: t('settings.factoryResetText'),
+            confirmText: t('settings.factoryResetConfirm'),
             onConfirm: () => {
                 clearGameProgressStorage();
                 if (typeof window !== 'undefined' && window.saveRunState) {
@@ -1447,7 +1473,7 @@ export function showSettingsMenu({ easyMode, controlsVisible, mobileAdvancedCont
     };
     panel.appendChild(resetBtn);
 
-    const closeBtn = consoleButton({ text: 'Close', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
+    const closeBtn = consoleButton({ text: t('common.close'), color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
     closeBtn.onclick = closeSettings;
     panel.appendChild(closeBtn);
 
@@ -1470,7 +1496,7 @@ export function displayPauseMenu(stats, onResume, onRestart) {
         if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
         onResume();
     };
-    panel.appendChild(panelTitleBar('Flight Paused', INK.phosphor, closePauseMenu));
+    panel.appendChild(panelTitleBar(t('pause.title'), INK.phosphor, closePauseMenu));
 
     const formatXp = (value) => Number.isFinite(Number(value))
         ? Number(value).toFixed(2)
@@ -1478,17 +1504,17 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     const currentXp = formatXp(stats.experience);
     const totalXpCollected = formatXp(stats.xpCollected);
     const rows = [
-        ['Level', stats.level],
-        ['Current XP', `${currentXp} / ${stats.maxXP}`],
-        ['Enemies Defeated', stats.kills],
-        ['Total XP Collected', totalXpCollected],
-        ['Hull Integrity', stats.hull],
-        ['Laser Damage', Number.isFinite(Number(stats.laserDamage)) ? Number(stats.laserDamage).toFixed(2) : stats.laserDamage],
-        ['Fire Interval', `${Math.round(stats.fireIntervalMs)} ms`],
-        ...(Number.isFinite(Number(stats.boltSpeed)) ? [['Bolt Speed', Number(stats.boltSpeed).toFixed(1)]] : []),
-        ['Homing Missiles', stats.missiles],
-        ['Drones', stats.drones],
-        ...(Number.isFinite(Number(stats.flightData)) ? [['Flight Data', stats.flightData]] : []),
+        [t('pause.stats.level'), stats.level],
+        [t('pause.stats.currentXp'), `${currentXp} / ${stats.maxXP}`],
+        [t('pause.stats.kills'), stats.kills],
+        [t('pause.stats.xpCollected'), totalXpCollected],
+        [t('pause.stats.hull'), stats.hull],
+        [t('pause.stats.laserDamage'), Number.isFinite(Number(stats.laserDamage)) ? Number(stats.laserDamage).toFixed(2) : stats.laserDamage],
+        [t('pause.stats.fireInterval'), `${Math.round(stats.fireIntervalMs)} ms`],
+        ...(Number.isFinite(Number(stats.boltSpeed)) ? [[t('pause.stats.boltSpeed'), Number(stats.boltSpeed).toFixed(1)]] : []),
+        [t('pause.stats.missiles'), stats.missiles],
+        [t('pause.stats.drones'), stats.drones],
+        ...(Number.isFinite(Number(stats.flightData)) ? [[t('pause.stats.flightData'), stats.flightData]] : []),
     ];
     const statsDiv = document.createElement('div');
     statsDiv.style.width = '100%';
@@ -1511,14 +1537,14 @@ export function displayPauseMenu(stats, onResume, onRestart) {
     row.style.display = 'flex';
     row.style.gap = scale(12);
 
-    const resumeBtn = consoleButton({ text: 'Resume', color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
+    const resumeBtn = consoleButton({ text: t('common.resume'), color: INK.phosphor, glowColor: INK.phosphorDim, filled: true, fontSize: 14 });
     resumeBtn.onclick = () => {
         menuCleanup();
         if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
         onResume();
     };
 
-    const restartBtn = consoleButton({ text: 'Restart', color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 14 });
+    const restartBtn = consoleButton({ text: t('common.restart'), color: INK.danger, glowColor: 'rgba(255,59,48,0.5)', fontSize: 14 });
     restartBtn.onclick = () => {
         suppressAutosave();
         clearRunState();
@@ -1558,7 +1584,7 @@ export function showTechTreeButton(onClick) {
             <circle cx="19" cy="19" r="2.5" stroke="${INK.scope}" stroke-width="2"/>
             <path d="M12 7.5V12M12 12L5 16.5M12 12L19 16.5" stroke="${INK.scope}" stroke-width="2" stroke-linecap="round"/>
         </svg>`;
-        btn.setAttribute('aria-label', 'Tech Tree');
+        btn.setAttribute('aria-label', t('ariaLabel.techTree'));
         btn.style.position = 'fixed';
         btn.style.top = scale(HUD_TOP_ROW1);
         btn.style.right = isTechTreeComplete() ? scale(200) : scale(84); // clears the Plasma dial (and Data dial if active)
@@ -1591,7 +1617,7 @@ export function showProtocolsButton(onClick) {
             <rect x="4" y="6" width="16" height="12" rx="2" stroke="${INK.gold}" stroke-width="2"/>
             <path d="M8 10h8 M8 14h8" stroke="${INK.gold}" stroke-width="2" stroke-linecap="round"/>
         </svg>`;
-        btn.setAttribute('aria-label', 'Flight Protocols');
+        btn.setAttribute('aria-label', t('ariaLabel.flightProtocols'));
         btn.style.position = 'fixed';
         btn.style.top = scale(HUD_TOP_ROW1);
         btn.style.right = scale(158);
@@ -1639,6 +1665,19 @@ function ensureTechTreeStyle() {
 // itself. Replaces the old inline-expand-in-card interaction: a tap now
 // always opens the same focused, full-detail view instead of unfolding
 // content in place, which reads better once cards sit four to a row.
+// Plasma cost label with singular/plural handling ("1 Plasma Cell" /
+// "3 Plasma Cells"). English is the only language that needs the plural split
+// here, but the keys exist in every dictionary.
+function techCostLabel(cost) {
+    return t(cost === 1 ? 'techTree.costPlasmaCellOne' : 'techTree.costPlasmaCellOther', { count: cost });
+}
+
+function techStatusLine(unlocked, locked, requiresLabel, costLabel) {
+    if (unlocked) return t('techTree.statusUnlocked');
+    if (locked) return t('techTree.statusRequires', { name: requiresLabel });
+    return t('techTree.statusCost', { cost: costLabel });
+}
+
 function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade) {
     const existing = document.getElementById('tech-node-detail-modal');
     if (existing) existing.remove();
@@ -1658,7 +1697,7 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
     panel.appendChild(desc);
 
     const statusLine = document.createElement('div');
-    statusLine.innerText = unlocked ? 'Unlocked' : (locked ? `Requires ${upg.requiresLabel}` : `Cost: ${costLabel}`);
+    statusLine.innerText = techStatusLine(unlocked, locked, upg.requiresLabel, costLabel);
     statusLine.style.fontFamily = FONT;
     statusLine.style.fontSize = scale(11);
     statusLine.style.letterSpacing = '0.05em';
@@ -1674,7 +1713,7 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
 
     if (purchasable) {
         const canAfford = typeof window !== 'undefined' && window.getPlasmaCount ? window.getPlasmaCount() >= upg.cost : true;
-        const confirmBtn = consoleButton({ text: `Confirm &mdash; ${costLabel}`, color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 13, sound: canAfford ? 'UI_UPGRADE' : 'UI_ERROR' });
+        const confirmBtn = consoleButton({ text: t('techTree.confirmCost', { cost: costLabel }), color: INK.scope, glowColor: INK.scopeDim, filled: true, fontSize: 13, sound: canAfford ? 'UI_UPGRADE' : 'UI_ERROR' });
         confirmBtn.style.flex = '1';
         if (!canAfford) {
             // Kein natives `disabled` — der Klick soll weiterhin feuern (siehe
@@ -1683,7 +1722,7 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
             confirmBtn.setAttribute('aria-disabled', 'true');
             confirmBtn.style.opacity = '0.5';
             confirmBtn.style.cursor = 'not-allowed';
-            confirmBtn.innerHTML = 'Not enough Plasma';
+            confirmBtn.innerHTML = t('techTree.notEnoughPlasma');
         } else {
             confirmBtn.onclick = () => {
                 modal.remove();
@@ -1693,7 +1732,7 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
         row.appendChild(confirmBtn);
     }
 
-    const closeBtn = consoleButton({ text: purchasable ? 'Cancel' : 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    const closeBtn = consoleButton({ text: purchasable ? t('common.cancel') : t('common.close'), color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     closeBtn.style.flex = purchasable ? '0 0 auto' : '1';
     closeBtn.onclick = () => modal.remove();
     row.appendChild(closeBtn);
@@ -1711,10 +1750,14 @@ export function showFlightProtocolsModal() {
     panel.style.overflowY = 'auto';
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
-    panel.appendChild(panelTitleBar('Flight Protocols', INK.gold, () => modal.remove()));
+    panel.appendChild(panelTitleBar(t('protocols.title'), INK.gold, () => modal.remove()));
 
     const dataReadout = document.createElement('div');
-    dataReadout.innerText = `FLIGHT DATA  ${upgrades.flightData || 0}   ·   ACTIVE SLOTS  ${flightProtocols.active.length}/${FLIGHT_PROTOCOL_SLOT_COUNT}`;
+    dataReadout.innerText = t('protocols.dataReadout', {
+        data: upgrades.flightData || 0,
+        active: flightProtocols.active.length,
+        total: FLIGHT_PROTOCOL_SLOT_COUNT,
+    });
     dataReadout.style.fontFamily = FONT;
     dataReadout.style.fontSize = scale(12);
     dataReadout.style.color = INK.gold;
@@ -1724,7 +1767,7 @@ export function showFlightProtocolsModal() {
     panel.appendChild(dataReadout);
 
     const intro = document.createElement('div');
-    intro.innerText = 'Permanent countermeasures for deep-flight threats. Unlock them with Flight Data, then activate up to three before a flight.';
+    intro.innerText = t('protocols.intro');
     intro.style.fontFamily = FONT;
     intro.style.fontSize = scale(12);
     intro.style.lineHeight = '1.5';
@@ -1753,13 +1796,13 @@ export function showFlightProtocolsModal() {
 
         const copy = document.createElement('div');
         const title = document.createElement('div');
-        title.innerText = `${protocol.label}${active ? '  [ACTIVE]' : ''}`;
+        title.innerText = `${protocol.label}${active ? `  ${t('protocols.activeTag')}` : ''}`;
         title.style.fontFamily = FONT;
         title.style.fontSize = scale(13);
         title.style.fontWeight = '600';
         title.style.color = active ? INK.gold : INK.text;
         const desc = document.createElement('div');
-        desc.innerText = `${protocol.description}  ${levelLocked ? `Available from Level ${protocol.minLevel}.` : ''}`;
+        desc.innerText = `${t(`protocols.descriptions.${protocol.key}`)}  ${levelLocked ? t('protocols.availableFromLevel', { level: protocol.minLevel }) : ''}`;
         desc.style.fontFamily = FONT;
         desc.style.fontSize = scale(11);
         desc.style.lineHeight = '1.4';
@@ -1769,7 +1812,9 @@ export function showFlightProtocolsModal() {
         row.appendChild(copy);
 
         const action = consoleButton({
-            text: unlocked ? (active ? 'Deactivate' : 'Activate') : `Unlock · ${protocol.cost} Data`,
+            text: unlocked
+                ? (active ? t('protocols.deactivate') : t('protocols.activate'))
+                : t('protocols.unlockCost', { cost: protocol.cost }),
             color: INK.gold,
             glowColor: 'rgba(255,210,63,0.55)',
             filled: active,
@@ -1805,7 +1850,7 @@ export function showFlightProtocolsModal() {
 // content inline.
 function techTreeNode(upg, unlocked, locked, onUpgrade) {
     const purchasable = !unlocked && !locked;
-    const costLabel = `${upg.cost} Plasma Cell${upg.cost === 1 ? '' : 's'}`;
+    const costLabel = techCostLabel(upg.cost);
 
     const node = document.createElement('div');
     node.style.width = '100%';
@@ -1853,11 +1898,9 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     header.style.color = 'inherit';
     header.style.cursor = 'pointer';
 
-    const statusLine = unlocked
-        ? 'Unlocked'
-        : (locked ? `Requires ${upg.requiresLabel}` : `Cost: ${costLabel}`);
+    const statusLine = techStatusLine(unlocked, locked, upg.requiresLabel, costLabel);
     const labelClass = upg.requires ? 'tt-child-label' : '';
-    header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? ' &mdash; Online' : ''}</span><span style="font-size:${scale(13)};opacity:0.55;flex-shrink:0">&#8250;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
+    header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? t('techTree.statusOnlineSuffix') : ''}</span><span style="font-size:${scale(13)};opacity:0.55;flex-shrink:0">&#8250;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
 
     header.onclick = () => {
         AudioManager.play('UI_CLICK');
@@ -1892,10 +1935,10 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     // button unreachable below the fold on phones with no way to scroll to it.
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
-    panel.appendChild(panelTitleBar('Tech Tree', INK.scope, closeTechTree));
+    panel.appendChild(panelTitleBar(t('techTree.title'), INK.scope, closeTechTree));
 
     const plasmaLabel = document.createElement('div');
-    plasmaLabel.innerText = `Available Plasma: ${upgrades.plasmaCount || 0}`;
+    plasmaLabel.innerText = t('techTree.availablePlasma', { count: upgrades.plasmaCount || 0 });
     plasmaLabel.style.fontFamily = FONT;
     plasmaLabel.style.color = INK.scope;
     plasmaLabel.style.fontSize = scale(14);
@@ -1909,35 +1952,35 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         : Infinity;
 
     const nodes = [
-        { key: 'xpResonance', label: 'XP Resonance', desc: 'Amplifies the XP carried by every collected orb.', cost: 5, col: 1, row: 1 },
-        { key: 'autoShoot', label: 'Auto-Fire', desc: 'Your ship fires automatically at enemies.', cost: 4, col: 2, row: 1 },
-        { key: 'boltVelocity', label: 'Bolt Velocity', desc: 'Laser bolts fly +2 faster right away and unlock a repeatable Bolt Velocity upgrade in the level-up shop that raises bolt speed up to 18.', cost: 6, col: 3, row: 1 },
-        { key: 'drone', label: 'Drone', desc: 'A companion drone orbits your ship and auto-fires its own independent laser at nearby enemies.', cost: 12, col: 4, row: 1 },
-        { key: 'resonanceCascade', label: 'Resonance Cascade', desc: 'Further increases the XP yield of collected orbs.', cost: 9, col: 1, row: 3, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
-        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: 'Permanently shortens your weapon cooldowns.', cost: 8, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'homingMissile', label: 'Homing Missiles', desc: 'Automatically fires missiles that track enemies.', cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'missilePayload', label: 'Payload Amplifier I', desc: 'Homing missiles gain +1.2 independent damage.', cost: 5, col: 3, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
-        { key: 'missilePayload2', label: 'Payload Amplifier II', desc: 'Homing missiles gain another +1.2 independent damage.', cost: 6, col: 3, row: 9, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
-        { key: 'missilePayload3', label: 'Payload Amplifier III', desc: 'Homing missiles gain another +1.2 independent damage. Available from Level 15.', cost: 7, col: 3, row: 11, requires: 'missilePayload2', requiresLabel: 'Payload Amplifier II' },
-        { key: 'missilePayload4', label: 'Payload Amplifier IV', desc: 'Homing missiles gain another +1.2 independent damage. Available from Level 18.', cost: 8, col: 3, row: 13, requires: 'missilePayload3', requiresLabel: 'Payload Amplifier III' },
-        { key: 'missilePayload5', label: 'Payload Amplifier V', desc: 'Homing missiles gain another +1.2 independent damage. Available from Level 22.', cost: 10, col: 3, row: 15, requires: 'missilePayload4', requiresLabel: 'Payload Amplifier IV' },
-        { key: 'missileEndurance', label: 'Extended Flight Core', desc: 'Homing missiles fly 50% longer and continue searching after losing a target. Available from Level 25.', cost: 8, col: 3, row: 17, requires: 'missilePayload5', requiresLabel: 'Payload Amplifier V' },
-        { key: 'missileWarhead', label: 'Siege Warhead', desc: 'Homing missile explosions reach 25px farther. Available from Level 30.', cost: 10, col: 3, row: 19, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
-        { key: 'missileGuidance', label: 'Guidance Array', desc: 'Homing missiles turn faster to stay on evasive targets. Available from Level 35.', cost: 10, col: 3, row: 21, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
-        { key: 'droneDamage1', label: 'Drone Emitter I', desc: 'Drone lasers deal 0.12× base laser damage more.', cost: 4, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
-        { key: 'droneDamage2', label: 'Drone Emitter II', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 5, col: 4, row: 5, requires: 'droneDamage1', requiresLabel: 'Drone Emitter I' },
-        { key: 'droneDamage3', label: 'Drone Emitter III', desc: 'Drone lasers deal another 0.12× base laser damage.', cost: 6, col: 4, row: 7, requires: 'droneDamage2', requiresLabel: 'Drone Emitter II' },
-        { key: 'droneDamage4', label: 'Drone Emitter IV', desc: 'Drone lasers deal another 0.12× base laser damage. Available from Level 15.', cost: 8, col: 4, row: 9, requires: 'droneDamage3', requiresLabel: 'Drone Emitter III' },
-        { key: 'droneDamage5', label: 'Drone Emitter V', desc: 'Drone lasers deal another 0.12× base laser damage. Available from Level 20.', cost: 10, col: 4, row: 11, requires: 'droneDamage4', requiresLabel: 'Drone Emitter IV' },
-        { key: 'twinDrones', label: 'Twin Drones', desc: 'Deploys a second companion drone, orbiting opposite the first. Available from Level 25.', cost: 18, col: 4, row: 13, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
-        { key: 'learningProtocol', label: 'Learning Protocol', desc: 'Gain +20% XP from collected orbs during levels 1–5 of every flight.', cost: 8, col: 1, row: 5, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
-        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: 'Drones prioritize the most dangerous nearby target.', cost: 8, col: 3, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
-        { key: 'piercing', label: 'Piercing Rounds', desc: 'Lasers pass through enemies.', cost: 6, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
-        { key: 'signalInterference', label: 'Signal Interference', desc: 'Every 15s, clears active enemy shots and disrupts hostile weapons for 4.5s. Available from Level 18.', cost: 12, col: 4, row: 15, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
-        { key: 'salvage', label: 'Salvage Drive', desc: 'Doubles the chance defeated enemies drop a Plasma Cell.', cost: 6, col: 1, row: 7, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
-        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: 'Lasers deal splash damage.', cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
-        { key: 'twinMissiles', label: 'Twin Missiles', desc: 'Fires two homing missiles per volley after Payload Amplifier I.', cost: 14, col: 4, row: 17, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
-        { key: 'reactorNova', label: 'Reactor Nova', desc: 'Every 32 kills, discharge a wide shockwave. Light targets are destroyed; heavier targets take 4 damage. Nova cannot trigger more than once every 15s.', cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
+        { key: 'xpResonance', label: 'XP Resonance', desc: t(`techTree.nodes.xpResonance`), cost: 5, col: 1, row: 1 },
+        { key: 'autoShoot', label: 'Auto-Fire', desc: t(`techTree.nodes.autoShoot`), cost: 4, col: 2, row: 1 },
+        { key: 'boltVelocity', label: 'Bolt Velocity', desc: t(`techTree.nodes.boltVelocity`), cost: 6, col: 3, row: 1 },
+        { key: 'drone', label: 'Drone', desc: t(`techTree.nodes.drone`), cost: 12, col: 4, row: 1 },
+        { key: 'resonanceCascade', label: 'Resonance Cascade', desc: t(`techTree.nodes.resonanceCascade`), cost: 9, col: 1, row: 3, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
+        { key: 'rapidFire', label: 'Rapid-Fire Core', desc: t(`techTree.nodes.rapidFire`), cost: 8, col: 2, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'homingMissile', label: 'Homing Missiles', desc: t(`techTree.nodes.homingMissile`), cost: 10, col: 3, row: 3, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'missilePayload', label: 'Payload Amplifier I', desc: t(`techTree.nodes.missilePayload`), cost: 5, col: 3, row: 7, requires: 'homingMissile', requiresLabel: 'Homing Missiles' },
+        { key: 'missilePayload2', label: 'Payload Amplifier II', desc: t(`techTree.nodes.missilePayload2`), cost: 6, col: 3, row: 9, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
+        { key: 'missilePayload3', label: 'Payload Amplifier III', desc: t(`techTree.nodes.missilePayload3`), cost: 7, col: 3, row: 11, requires: 'missilePayload2', requiresLabel: 'Payload Amplifier II' },
+        { key: 'missilePayload4', label: 'Payload Amplifier IV', desc: t(`techTree.nodes.missilePayload4`), cost: 8, col: 3, row: 13, requires: 'missilePayload3', requiresLabel: 'Payload Amplifier III' },
+        { key: 'missilePayload5', label: 'Payload Amplifier V', desc: t(`techTree.nodes.missilePayload5`), cost: 10, col: 3, row: 15, requires: 'missilePayload4', requiresLabel: 'Payload Amplifier IV' },
+        { key: 'missileEndurance', label: 'Extended Flight Core', desc: t(`techTree.nodes.missileEndurance`), cost: 8, col: 3, row: 17, requires: 'missilePayload5', requiresLabel: 'Payload Amplifier V' },
+        { key: 'missileWarhead', label: 'Siege Warhead', desc: t(`techTree.nodes.missileWarhead`), cost: 10, col: 3, row: 19, requires: 'missileEndurance', requiresLabel: 'Extended Flight Core' },
+        { key: 'missileGuidance', label: 'Guidance Array', desc: t(`techTree.nodes.missileGuidance`), cost: 10, col: 3, row: 21, requires: 'missileWarhead', requiresLabel: 'Siege Warhead' },
+        { key: 'droneDamage1', label: 'Drone Emitter I', desc: t(`techTree.nodes.droneDamage1`), cost: 4, col: 4, row: 3, requires: 'drone', requiresLabel: 'Drone' },
+        { key: 'droneDamage2', label: 'Drone Emitter II', desc: t(`techTree.nodes.droneDamage2`), cost: 5, col: 4, row: 5, requires: 'droneDamage1', requiresLabel: 'Drone Emitter I' },
+        { key: 'droneDamage3', label: 'Drone Emitter III', desc: t(`techTree.nodes.droneDamage3`), cost: 6, col: 4, row: 7, requires: 'droneDamage2', requiresLabel: 'Drone Emitter II' },
+        { key: 'droneDamage4', label: 'Drone Emitter IV', desc: t(`techTree.nodes.droneDamage4`), cost: 8, col: 4, row: 9, requires: 'droneDamage3', requiresLabel: 'Drone Emitter III' },
+        { key: 'droneDamage5', label: 'Drone Emitter V', desc: t(`techTree.nodes.droneDamage5`), cost: 10, col: 4, row: 11, requires: 'droneDamage4', requiresLabel: 'Drone Emitter IV' },
+        { key: 'twinDrones', label: 'Twin Drones', desc: t(`techTree.nodes.twinDrones`), cost: 18, col: 4, row: 13, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
+        { key: 'learningProtocol', label: 'Learning Protocol', desc: t(`techTree.nodes.learningProtocol`), cost: 8, col: 1, row: 5, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
+        { key: 'targetingMatrix', label: 'Targeting Matrix', desc: t(`techTree.nodes.targetingMatrix`), cost: 8, col: 3, row: 5, requires: ['autoShoot', 'drone'], requiresLabel: 'Auto-Fire + Drone' },
+        { key: 'piercing', label: 'Piercing Rounds', desc: t(`techTree.nodes.piercing`), cost: 6, col: 2, row: 5, requires: 'autoShoot', requiresLabel: 'Auto-Fire' },
+        { key: 'signalInterference', label: 'Signal Interference', desc: t(`techTree.nodes.signalInterference`), cost: 12, col: 4, row: 15, requires: 'droneDamage5', requiresLabel: 'Drone Emitter V' },
+        { key: 'salvage', label: 'Salvage Drive', desc: t(`techTree.nodes.salvage`), cost: 6, col: 1, row: 7, requires: 'xpResonance', requiresLabel: 'XP Resonance' },
+        { key: 'explosiveRounds', label: 'Explosive Rounds', desc: t(`techTree.nodes.explosiveRounds`), cost: 6, col: 2, row: 7, requires: 'piercing', requiresLabel: 'Piercing Rounds' },
+        { key: 'twinMissiles', label: 'Twin Missiles', desc: t(`techTree.nodes.twinMissiles`), cost: 14, col: 4, row: 17, requires: 'missilePayload', requiresLabel: 'Payload Amplifier I' },
+        { key: 'reactorNova', label: 'Reactor Nova', desc: t(`techTree.nodes.reactorNova`), cost: 14, col: 2, row: 9, requires: 'explosiveRounds', requiresLabel: 'Explosive Rounds' }
     ];
 
     const grid = document.createElement('div');
@@ -2017,11 +2060,11 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         mobileTree.style.width = '100%';
 
         const groups = [
-            { label: 'XP SYSTEMS', keys: ['xpResonance', 'resonanceCascade', 'learningProtocol'] },
-            { label: 'WEAPON SYSTEMS', keys: ['autoShoot', 'boltVelocity', 'rapidFire', 'piercing', 'explosiveRounds', 'reactorNova'] },
-            { label: 'MISSILE SYSTEMS', keys: ['homingMissile', 'twinMissiles', 'missilePayload', 'missilePayload2', 'missilePayload3', 'missilePayload4', 'missilePayload5', 'missileEndurance', 'missileWarhead', 'missileGuidance'] },
-            { label: 'DRONE SYSTEMS', keys: ['drone', 'droneDamage1', 'droneDamage2', 'droneDamage3', 'droneDamage4', 'droneDamage5', 'targetingMatrix', 'twinDrones', 'signalInterference'] },
-            { label: 'UTILITY SYSTEMS', keys: ['salvage'] }
+            { label: t('techTree.groups.xp'), keys: ['xpResonance', 'resonanceCascade', 'learningProtocol'] },
+            { label: t('techTree.groups.weapon'), keys: ['autoShoot', 'boltVelocity', 'rapidFire', 'piercing', 'explosiveRounds', 'reactorNova'] },
+            { label: t('techTree.groups.missile'), keys: ['homingMissile', 'twinMissiles', 'missilePayload', 'missilePayload2', 'missilePayload3', 'missilePayload4', 'missilePayload5', 'missileEndurance', 'missileWarhead', 'missileGuidance'] },
+            { label: t('techTree.groups.drone'), keys: ['drone', 'droneDamage1', 'droneDamage2', 'droneDamage3', 'droneDamage4', 'droneDamage5', 'targetingMatrix', 'twinDrones', 'signalInterference'] },
+            { label: t('techTree.groups.utility'), keys: ['salvage'] }
         ];
         groups.forEach((group) => {
             const groupNodes = group.keys.map((key) => nodeByKey.get(key)).filter(Boolean);
@@ -2079,7 +2122,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         panel.appendChild(grid);
     }
 
-    const closeBtn = consoleButton({ text: 'Close', color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
+    const closeBtn = consoleButton({ text: t('common.close'), color: INK.scope, glowColor: INK.scopeDim, fontSize: 13 });
     closeBtn.style.marginTop = scale(14);
     closeBtn.style.padding = `${scale(8)} ${scale(20)}`;
     closeBtn.onclick = closeTechTree;
@@ -2148,29 +2191,29 @@ function annunciator({ id, top, text, color, duration }) {
 }
 
 export function showWaveHint() {
-    annunciator({ id: 'wave-hint', top: '96px', text: 'Caution — Enemy Wave Incoming', color: INK.caution, duration: 3500 });
+    annunciator({ id: 'wave-hint', top: '96px', text: t('hints.wave'), color: INK.caution, duration: 3500 });
 }
 
 
 export function showOverdriveHint(duration) {
-    annunciator({ id: 'overdrive-hint', top: '172px', text: 'Weapon Overdrive Engaged', color: INK.gold, duration });
+    annunciator({ id: 'overdrive-hint', top: '172px', text: t('hints.overdrive'), color: INK.gold, duration });
 }
 
 export function showBossHint() {
-    annunciator({ id: 'boss-hint', top: '96px', text: 'Warning — Boss Approaching', color: INK.danger, duration: 3500 });
+    annunciator({ id: 'boss-hint', top: '96px', text: t('hints.boss'), color: INK.danger, duration: 3500 });
 }
 
 export function showSalvageHint() {
-    annunciator({ id: 'salvage-hint', top: '96px', text: 'Signal Contact — Salvage Opportunity', color: INK.gold, duration: 3500 });
+    annunciator({ id: 'salvage-hint', top: '96px', text: t('hints.salvage'), color: INK.gold, duration: 3500 });
 }
 
 export function showSalvageRewardHint(reward) {
     const rewards = {
-        hull: { text: 'Salvage Recovery — Hull Fully Repaired', color: INK.phosphor },
-        milestone: { text: 'Salvage Milestone — Hull Nominal', color: INK.gold },
-        overdrive: { text: 'Salvage Cache — Weapon Overdrive', color: INK.gold },
-        drone: { text: 'Salvage Uplink — Auxiliary Drone Online · 25s', color: INK.scope },
-        overcharge: { text: 'Salvage Overcharge — Barrier Online · 25s', color: INK.phosphor }
+        hull: { text: t('hints.salvageHull'), color: INK.phosphor },
+        milestone: { text: t('hints.salvageMilestone'), color: INK.gold },
+        overdrive: { text: t('hints.salvageOverdrive'), color: INK.gold },
+        drone: { text: t('hints.salvageDrone'), color: INK.scope },
+        overcharge: { text: t('hints.salvageOvercharge'), color: INK.phosphor }
     };
     const entry = rewards[reward];
     if (entry) annunciator({ id: 'salvage-reward-hint', top: '136px', text: entry.text, color: entry.color, duration: 3500 });
@@ -2247,8 +2290,8 @@ export function showToast({ id, message, buttonLabel, onClick, isShopOpenRef, is
 export function showUpdateToast(onReload, isShopOpenRef, isPausedRef) {
     showToast({
         id: 'pwa-update-toast',
-        message: 'Update verfügbar',
-        buttonLabel: 'Jetzt neu laden',
+        message: t('toast.updateAvailable'),
+        buttonLabel: t('toast.reloadNow'),
         onClick: onReload,
         isShopOpenRef,
         isPausedRef,
