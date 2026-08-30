@@ -43,6 +43,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.10.3', date: '2026-08-30', changes: ['Bugfix: Opening the Flight Protocols menu now pauses the flight (like the Pause, Settings, and Tech Tree menus) instead of letting enemies keep attacking behind it. Escape closes the menu.'] },
     { version: '0.10.2', date: '2026-08-30', changes: ['Bugfix: The Flight Protocols and tech-node detail modals no longer overflow the screen on mobile with the longer German labels; their buttons now stack on narrow screens.'] },
     { version: '0.10.1', date: '2026-08-30', changes: ['Tech Tree: Level-gated nodes (Twin Drones, Signal Interference, late Payload Amplifiers, etc.) now stay visible as locked cards showing the required level, instead of being hidden until the current run reaches that level.'] },
     { version: '0.10.0', date: '2026-08-30', changes: ['Added German localization with an English/Deutsch language switch in Settings; the game auto-detects the browser language on first launch. Changelog entries stay in English.'] },
@@ -1756,13 +1757,25 @@ function showTechNodeDetail(upg, unlocked, locked, levelLocked, purchasable, cos
 
 export function showFlightProtocolsModal() {
     if (!isTechTreeComplete() || document.getElementById('flight-protocols-modal')) return;
+    // Freeze the flight while this modal is open, the same way Pause / Settings /
+    // Tech Tree do — otherwise enemies keep spawning and the (uncontrollable)
+    // ship takes hits behind the scrim.
+    if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = true;
     const { modal, panel } = consolePanelModal({ id: 'flight-protocols-modal', zIndex: 5100, accent: INK.gold });
     panel.style.width = _isMobile ? '92vw' : 'min(92vw, 560px)';
     panel.style.maxHeight = _isMobile ? '76vh' : '82vh';
     panel.style.overflowY = 'auto';
     panel.style.touchAction = 'pan-y';
     panel.style.webkitOverflowScrolling = 'touch';
-    panel.appendChild(panelTitleBar(t('protocols.title'), INK.gold, () => modal.remove()));
+    // A plain modal.remove() (used by the unlock/toggle refresh path below)
+    // re-opens this modal immediately, so it must NOT resume; closeModal is the
+    // real dismissal and hands control back to the game loop.
+    const closeModal = () => {
+        modal.remove();
+        if (typeof window !== 'undefined' && window.isPausedRef) window.isPausedRef.value = false;
+        if (typeof window.resumeGame === 'function') window.resumeGame();
+    };
+    panel.appendChild(panelTitleBar(t('protocols.title'), INK.gold, closeModal));
 
     const dataReadout = document.createElement('div');
     dataReadout.innerText = t('protocols.dataReadout', {

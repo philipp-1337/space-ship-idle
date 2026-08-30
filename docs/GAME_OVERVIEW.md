@@ -123,7 +123,7 @@ Flight Data is awarded for:
 - Every 25-level milestone after Tech Tree completion: 10 Data
 - Deep Scan doubles Data from special enemies
 
-The Flight Protocols menu is available from the completed Tech Tree. Protocols are permanent unlocks, but only three can be active in a flight at once. This creates a loadout decision instead of another unlimited damage ladder.
+The Flight Protocols menu is available from the completed Tech Tree, opens from its own HUD button, and pauses the flight while open (like the Pause, Settings, and Tech Tree menus). Protocols are permanent unlocks, but only three can be active in a flight at once. This creates a loadout decision instead of another unlimited damage ladder.
 
 Current Protocols:
 

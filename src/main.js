@@ -345,7 +345,7 @@ window.addEventListener('keydown', (e) => {
             techDetail.remove();
             return;
         }
-        for (const menuId of ['pause-menu', 'settings-menu', 'tech-tree-modal', 'changelog-modal']) {
+        for (const menuId of ['pause-menu', 'settings-menu', 'tech-tree-modal', 'flight-protocols-modal', 'changelog-modal']) {
             const closeButton = document.querySelector(`#${menuId} .modal-close-button`);
             if (closeButton) {
                 closeButton.click();
