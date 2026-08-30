@@ -24,6 +24,7 @@ AudioManager.init();
 initializeUI();
 
 const canvas = document.createElement('canvas');
+canvas.id = 'game-canvas';
 const ctx = canvas.getContext('2d');
 document.body.appendChild(canvas);
 canvas.width = window.innerWidth;
@@ -401,7 +402,7 @@ function resumeGame() {
 // Mache resumeGame global verfügbar, damit das Tech-Tree-Modal es aufrufen kann
 window.resumeGame = resumeGame;
 
-window.addEventListener('resize', () => {
+function handleViewportResize() {
     window.logicalWidth = window.innerWidth;
     window.logicalHeight = window.innerHeight;
     if (inputManager.isMobile) {
@@ -412,11 +413,30 @@ window.addEventListener('resize', () => {
         applyDesktopResolutionCap();
     }
     effectsSystem.resize(window.logicalWidth, window.logicalHeight);
-    
+
     // Margin für Weltverschiebung neu berechnen, da sich das logische Fenster geändert hat
     marginX = window.logicalWidth * PHYSICS.MARGIN_FACTOR;
     marginY = window.logicalHeight * PHYSICS.MARGIN_FACTOR;
+
+    // Schiff wieder in den (evtl. geschrumpften) Spielbereich zwingen, damit es
+    // nach einem Wechsel ins Querformat nicht außerhalb des Canvas hängen bleibt.
+    ship.x = Math.max(marginX, Math.min(window.logicalWidth - marginX, ship.x));
+    ship.y = Math.max(marginY, Math.min(window.logicalHeight - marginY, ship.y));
+}
+
+window.addEventListener('resize', handleViewportResize);
+
+// iOS Safari (und einige Android-Browser) feuern beim Drehen entweder gar kein
+// resize oder eines mit noch veralteten innerWidth/innerHeight-Werten. Deshalb
+// zusätzlich auf orientationchange/visualViewport hören und die Messung nach dem
+// Layout-Update noch einmal nachziehen.
+window.addEventListener('orientationchange', () => {
+    handleViewportResize();
+    setTimeout(handleViewportResize, 300);
 });
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+}
 
 function restartGame() {
     document.location.reload();

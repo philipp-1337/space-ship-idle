@@ -42,6 +42,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.9.26', date: '2026-08-30', changes: ['Bugfix: On mobile, rotating between portrait and landscape now resizes the playfield to fill the screen instead of leaving it cropped.'] },
     { version: '0.9.25', date: '2026-08-28', changes: ['Balancing: Laser projectile speed is no longer tied to Laser Damage. Added a permanent Bolt Velocity tech node that grants +2 bolt speed and unlocks a repeatable level-up upgrade raising bolt speed up to 18.'] },
     { version: '0.9.24', date: '2026-08-09', changes: ['Performance Fix: Added a hard 60 FPS cap to normalize device performance and prevent battery drain on high-refresh-rate phones (e.g. 120Hz/144Hz displays).'] },
     { version: '0.9.23', date: '2026-08-08', changes: ['Performance Fix: Removed expensive shadowBlur rendering from late-game enemies, resolving severe framerate drops in Chrome.'] },
