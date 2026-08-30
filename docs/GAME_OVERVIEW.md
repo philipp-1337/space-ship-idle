@@ -125,6 +125,8 @@ Flight Data is awarded for:
 
 The Flight Protocols menu is available from the completed Tech Tree, opens from its own HUD button, and pauses the flight while open (like the Pause, Settings, and Tech Tree menus). Protocols are permanent unlocks, but only three can be active in a flight at once. This creates a loadout decision instead of another unlimited damage ladder.
 
+The per-protocol **unlock level** gates *unlocking* only. Flight Data and every unlocked protocol persist through death (they live in their own `localStorage` keys, untouched by the run-state reset). After a death restarts the run at level 1, an already-unlocked protocol can still be activated or deactivated freely — the loadout is always the player's to rearrange; only spending Flight Data on a not-yet-unlocked protocol stays blocked until its level. Each menu row shows an explicit status: Active in loadout / Unlocked · ready / Unlocked · loadout full / Locked until Level X / Needs X Data / Unlockable now.
+
 Current Protocols:
 
 | Protocol | Unlock level | Cost | Effect |

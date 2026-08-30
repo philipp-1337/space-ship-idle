@@ -43,6 +43,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.10.4', date: '2026-08-30', changes: ['Flight Protocols: every row now shows an explicit status line (Active / Unlocked / Locked until Level X / Needs X Data / Loadout full). A protocol you already own can be activated and deactivated at any level — dying and restarting at level 1 no longer locks you out of rearranging your loadout; only unlocking new protocols stays level-gated.'] },
     { version: '0.10.3', date: '2026-08-30', changes: ['Bugfix: Opening the Flight Protocols menu now pauses the flight (like the Pause, Settings, and Tech Tree menus) instead of letting enemies keep attacking behind it. Escape closes the menu.'] },
     { version: '0.10.2', date: '2026-08-30', changes: ['Bugfix: The Flight Protocols and tech-node detail modals no longer overflow the screen on mobile with the longer German labels; their buttons now stack on narrow screens.'] },
     { version: '0.10.1', date: '2026-08-30', changes: ['Tech Tree: Level-gated nodes (Twin Drones, Signal Interference, late Payload Amplifiers, etc.) now stay visible as locked cards showing the required level, instead of being hidden until the current run reaches that level.'] },
@@ -1823,33 +1824,70 @@ export function showFlightProtocolsModal() {
         row.style.border = `1px solid ${active ? INK.gold : INK.hairlineDim}`;
         row.style.clipPath = chamferClip(scaleNum(6));
 
+        // Three independent facts about a protocol:
+        //   unlocked   – permanent, bought with Flight Data, survives death
+        //   active     – slotted into the current loadout (max 3), also persisted
+        //   levelLocked – only ever blocks *unlocking* a new protocol; a protocol
+        //                 you already own stays freely togglable at any level,
+        //                 so your loadout is always yours to rearrange (e.g.
+        //                 right after a death restarts you at level 1).
+        const slotLocked = !active && flightProtocols.active.length >= FLIGHT_PROTOCOL_SLOT_COUNT;
+        const affordable = (upgrades.flightData || 0) >= protocol.cost;
+        const canActivate = unlocked && !active && !slotLocked;
+        const canUnlock = !unlocked && !levelLocked && affordable;
+        const interactive = active || canActivate || canUnlock;
+
         const copy = document.createElement('div');
         copy.style.minWidth = '0'; // allow the copy column to shrink instead of overflowing the panel
+
+        const statusTag = active ? t('protocols.activeTag') : unlocked ? t('protocols.readyTag') : '';
         const title = document.createElement('div');
-        title.innerText = `${protocol.label}${active ? `  ${t('protocols.activeTag')}` : ''}`;
+        title.innerText = `${protocol.label}${statusTag ? `  ${statusTag}` : ''}`;
         title.style.fontFamily = FONT;
         title.style.fontSize = scale(13);
         title.style.fontWeight = '600';
-        title.style.color = active ? INK.gold : INK.text;
+        title.style.color = active ? INK.gold : unlocked ? INK.text : INK.textDim;
+
         const desc = document.createElement('div');
-        desc.innerText = `${t(`protocols.descriptions.${protocol.key}`)}  ${levelLocked ? t('protocols.availableFromLevel', { level: protocol.minLevel }) : ''}`;
+        desc.innerText = t(`protocols.descriptions.${protocol.key}`);
         desc.style.fontFamily = FONT;
         desc.style.fontSize = scale(11);
         desc.style.lineHeight = '1.4';
         desc.style.color = INK.textDim;
         desc.style.marginTop = scale(4);
-        copy.append(title, desc);
+
+        // Always-present status line — spells out where this protocol stands and
+        // what (if anything) blocks the next action, so the row is never a
+        // greyed-out button with no explanation.
+        let statusText;
+        if (active) statusText = t('protocols.statusActive');
+        else if (unlocked && slotLocked) statusText = t('protocols.statusLoadoutFull', { active: flightProtocols.active.length, total: FLIGHT_PROTOCOL_SLOT_COUNT });
+        else if (unlocked) statusText = t('protocols.statusReady');
+        else if (levelLocked) statusText = t('protocols.statusLevelLocked', { level: protocol.minLevel });
+        else if (!affordable) statusText = t('protocols.statusNeedsData', { cost: protocol.cost, have: upgrades.flightData || 0 });
+        else statusText = t('protocols.statusUnlockable', { cost: protocol.cost });
+        const status = document.createElement('div');
+        status.innerText = statusText;
+        status.style.fontFamily = FONT;
+        status.style.fontSize = scale(10);
+        status.style.letterSpacing = '0.05em';
+        status.style.textTransform = 'uppercase';
+        status.style.marginTop = scale(5);
+        status.style.color = active ? INK.gold : interactive ? INK.phosphor : INK.caution;
+
+        copy.append(title, desc, status);
         row.appendChild(copy);
 
+        const actionLabel = active
+            ? t('protocols.deactivate')
+            : unlocked ? t('protocols.activate') : t('protocols.unlockCost', { cost: protocol.cost });
         const action = consoleButton({
-            text: unlocked
-                ? (active ? t('protocols.deactivate') : t('protocols.activate'))
-                : t('protocols.unlockCost', { cost: protocol.cost }),
+            text: actionLabel,
             color: INK.gold,
             glowColor: 'rgba(255,210,63,0.55)',
             filled: active,
             fontSize: 11,
-            sound: unlocked || (!levelLocked && upgrades.flightData >= protocol.cost) ? 'UI_UPGRADE' : 'UI_ERROR'
+            sound: interactive ? 'UI_UPGRADE' : 'UI_ERROR'
         });
         action.style.whiteSpace = 'nowrap';
         if (_isMobile) {
@@ -1858,18 +1896,17 @@ export function showFlightProtocolsModal() {
             action.style.justifySelf = 'start';
             action.style.marginTop = scale(4);
         }
-        const slotLocked = !active && flightProtocols.active.length >= FLIGHT_PROTOCOL_SLOT_COUNT;
-        if (levelLocked || slotLocked || (!unlocked && upgrades.flightData < protocol.cost)) {
-            action.style.opacity = '0.45';
-            action.setAttribute('aria-disabled', 'true');
-            action.style.cursor = 'not-allowed';
-        } else {
+        if (interactive) {
             action.onclick = () => {
                 if (unlocked ? toggleProtocol(protocol.key) : handleProtocolUnlock(protocol.key)) {
                     modal.remove();
                     showFlightProtocolsModal();
                 }
             };
+        } else {
+            action.style.opacity = '0.45';
+            action.setAttribute('aria-disabled', 'true');
+            action.style.cursor = 'not-allowed';
         }
         row.appendChild(action);
         list.appendChild(row);
