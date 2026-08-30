@@ -43,6 +43,7 @@ const CHAMFER = 10; // px, unscaled — corner cut for the console-panel shape
 const MOBILE_MOVEMENT_NOTICE_VERSION = 'mobile-controls-v4';
 
 const CHANGELOG_ENTRIES = [
+    { version: '0.10.1', date: '2026-08-30', changes: ['Tech Tree: Level-gated nodes (Twin Drones, Signal Interference, late Payload Amplifiers, etc.) now stay visible as locked cards showing the required level, instead of being hidden until the current run reaches that level.'] },
     { version: '0.10.0', date: '2026-08-30', changes: ['Added German localization with an English/Deutsch language switch in Settings; the game auto-detects the browser language on first launch. Changelog entries stay in English.'] },
     { version: '0.9.26', date: '2026-08-30', changes: ['Bugfix: On mobile, rotating between portrait and landscape now resizes the playfield to fill the screen instead of leaving it cropped.'] },
     { version: '0.9.25', date: '2026-08-28', changes: ['Balancing: Laser projectile speed is no longer tied to Laser Damage. Added a permanent Bolt Velocity tech node that grants +2 bolt speed and unlocks a repeatable level-up upgrade raising bolt speed up to 18.'] },
@@ -1672,13 +1673,14 @@ function techCostLabel(cost) {
     return t(cost === 1 ? 'techTree.costPlasmaCellOne' : 'techTree.costPlasmaCellOther', { count: cost });
 }
 
-function techStatusLine(unlocked, locked, requiresLabel, costLabel) {
+function techStatusLine(unlocked, locked, requiresLabel, costLabel, levelLocked, requiredLevel) {
     if (unlocked) return t('techTree.statusUnlocked');
     if (locked) return t('techTree.statusRequires', { name: requiresLabel });
+    if (levelLocked) return t('techTree.statusRequiresLevel', { level: requiredLevel });
     return t('techTree.statusCost', { cost: costLabel });
 }
 
-function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade) {
+function showTechNodeDetail(upg, unlocked, locked, levelLocked, purchasable, costLabel, onUpgrade) {
     const existing = document.getElementById('tech-node-detail-modal');
     if (existing) existing.remove();
 
@@ -1697,7 +1699,7 @@ function showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpg
     panel.appendChild(desc);
 
     const statusLine = document.createElement('div');
-    statusLine.innerText = techStatusLine(unlocked, locked, upg.requiresLabel, costLabel);
+    statusLine.innerText = techStatusLine(unlocked, locked, upg.requiresLabel, costLabel, levelLocked, upg.minLevel);
     statusLine.style.fontFamily = FONT;
     statusLine.style.fontSize = scale(11);
     statusLine.style.letterSpacing = '0.05em';
@@ -1848,8 +1850,8 @@ export function showFlightProtocolsModal() {
 // unmet (distinct from simply not being able to afford it yet). A tap opens
 // a focused detail modal (see showTechNodeDetail) rather than expanding
 // content inline.
-function techTreeNode(upg, unlocked, locked, onUpgrade) {
-    const purchasable = !unlocked && !locked;
+function techTreeNode(upg, unlocked, locked, levelLocked, onUpgrade) {
+    const purchasable = !unlocked && !locked && !levelLocked;
     const costLabel = techCostLabel(upg.cost);
 
     const node = document.createElement('div');
@@ -1873,7 +1875,7 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
         node.style.border = `1px solid ${INK.phosphor}`;
         node.style.color = INK.void;
         node.style.boxShadow = `0 0 ${scaleNum(12)}px ${scaleNum(1)}px ${INK.phosphorDim}`;
-    } else if (locked) {
+    } else if (locked || levelLocked) {
         node.style.background = INK.panel;
         node.style.border = `1px solid ${INK.hairlineDim}`;
         node.style.color = INK.textDim;
@@ -1898,13 +1900,13 @@ function techTreeNode(upg, unlocked, locked, onUpgrade) {
     header.style.color = 'inherit';
     header.style.cursor = 'pointer';
 
-    const statusLine = techStatusLine(unlocked, locked, upg.requiresLabel, costLabel);
+    const statusLine = techStatusLine(unlocked, locked, upg.requiresLabel, costLabel, levelLocked, upg.minLevel);
     const labelClass = upg.requires ? 'tt-child-label' : '';
     header.innerHTML = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:${scale(6)}"><span class="${labelClass}" style="font-weight:600;font-size:${scale(13)};letter-spacing:0.03em;text-transform:uppercase">${upg.label}${unlocked ? t('techTree.statusOnlineSuffix') : ''}</span><span style="font-size:${scale(13)};opacity:0.55;flex-shrink:0">&#8250;</span></div><div style="font-size:${scale(10)};margin-top:${scale(6)};letter-spacing:0.05em;text-transform:uppercase;opacity:${unlocked ? '0.85' : '0.6'}">${statusLine}</div>`;
 
     header.onclick = () => {
         AudioManager.play('UI_CLICK');
-        showTechNodeDetail(upg, unlocked, locked, purchasable, costLabel, onUpgrade);
+        showTechNodeDetail(upg, unlocked, locked, levelLocked, purchasable, costLabel, onUpgrade);
     };
     // Hover styling lives on the parent `node`, not this button — mirror it
     // onto keyboard focus the same way mirrorHoverOnFocus() does elsewhere.
@@ -2033,8 +2035,14 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
     // Connectors are rendered only on desktop. Mobile gets a linear branch list
     // below, which keeps the dependency hierarchy readable without shrinking a
     // graph into an unusable touch layout.
-    const visibleNodes = nodes.filter((node) => !TECH_MIN_LEVELS[node.key] || currentLevel >= TECH_MIN_LEVELS[node.key]);
+    //
+    // Level-gated nodes stay visible but render locked (greyed, no Confirm) with
+    // an "ab Level X" status, so late-game goals like Twin Drones are always
+    // discoverable instead of vanishing from the tree until the run catches up.
+    nodes.forEach((node) => { node.minLevel = TECH_MIN_LEVELS[node.key] || 0; });
+    const visibleNodes = nodes;
     const nodeByKey = new Map(visibleNodes.map((node) => [node.key, node]));
+    const isLevelLocked = (node) => currentLevel < node.minLevel;
     const isUnlocked = (key) => key === 'autoShoot' ? (!!currentTechUpgrades[key] || _isMobile) : !!currentTechUpgrades[key];
     const nodeDepth = (node, seen = new Set()) => {
         if (!node || !node.requires || seen.has(node.key)) return 0;
@@ -2048,7 +2056,7 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
         const prereqMet = requirements.every((requirement) => requirement === 'autoShoot'
             ? (!!currentTechUpgrades[requirement] || _isMobile)
             : !!currentTechUpgrades[requirement]);
-        return techTreeNode(n, unlocked, !prereqMet, onUpgrade);
+        return techTreeNode(n, unlocked, !prereqMet, isLevelLocked(n), onUpgrade);
     };
 
     if (_isMobile) {
@@ -2087,7 +2095,9 @@ export function showTechTreeModal(currentTechUpgrades, onUpgrade) {
             branch.style.paddingLeft = scale(10);
             groupNodes.forEach((n, index) => {
                 const node = createTreeNode(n);
-                const margin = nodeDepth(n) * 10;
+                // Cap the indent so long dependency chains (the missile and drone
+                // branches run 6-9 deep) don't squeeze cards off the phone screen.
+                const margin = Math.min(nodeDepth(n), 4) * 10;
                 node.style.marginLeft = scale(margin);
                 node.style.width = `calc(100% - ${scale(margin)})`;
                 if (index > 0 && n.requires) node.style.position = 'relative';

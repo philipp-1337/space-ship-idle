@@ -198,6 +198,7 @@ export default {
         statusUnlocked: 'Unlocked',
         statusOnlineSuffix: ' — Online',
         statusRequires: 'Requires {name}',
+        statusRequiresLevel: 'Reach Level {level}',
         statusCost: 'Cost: {cost}',
         costPlasmaCellOne: '{count} Plasma Cell',
         costPlasmaCellOther: '{count} Plasma Cells',

@@ -20,6 +20,18 @@
         "value": "#ffc107",
         "createdAt": "2026-08-02T17:38:45.439Z",
         "reason": "Explosion VFX color; DESIGN.md scopes gameplay/sprite colors outside the chrome-only design system"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#1e2421",
+        "createdAt": "2026-08-30T15:54:21.832Z",
+        "reason": "pre-existing kbd-key skeuomorphism on start screen (ui.js kbdStyle); not introduced by this change, only re-flagged due to a line-number shift"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "3px",
+        "createdAt": "2026-08-30T15:54:26.068Z",
+        "reason": "pre-existing kbd-key skeuomorphism on start screen (ui.js kbdStyle); not introduced by this change, only re-flagged due to a line-number shift"
       }
     ]
   }
